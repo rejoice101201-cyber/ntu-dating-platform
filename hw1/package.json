@@ -1,0 +1,27 @@
+{
+  "name": "daniel-wu-portfolio",
+  "version": "1.0.0",
+  "description": "Daniel Wu's personal portfolio website with TypeScript implementation",
+  "main": "assets/js/script.js",
+  "scripts": {
+    "start": "python3 -m http.server 8005",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc && echo 'TypeScript compilation completed'"
+  },
+  "keywords": [
+    "portfolio",
+    "typescript",
+    "web-development",
+    "interactive-design",
+    "responsive"
+  ],
+  "author": "Daniel Wu",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
