@@ -35,8 +35,7 @@ src/AppTest.tsx
 src/AppWithPacMan.tsx
 src/AppWithPacManTest.tsx
 
-# Chat history and documentation
-chat-history/
+# Documentation
 PACMAN_COMPONENT_README.md
 
 # Screenshots and temporary files
