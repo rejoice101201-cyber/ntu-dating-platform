@@ -9,6 +9,7 @@ import { soundManager } from '../utils/SoundManager';
 import PacManAnimated from './PacManAnimated';
 import StartScreen from './StartScreen';
 import GameAnimations from './GameAnimations';
+import EndOverlay from './EndOverlay';
 
 interface GameCanvasProps {
   onScoreChange?: (score: number) => void;
@@ -644,7 +645,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
       )}
       
       {/* Game Animations */}
-      {showGameAnimation && (
+      {showGameAnimation && showGameAnimation !== 'end' && (
         <GameAnimations 
           type={showGameAnimation} 
           onComplete={handleAnimationComplete}
@@ -806,30 +807,11 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
           </div>
         )}
         {gameOver && (
-          <div role="dialog" aria-modal="true" style={{ 
-            position: 'fixed', 
-            inset: 0, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            background: 'rgba(0,0,0,0.8)', 
-            color: '#FF0000', 
-            fontFamily: 'Courier New, monospace',
-            fontSize: '18px',
-            zIndex: 9999
-          }}>
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '24px', 
-              border: '2px solid #FF0000', 
-              background: 'rgba(0,0,0,0.9)',
-              borderRadius: '8px'
-            }}>
-              <h3 style={{ marginTop: 0, fontSize: '24px', fontWeight: 'bold' }}>GAME OVER</h3>
-              <p style={{ margin: '16px 0', fontSize: '16px' }}>Press any key to restart</p>
-              <p style={{ margin: 0, fontSize: '14px', color: '#CCCCCC' }}>遊戲結束。按任意鍵或滑鼠重新開始。</p>
-            </div>
-          </div>
+          <EndOverlay 
+            score={state.score.score}
+            highScore={state.score.highScore}
+            onRestart={resetGame}
+          />
         )}
         {gameWon && (
           <div role="dialog" aria-modal="true" style={{ 

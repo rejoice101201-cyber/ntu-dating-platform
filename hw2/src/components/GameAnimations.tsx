@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface GameAnimationsProps {
-  type: 'start' | 'pause' | 'end' | 'levelComplete';
+  type: 'start' | 'pause' | 'levelComplete';
   onComplete?: () => void;
 }
 
@@ -11,8 +11,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
   const [animationPhase, setAnimationPhase] = useState(0);
 
   useEffect(() => {
-    // For 'end' keep visible; others auto-dismiss quickly
-    if (type === 'end') return;
+    // auto-dismiss quickly
     const timer = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
@@ -22,7 +21,6 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
 
   // Dismiss animation immediately on any key press (except end)
   useEffect(() => {
-    if (type === 'end') return;
     const handleKeyPress = () => {
       setIsVisible(false);
       onComplete?.();
@@ -59,12 +57,6 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
           color: '#FFD700',
           bgColor: 'rgba(255, 215, 0, 0.1)'
         };
-      case 'end':
-        return {
-          title: 'GAME OVER',
-          color: '#FF0000',
-          bgColor: 'transparent' // don't darken background to avoid black screen
-        };
       case 'levelComplete':
         return {
           title: 'LEVEL COMPLETE!',
@@ -91,25 +83,21 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       left: 0,
       width: '100vw',
       height: '100vh',
-      backgroundColor: type === 'end' ? 'rgba(0,0,0,0.4)' : bgColor,
+      backgroundColor: bgColor,
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 100000,
-      animation: type === 'end' ? undefined : 'fadeInOut 2s ease-in-out'
+      animation: 'fadeInOut 2s ease-in-out'
     }}>
       <div style={{
         textAlign: 'center',
-        animation: `pulse${animationPhase} 0.2s ease-in-out`,
-        padding: '24px',
-        border: type === 'end' ? '2px solid #FF0000' : undefined,
-        background: type === 'end' ? 'rgba(0,0,0,0.85)' : undefined,
-        borderRadius: '8px'
+        animation: `pulse${animationPhase} 0.2s ease-in-out`
       }}>
         <h1 style={{
           fontSize: '5rem',
           fontWeight: 'bold',
-          color: type === 'end' ? '#FF5555' : color,
+          color: color,
           textShadow: `0 0 20px ${color}, 0 0 40px ${color}`,
           margin: 0,
           fontFamily: 'Arial, sans-serif',
