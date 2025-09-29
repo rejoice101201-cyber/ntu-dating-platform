@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface GameAnimationsProps {
   type: 'start' | 'pause' | 'end' | 'levelComplete';
@@ -81,7 +82,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
 
   if (!isVisible) return null;
 
-  return (
+  const node = (
     <div style={{
       position: 'fixed',
       top: 0,
@@ -184,6 +185,8 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       `}</style>
     </div>
   );
+
+  return createPortal(node, document.body);
 };
 
 export default GameAnimations;
