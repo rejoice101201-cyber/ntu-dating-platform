@@ -271,6 +271,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
               currentState.running = false;
               setGameOver(true);
               setShowGameAnimation('end');
+              console.log('[Game] Game Over triggered');
               // Play intermission audio on game over
               if (intermissionAudio) {
                 intermissionAudio.play().catch(error => {

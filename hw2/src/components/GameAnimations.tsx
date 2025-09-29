@@ -11,16 +11,18 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
   const [animationPhase, setAnimationPhase] = useState(0);
 
   useEffect(() => {
+    // For 'end' keep visible; others auto-dismiss quickly
+    if (type === 'end') return;
     const timer = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, 300); // Very short animation duration
-
+    }, 300);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, [onComplete, type]);
 
-  // Dismiss animation immediately on any key press
+  // Dismiss animation immediately on any key press (except end)
   useEffect(() => {
+    if (type === 'end') return;
     const handleKeyPress = () => {
       setIsVisible(false);
       onComplete?.();
@@ -33,7 +35,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       window.removeEventListener('keydown', handleKeyPress);
       window.removeEventListener('mousedown', handleKeyPress);
     };
-  }, [onComplete]);
+  }, [onComplete, type]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -61,7 +63,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
         return {
           title: 'GAME OVER',
           color: '#FF0000',
-          bgColor: 'rgba(255, 0, 0, 0.1)'
+          bgColor: 'transparent' // don't darken background to avoid black screen
         };
       case 'levelComplete':
         return {
@@ -94,7 +96,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 100000,
-      animation: 'fadeInOut 2s ease-in-out'
+      animation: type === 'end' ? undefined : 'fadeInOut 2s ease-in-out'
     }}>
       <div style={{
         textAlign: 'center',
