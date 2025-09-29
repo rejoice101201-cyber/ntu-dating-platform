@@ -852,7 +852,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             <div style={{ 
               textAlign: 'center', 
               padding: '24px', 
-              border: '2px solid '#FFFF00', 
+              border: '2px solid #FFFF00', 
               background: 'rgba(0,0,0,0.9)',
               borderRadius: '8px'
             }}>
@@ -883,7 +883,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             <div style={{ 
               textAlign: 'center', 
               padding: '24px', 
-              border: '2px solid '#00FF00', 
+              border: '2px solid #00FF00', 
               background: 'rgba(0,0,0,0.9)',
               borderRadius: '8px'
             }}>
