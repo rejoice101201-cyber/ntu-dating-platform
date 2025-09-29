@@ -385,6 +385,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
     const mapImg = new Image();
     mapImg.src = '/map.png';
     
+    const USE_GHOST_IMAGES = false; // force vector ghosts for cross-platform consistency
+
     const draw = () => {
       animationTime += 16.67; // ~60fps (1000ms / 60fps = 16.67ms per frame)
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -522,47 +524,6 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             ctx.fill();
             return;
           }
-        }
-        
-        // Load individual ghost images
-        const ghostImg = new Image();
-        if (mode === 'frightened') {
-          // Use 5.jpg for frightened mode
-          ghostImg.src = '/5.jpg';
-        } else {
-          // Use individual ghost images for normal mode
-          switch (ghostId) {
-            case 'blinky': ghostImg.src = '/4.jpg'; break;
-            case 'pinky': ghostImg.src = '/1.jpg'; break;
-            case 'inky': ghostImg.src = '/2.jpg'; break;
-            case 'clyde': ghostImg.src = '/3.jpg'; break;
-          }
-        }
-        
-        // Use individual ghost image if loaded
-        if (ghostImg.complete) {
-          // Adjust size based on mode: frightened mode is 0.6x smaller
-          const sizeMultiplier = mode === 'frightened' ? 1.8 * 0.8 : 1.8;
-          const w = size * sizeMultiplier, h = size * sizeMultiplier;
-          ctx.save();
-          ctx.translate(x, y);
-          
-          // Apply flashing effect for frightened mode
-          if (mode === 'frightened' && isFlashing) {
-            const flashSpeed = 200;
-            const flashPhase = (animationTime % (flashSpeed * 2)) / flashSpeed;
-            ctx.globalAlpha = flashPhase < 1 ? 1 : 0.3; // Flash between full opacity and semi-transparent
-          }
-          
-          // Draw the ghost sprite (full image, with size adjustment)
-          ctx.drawImage(
-            ghostImg,
-            0, 0, ghostImg.width, ghostImg.height, // Source rectangle (full image)
-            -w/2, -h/2, w, h // Destination rectangle (adjusted size)
-          );
-          
-          ctx.restore();
-          return;
         }
         
         // Fallback to original vector drawing if image not loaded
