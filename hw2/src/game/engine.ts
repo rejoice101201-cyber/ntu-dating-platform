@@ -356,10 +356,16 @@ export function updateGhostDirections(ghosts: Ghost[], pacman: Pacman, tilemap: 
           dir = 'down'; // Move down to center
         }
       } else {
-        // Move to home corner when outside ghost house
-        const dx = g.homeCorner.col * tilemap.tileSize + tilemap.tileSize / 2 - g.position.x;
-        const dy = g.homeCorner.row * tilemap.tileSize + tilemap.tileSize / 2 - g.position.y;
-        dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        // Special rule: Inky (cyan) should always chase Pac-Man when not frightened/eyes
+        if (g.name === 'inky') {
+          const pacmanTile = tileAt(pacman, tilemap.tileSize);
+          dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
+        } else {
+          // Move to home corner when outside ghost house
+          const dx = g.homeCorner.col * tilemap.tileSize + tilemap.tileSize / 2 - g.position.x;
+          const dy = g.homeCorner.row * tilemap.tileSize + tilemap.tileSize / 2 - g.position.y;
+          dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        }
       }
     } else if (g.mode === 'chase') {
       // Different AI for each ghost
@@ -383,22 +389,8 @@ export function updateGhostDirections(ghosts: Ghost[], pacman: Pacman, tilemap: 
           
           dir = getDirectionWithBfs(tilemap, ghostTile, pinkyTarget);
           break;
-        case 'inky': // Cyan - complex targeting based on Pac-Man and Blinky positions
-          const blinky = ghosts.find(gh => gh.name === 'blinky');
-          if (blinky) {
-            const blinkyTile = tileAt(blinky, tilemap.tileSize);
-            // Calculate Pac-Man's position 2 tiles ahead
-            const pacmanAhead2 = getTileAhead(pacmanTile, pacman.direction, 2);
-            // Create vector from Blinky to Pac-Man's 2-tile-ahead position, then double it
-            const vector = { 
-              col: pacmanAhead2.col + (pacmanAhead2.col - blinkyTile.col), 
-              row: pacmanAhead2.row + (pacmanAhead2.row - blinkyTile.row) 
-            };
-            dir = getDirectionWithBfs(tilemap, ghostTile, vector);
-          } else {
-            // Fallback to direct chase if Blinky not found
-            dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
-          }
+        case 'inky': // Cyan - force direct chase always
+          dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
           break;
         case 'clyde': // Orange - sometimes moves away from Pac-Man
           const distance = Math.abs(ghostTile.col - pacmanTile.col) + Math.abs(ghostTile.row - pacmanTile.row);
