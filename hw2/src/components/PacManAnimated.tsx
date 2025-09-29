@@ -34,10 +34,11 @@ const PacManAnimated: React.FC<PacManAnimatedProps> = ({
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Calculate mouth animation
-      const time = Date.now() * 0.003;
-      const mouthAngle = Math.PI / 3;
-      const mouthAnimation = Math.sin(time) * 0.3 + 0.7;
+      // Calculate mouth animation (much faster frequency, wide amplitude)
+      const time = Date.now() * 0.025; // further increased frequency
+      const mouthAngle = Math.PI / 2; // wider possible mouth
+      const phase = (Math.sin(time) + 1) / 2; // 0..1
+      const mouthAnimation = 0.08 + 0.92 * phase; // 0.08 .. 1.0 (closes more)
       const currentMouthAngle = mouthAngle * mouthAnimation;
 
       // Save context
@@ -67,12 +68,6 @@ const PacManAnimated: React.FC<PacManAnimatedProps> = ({
       ctx.arc(0, 0, size, -currentMouthAngle / 2, currentMouthAngle / 2);
       ctx.lineTo(0, 0);
       ctx.closePath();
-      ctx.fill();
-
-      // Add eye
-      ctx.fillStyle = '#000000';
-      ctx.beginPath();
-      ctx.arc(0, -size * 0.3, size * 0.1, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
