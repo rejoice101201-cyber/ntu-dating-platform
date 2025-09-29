@@ -6,7 +6,7 @@ import { useKeyControls } from '../hooks/useKeyControls';
 import type { Ghost, Pacman } from '../types/GameTypes';
 import { HighScoreManager } from '../utils/HighScoreManager';
 import { soundManager } from '../utils/SoundManager';
-import PacManWorking from './PacManWorking';
+import PacManAnimated from './PacManAnimated';
 import StartScreen from './StartScreen';
 import GameAnimations from './GameAnimations';
 
@@ -661,7 +661,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         
         {/* Standalone Animated Pac-Man Component */}
         {state.running && !state.paused && (
-          <PacManWorking
+          <PacManAnimated
             x={pacman.position.x}
             y={pacman.position.y}
             size={pacman.size}
