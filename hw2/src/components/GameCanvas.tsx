@@ -326,7 +326,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
     });
   }, [pacman, ghosts, input, tilemap, level, intermissionAudio]);
 
-  useGameLoop(step, state.running);
+  useGameLoop(step, state.running && !gameOver);
 
   // Reset game function
   const resetGame = useCallback(() => {
@@ -360,12 +360,12 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
 
   // Start overlay: any key or click to start
   useEffect(() => {
-    if (!showStart) return;
+    if (!showStart || gameOver) return;
     const start = () => { setShowStart(false); setState(s => ({ ...s, running: true })); };
     window.addEventListener('keydown', start, { once: true });
     window.addEventListener('mousedown', start, { once: true });
     return () => { window.removeEventListener('keydown', start); window.removeEventListener('mousedown', start); };
-  }, [showStart]);
+  }, [showStart, gameOver]);
 
   // Game over/win overlay: any key or click to restart
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface EndOverlayProps {
@@ -8,6 +8,14 @@ interface EndOverlayProps {
 }
 
 const EndOverlay: React.FC<EndOverlayProps> = ({ score, highScore, onRestart }) => {
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
   const node = (
     <div style={{
       position: 'fixed',
