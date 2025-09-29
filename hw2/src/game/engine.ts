@@ -356,8 +356,8 @@ export function updateGhostDirections(ghosts: Ghost[], pacman: Pacman, tilemap: 
           dir = 'down'; // Move down to center
         }
       } else {
-        // Special rule: Inky (cyan) should always chase Pac-Man when not frightened/eyes
-        if (g.name === 'inky') {
+        // Special rule: Inky and Clyde should always chase Pac-Man when not frightened/eyes
+        if (g.name === 'inky' || g.name === 'clyde') {
           const pacmanTile = tileAt(pacman, tilemap.tileSize);
           dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
         } else {
@@ -392,13 +392,8 @@ export function updateGhostDirections(ghosts: Ghost[], pacman: Pacman, tilemap: 
         case 'inky': // Cyan - force direct chase always
           dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
           break;
-        case 'clyde': // Orange - sometimes moves away from Pac-Man
-          const distance = Math.abs(ghostTile.col - pacmanTile.col) + Math.abs(ghostTile.row - pacmanTile.row);
-          if (distance > 8) {
-            dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
-          } else {
-            dir = getDirectionToTarget(ghostTile, g.homeCorner);
-          }
+        case 'clyde': // Orange - force direct chase always
+          dir = getDirectionWithBfs(tilemap, ghostTile, pacmanTile);
           break;
       }
     }
