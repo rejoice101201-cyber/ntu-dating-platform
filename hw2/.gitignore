@@ -26,7 +26,6 @@ src/components/PacManMasked.tsx
 src/components/PacManSimple.tsx
 src/components/PacManSimpleMouth.tsx
 src/components/PacManStepByStep.tsx
-src/components/PacManWorking.tsx
 src/components/ImageTest.tsx
 src/AppImageTest.tsx
 src/AppPacManTest.tsx
