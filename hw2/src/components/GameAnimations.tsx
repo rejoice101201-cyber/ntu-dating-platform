@@ -93,7 +93,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 2000,
+      zIndex: 100000,
       animation: 'fadeInOut 2s ease-in-out'
     }}>
       <div style={{

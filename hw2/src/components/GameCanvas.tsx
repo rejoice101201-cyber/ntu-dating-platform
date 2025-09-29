@@ -660,7 +660,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         left: 0,
         right: 0,
         bottom: 0,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 0
       }}>
       <div style={{ 
         display: 'flex', 
