@@ -34,6 +34,8 @@ const EXTRA_LIFE_SCORE = 10000;
 
 export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const infoPanelRef = useRef<HTMLDivElement | null>(null);
+  const gameOuterRef = useRef<HTMLDivElement | null>(null);
   const [tilemap, setTilemap] = useState(() => createDefaultTilemap(TILE_SIZE));
   const [state, setState] = useState(() => ({ ...createInitialGameState(), running: false, paused: false }));
   const [showStart, setShowStart] = useState(true);
@@ -45,6 +47,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [showGameAnimation, setShowGameAnimation] = useState<'start' | 'pause' | 'end' | 'levelComplete' | null>(null);
   const [intermissionAudio, setIntermissionAudio] = useState<HTMLAudioElement | null>(null);
+  const [scale, setScale] = useState(1);
   
   // Handle start screen
   const handleStartGame = () => {
@@ -64,6 +67,30 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
     audio.volume = 0.5;
     setIntermissionAudio(audio);
   }, []);
+
+  // Responsive scaling to fit viewport
+  useEffect(() => {
+    const updateScale = () => {
+      const gameWidth = tilemap.cols * tilemap.tileSize;
+      const gameHeight = tilemap.rows * tilemap.tileSize;
+
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const sidePanelWidth = infoPanelRef.current?.offsetWidth ?? 220; // fallback
+      const horizontalGaps = 30 + 240; // gap between columns + left spacer
+      const availableWidth = Math.max(0, vw - sidePanelWidth - horizontalGaps - 40); // a bit of padding
+
+      const scaleByWidth = availableWidth / gameWidth;
+      const scaleByHeight = (vh - 40) / gameHeight; // top/bottom padding
+
+      const newScale = Math.min(1, Math.max(0.1, Math.min(scaleByWidth, scaleByHeight)));
+      setScale(isFinite(newScale) ? newScale : 1);
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [tilemap]);
 
   // Helper function to create game entities
   const createGameEntities = useCallback((tilemap: any, level: any) => {
@@ -599,6 +626,9 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
     return () => cancelAnimationFrame(id);
   }, [tilemap, pacman, ghosts]);
 
+  const gameWidthPx = tilemap.cols * tilemap.tileSize;
+  const gameHeightPx = tilemap.rows * tilemap.tileSize;
+
   return (
     <>
       {/* Start Screen */}
@@ -641,12 +671,16 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
           height: '1px'
         }}></div>
         
-        <div style={{ 
+        <div ref={gameOuterRef} style={{ 
           display: 'flex', 
           flexDirection: 'column',
           alignItems: 'center',
           gap: '20px',
-          position: 'relative'
+          position: 'relative',
+          width: gameWidthPx,
+          height: gameHeightPx,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left'
       }}>
         <canvas 
           ref={canvasRef} 
@@ -672,7 +706,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         </div>
         
         {/* Game Info Panel */}
-        <div style={{
+        <div ref={infoPanelRef} style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '20px',
@@ -818,7 +852,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             <div style={{ 
               textAlign: 'center', 
               padding: '24px', 
-              border: '2px solid #FFFF00', 
+              border: '2px solid '#FFFF00', 
               background: 'rgba(0,0,0,0.9)',
               borderRadius: '8px'
             }}>
@@ -849,7 +883,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             <div style={{ 
               textAlign: 'center', 
               padding: '24px', 
-              border: '2px solid #00FF00', 
+              border: '2px solid '#00FF00', 
               background: 'rgba(0,0,0,0.9)',
               borderRadius: '8px'
             }}>
