@@ -91,7 +91,7 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
       left: 0,
       width: '100vw',
       height: '100vh',
-      backgroundColor: bgColor,
+      backgroundColor: type === 'end' ? 'rgba(0,0,0,0.4)' : bgColor,
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -100,12 +100,16 @@ const GameAnimations: React.FC<GameAnimationsProps> = ({ type, onComplete }) => 
     }}>
       <div style={{
         textAlign: 'center',
-        animation: `pulse${animationPhase} 0.2s ease-in-out`
+        animation: `pulse${animationPhase} 0.2s ease-in-out`,
+        padding: '24px',
+        border: type === 'end' ? '2px solid #FF0000' : undefined,
+        background: type === 'end' ? 'rgba(0,0,0,0.85)' : undefined,
+        borderRadius: '8px'
       }}>
         <h1 style={{
           fontSize: '5rem',
           fontWeight: 'bold',
-          color: color,
+          color: type === 'end' ? '#FF5555' : color,
           textShadow: `0 0 20px ${color}, 0 0 40px ${color}`,
           margin: 0,
           fontFamily: 'Arial, sans-serif',

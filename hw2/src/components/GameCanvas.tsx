@@ -700,6 +700,15 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             borderRadius: '8px'
           }}
         />
+        {overlayActive && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            pointerEvents: 'none',
+            zIndex: 1000
+          }} />
+        )}
         
         {/* Standalone Animated Pac-Man Component */}
         {state.running && !state.paused && (
