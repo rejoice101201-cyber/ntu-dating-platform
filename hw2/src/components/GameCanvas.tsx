@@ -777,7 +777,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             background: 'rgba(0,0,0,0.8)', 
             color: '#FFFF00', 
             fontFamily: 'Courier New, monospace',
-            fontSize: '18px'
+            fontSize: '18px',
+            zIndex: 9999
           }}>
             <div style={{ 
               textAlign: 'center', 
@@ -802,7 +803,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             background: 'rgba(0,0,0,0.8)', 
             color: '#FF0000', 
             fontFamily: 'Courier New, monospace',
-            fontSize: '18px'
+            fontSize: '18px',
+            zIndex: 9999
           }}>
             <div style={{ 
               textAlign: 'center', 
@@ -827,7 +829,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             background: 'rgba(0,0,0,0.8)', 
             color: '#00FF00', 
             fontFamily: 'Courier New, monospace',
-            fontSize: '18px'
+            fontSize: '18px',
+            zIndex: 9999
           }}>
             <div style={{ 
               textAlign: 'center', 
@@ -852,7 +855,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             background: 'rgba(0,0,0,0.7)', 
             color: '#FFFF00', 
             fontFamily: 'Courier New, monospace',
-            fontSize: '18px'
+            fontSize: '18px',
+            zIndex: 9999
           }}>
             <div style={{ 
               textAlign: 'center', 
@@ -883,7 +887,8 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             background: 'rgba(0,0,0,0.8)', 
             color: '#00FF00', 
             fontFamily: 'Courier New, monospace',
-            fontSize: '18px'
+            fontSize: '18px',
+            zIndex: 9999
           }}>
             <div style={{ 
               textAlign: 'center', 
