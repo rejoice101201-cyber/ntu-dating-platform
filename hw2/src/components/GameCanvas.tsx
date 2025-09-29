@@ -769,7 +769,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
       {/* Overlay screens */}
         {showStart && (
           <div role="dialog" aria-modal="true" style={{ 
-            position: 'absolute', 
+            position: 'fixed', 
             inset: 0, 
             display: 'flex', 
             alignItems: 'center', 
@@ -795,7 +795,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         )}
         {gameOver && (
           <div role="dialog" aria-modal="true" style={{ 
-            position: 'absolute', 
+            position: 'fixed', 
             inset: 0, 
             display: 'flex', 
             alignItems: 'center', 
@@ -821,7 +821,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         )}
         {gameWon && (
           <div role="dialog" aria-modal="true" style={{ 
-            position: 'absolute', 
+            position: 'fixed', 
             inset: 0, 
             display: 'flex', 
             alignItems: 'center', 
@@ -847,7 +847,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         )}
         {state.paused && (
           <div role="dialog" aria-modal="true" style={{ 
-            position: 'absolute', 
+            position: 'fixed', 
             inset: 0, 
             display: 'flex', 
             alignItems: 'center', 
@@ -879,7 +879,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         )}
         {showLevelTransition && (
           <div role="dialog" aria-modal="true" style={{ 
-            position: 'absolute', 
+            position: 'fixed', 
             inset: 0, 
             display: 'flex', 
             alignItems: 'center', 
