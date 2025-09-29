@@ -657,7 +657,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         justifyContent: 'center', 
         alignItems: 'center',
         height: '100vh',
-        background: overlayActive ? 'transparent' : '#000000',
+        background: '#000000',
         position: 'fixed',
         top: 0,
         left: 0,
@@ -701,15 +701,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             borderRadius: '8px'
           }}
         />
-        {overlayActive && (
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            pointerEvents: 'none',
-            zIndex: 1000
-          }} />
-        )}
+        {/* dimmer removed to avoid residual darkness */}
         
         {/* Standalone Animated Pac-Man Component */}
         {state.running && !state.paused && (
@@ -765,7 +757,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
             <div>
               <div style={{ fontSize: '14px', color: '#CCCCCC', marginBottom: '5px' }}>LIVES</div>
               <div style={{ fontSize: '20px', color: '#4ECDC4', fontWeight: 'bold' }}>
-                {'❤️ '.repeat(pacman.lives)}
+                {'❤️ '.repeat(Math.max(0, pacman.lives))}
               </div>
             </div>
             

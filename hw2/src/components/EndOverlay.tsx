@@ -16,6 +16,12 @@ const EndOverlay: React.FC<EndOverlayProps> = ({ score, highScore, onRestart }) 
     };
   }, []);
 
+  const handleRestart = () => {
+    // restore before restarting
+    document.body.style.overflow = '';
+    onRestart();
+  };
+
   const node = (
     <div style={{
       position: 'fixed',
@@ -42,7 +48,7 @@ const EndOverlay: React.FC<EndOverlayProps> = ({ score, highScore, onRestart }) 
         <div style={{ marginTop: '12px', fontSize: '16px' }}>HIGH SCORE</div>
         <div style={{ fontSize: '24px', color: '#FF6B6B', fontWeight: 700 }}>{highScore.toLocaleString()}</div>
         <button
-          onClick={onRestart}
+          onClick={handleRestart}
           style={{
             marginTop: '20px',
             padding: '10px 16px',
