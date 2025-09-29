@@ -119,12 +119,6 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
       // Handle pause toggle (Q key)
       if (input.pause && !currentState.paused) {
         setShowGameAnimation('pause');
-        // Start intermission audio
-        if (intermissionAudio) {
-          intermissionAudio.play().catch(error => {
-            console.log('Intermission audio play failed:', error);
-          });
-        }
         return { ...currentState, paused: true };
       }
       
@@ -276,6 +270,12 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
               currentState.running = false;
               setGameOver(true);
               setShowGameAnimation('end');
+              // Play intermission audio on game over
+              if (intermissionAudio) {
+                intermissionAudio.play().catch(error => {
+                  console.log('Intermission audio play failed:', error);
+                });
+              }
               const newHighScore = HighScoreManager.setHighScore(currentState.score.score);
               if (newHighScore) {
                 currentState.score.highScore = HighScoreManager.getHighScore();
@@ -327,6 +327,11 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
 
   // Reset game function
   const resetGame = useCallback(() => {
+    // Ensure intermission audio stops on reset
+    if (intermissionAudio) {
+      intermissionAudio.pause();
+      intermissionAudio.currentTime = 0;
+    }
     setShowStart(true);
     setGameOver(false);
     setGameWon(false);
@@ -348,7 +353,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
     
     // Reset power mode
     setIsPowerMode(false);
-  }, [createGameEntities]);
+  }, [createGameEntities, intermissionAudio]);
 
   // Start overlay: any key or click to start
   useEffect(() => {
