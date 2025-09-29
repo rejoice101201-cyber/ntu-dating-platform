@@ -48,6 +48,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
   const [showGameAnimation, setShowGameAnimation] = useState<'start' | 'pause' | 'end' | 'levelComplete' | null>(null);
   const [intermissionAudio, setIntermissionAudio] = useState<HTMLAudioElement | null>(null);
   const [scale, setScale] = useState(1);
+  const overlayActive = showStartScreen || showStart || gameOver || gameWon || state.paused || showLevelTransition || !!showGameAnimation;
   
   // Handle start screen
   const handleStartGame = () => {
@@ -654,7 +655,7 @@ export function GameCanvas({ onScoreChange, onHighChange, onLivesChange }: GameC
         justifyContent: 'center', 
         alignItems: 'center',
         height: '100vh',
-        background: '#000000',
+        background: overlayActive ? 'transparent' : '#000000',
         position: 'fixed',
         top: 0,
         left: 0,
