@@ -8,13 +8,20 @@ A simple, fast Pac‑Man clone built with React + TypeScript + Canvas. Pure fron
 - Dev: `npm run dev` → open the shown localhost URL
 - Build: `npm run build` then `npm run preview`
 
+### Controls
+- **Movement**: Arrow keys (↑↓←→) or WASD keys
+- **Pause**: Q key (press again to resume)
+- **Resume**: Space key (when paused)
+- **Restart**: R key (when paused)
+- **Rules**: Click "Rules" button in the header
+- **Start Game**: Click "START GAME" button or press any key on main screen
+
 ### Before you start the game
 - Click the "Start Game" buttom to start it.
-- Using "up","down","right","left",or "W","S","D","A" to control Pac-Man.
-- If you want to pause the game,just push "Q" button and then you can take a break or resume the game.
 - You have to know that if there are no white dots,there MUST NOT be entered,so don't say that there is a bug,I've written there clearly,just a decoration.
 
 ### Design
+- **Reference**:  All the designs are originated from this online Pac-Man game:https://www.edslap.com/amusements/Games/Pacman/pacman.html
 - **Visual Style**: Modern Pac-Man game with custom skins and animations
 - **Canvas Renderer**: 60 FPS smooth gameplay with optimized rendering
 - **Maze Design**: Classic rectangular maze (3:1 ratio) with tunnels, dots, and power pellets
@@ -47,13 +54,6 @@ A simple, fast Pac‑Man clone built with React + TypeScript + Canvas. Pure fron
   - Extra life at 10,000 points
 - **Data Persistence**: Local high score via `localStorage`
 
-### Controls
-- **Movement**: Arrow keys (↑↓←→) or WASD keys
-- **Pause**: Q key (press again to resume)
-- **Resume**: Space key (when paused)
-- **Restart**: R key (when paused)
-- **Rules**: Click "Rules" button in the header
-- **Start Game**: Click "START GAME" button or press any key on main screen
 
 ### Notes
 - **Audio Files**: Custom audio files in `public/` directory:
