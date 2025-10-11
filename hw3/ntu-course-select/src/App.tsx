@@ -7,6 +7,7 @@ import PrioritySorting from './pages/PrioritySorting'
 import Selection from './pages/Selection'
 import Results from './pages/Results'
 import Schedule from './pages/Schedule'
+import DebugSchedule from './pages/DebugSchedule'
 import './App.css'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
             <Route path="/selection" element={<Selection />} />
             <Route path="/final-results" element={<Results />} />
             <Route path="/schedule" element={<Schedule />} />
+            <Route path="/debug-schedule" element={<DebugSchedule />} />
           </Routes>
         </div>
       </Router>

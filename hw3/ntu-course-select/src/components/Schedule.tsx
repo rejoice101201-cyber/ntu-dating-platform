@@ -13,7 +13,7 @@ import {
   CardContent,
   Chip
 } from '@mui/material'
-import { ArrowBack, Home } from '@mui/icons-material'
+import { ArrowBack, Home, BugReport } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 import type { Course } from '../types/course'
 import { parseNtuTime } from '../utils/timeParser'
@@ -233,7 +233,7 @@ export default function Schedule() {
         )}
 
         {/* 操作按鈕 */}
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>
           <Button
             variant="contained"
             onClick={() => navigate('/')}
@@ -241,6 +241,14 @@ export default function Schedule() {
             sx={{ borderRadius: 2, px: 4 }}
           >
             返回首頁
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/debug-schedule')}
+            startIcon={<BugReport />}
+            sx={{ borderRadius: 2, px: 4 }}
+          >
+            調試課表
           </Button>
         </Box>
       </Container>
