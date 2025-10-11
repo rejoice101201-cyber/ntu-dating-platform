@@ -135,24 +135,44 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   const resolveTimeConflicts = (courses: Course[]): Course[] => {
     const timeSlots = new Map<string, Course[]>()
     
-    // 按時間分組課程
+    // 按時間分組課程 - 使用原始時間數據
     courses.forEach(course => {
-      if (course.time) {
-        const timeKey = course.time
+      const courseData = course as any
+      
+      // 檢查所有時間段
+      const timeKeys: string[] = []
+      
+      if (courseData.day1 && courseData.st1) {
+        timeKeys.push(`${courseData.day1}-${courseData.st1}`)
+      }
+      if (courseData.day2 && courseData.st2) {
+        timeKeys.push(`${courseData.day2}-${courseData.st2}`)
+      }
+      if (courseData.day3 && courseData.st3) {
+        timeKeys.push(`${courseData.day3}-${courseData.st3}`)
+      }
+      
+      // 將課程添加到所有相關時間段
+      timeKeys.forEach(timeKey => {
         if (!timeSlots.has(timeKey)) {
           timeSlots.set(timeKey, [])
         }
         timeSlots.get(timeKey)!.push(course)
-      }
+      })
     })
     
     const finalCourses: Course[] = []
+    const processedCourses = new Set<string>()
     
     // 處理每個時間段的衝突
     timeSlots.forEach((conflictingCourses, timeSlot) => {
       if (conflictingCourses.length === 1) {
         // 沒有衝突，直接加入
-        finalCourses.push(conflictingCourses[0])
+        const course = conflictingCourses[0]
+        if (!processedCourses.has(course.ser_no)) {
+          finalCourses.push(course)
+          processedCourses.add(course.ser_no)
+        }
       } else {
         // 有衝突，按志願序排序，保留志願序最高的（數字最小）
         const sortedCourses = conflictingCourses.sort((a, b) => {
@@ -162,7 +182,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         })
         
         const selectedCourse = sortedCourses[0]
-        finalCourses.push(selectedCourse)
+        if (!processedCourses.has(selectedCourse.ser_no)) {
+          finalCourses.push(selectedCourse)
+          processedCourses.add(selectedCourse.ser_no)
+        }
         
         console.log(`時間衝突 ${timeSlot}: 保留 ${selectedCourse.cou_cname} (志願序: ${selectedCourse.priority || '未設定'})`)
       }
@@ -170,8 +193,12 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     
     // 加入沒有時間信息的課程
     courses.forEach(course => {
-      if (!course.time) {
-        finalCourses.push(course)
+      const courseData = course as any
+      if (!courseData.day1 && !courseData.day2 && !courseData.day3) {
+        if (!processedCourses.has(course.ser_no)) {
+          finalCourses.push(course)
+          processedCourses.add(course.ser_no)
+        }
       }
     })
     
