@@ -98,19 +98,19 @@ export default function CourseResults() {
             ser_no: values[0]?.trim() || `course-${i}-${Date.now()}`,
             cou_cname: values[12]?.trim() || '',
             cou_ename: values[13]?.trim() || '',
-            tea_cname: values[15]?.trim() || '',
+            tea_cname: values[16]?.trim() || '', // 修正：tea_cname 在第17欄（索引16）
             cou_code: values[5]?.trim() || '',
             credit: values[7]?.trim() || '',
             dpt_code: values[3]?.trim() || '',
-            dpt_abbr: values[49]?.trim() || '',
+            dpt_abbr: values[50]?.trim() || '', // 修正：dpt_abbr 在第51欄（索引50）
             co_tp: values[8]?.trim() || '',
             mark: values[9]?.trim() || '',
             co_rep: values[10]?.trim() || '',
             pre_course: values[11]?.trim() || '',
             // 模擬機率：根據課程類型設定不同機率
             probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
-            time: values[16]?.trim() || '', // 假設第16欄是時間
-            classroom: values[17]?.trim() || '' // 假設第17欄是教室
+            time: values[24]?.trim() || '', // st1 開始時間
+            classroom: values[18]?.trim() || '' // clsrom_1 教室
           }
           
           // 只包含有課程名稱和教師的課程
@@ -120,6 +120,16 @@ export default function CourseResults() {
         }
         
         console.log('解析完成，課程數量:', parsedCourses.length)
+        
+        // 檢查前幾個課程的數據
+        if (parsedCourses.length > 0) {
+          console.log('前3個課程數據:', parsedCourses.slice(0, 3).map(course => ({
+            ser_no: course.ser_no,
+            cou_cname: course.cou_cname,
+            tea_cname: course.tea_cname,
+            cou_code: course.cou_code
+          })))
+        }
         
         // 檢查 ser_no 重複問題
         const serNoCounts = new Map<string, number>()
