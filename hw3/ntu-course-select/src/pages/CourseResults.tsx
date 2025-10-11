@@ -91,7 +91,7 @@ export default function CourseResults() {
           if (values.length < headers.length) continue
           
           const course: FullCourse = {
-            ser_no: values[0]?.trim() || `course-${i}`,
+            ser_no: values[0]?.trim() || `course-${i}-${Date.now()}`,
             cou_cname: values[12]?.trim() || '',
             cou_ename: values[13]?.trim() || '',
             tea_cname: values[15]?.trim() || '',
@@ -112,6 +112,19 @@ export default function CourseResults() {
         }
         
         console.log('解析完成，課程數量:', parsedCourses.length)
+        
+        // 檢查 ser_no 重複問題
+        const serNoCounts = new Map<string, number>()
+        parsedCourses.forEach(course => {
+          const count = serNoCounts.get(course.ser_no) || 0
+          serNoCounts.set(course.ser_no, count + 1)
+        })
+        
+        const duplicates = Array.from(serNoCounts.entries()).filter(([_, count]) => count > 1)
+        if (duplicates.length > 0) {
+          console.warn('發現重複的 ser_no:', duplicates.slice(0, 5))
+        }
+        
         setCourses(parsedCourses)
         
       } catch (err) {
@@ -150,10 +163,20 @@ export default function CourseResults() {
   }
 
   const toggleFavorite = (course: FullCourse) => {
-    console.log('Toggling favorite for:', course.ser_no, 'Current favorites:', Array.from(favorites))
+    console.log('=== 點擊愛心 ===')
+    console.log('課程信息:', {
+      ser_no: course.ser_no,
+      cou_cname: course.cou_cname,
+      cou_code: course.cou_code
+    })
+    console.log('當前最愛 Set:', Array.from(favorites))
+    console.log('是否已存在:', favorites.has(course.ser_no))
+    
     if (favorites.has(course.ser_no)) {
+      console.log('移除最愛:', course.ser_no)
       removeFromFavorites(course.ser_no)
     } else {
+      console.log('加入最愛:', course.ser_no)
       // 轉換 FullCourse 到 Course 格式
       const courseForContext = {
         ser_no: course.ser_no,
@@ -289,7 +312,7 @@ export default function CourseResults() {
             </Paper>
           ) : (
             filteredCourses.map((course, index) => (
-              <Card key={`${course.ser_no}-${index}`} elevation={1} sx={{ borderRadius: 2 }}>
+              <Card key={`${course.ser_no}-${course.cou_code}-${index}`} elevation={1} sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box sx={{ flex: 1 }}>
