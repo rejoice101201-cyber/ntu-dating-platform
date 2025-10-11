@@ -56,8 +56,8 @@ export default function CourseResultsWithData() {
         
         const parsedCourses: SimpleCourse[] = []
         
-        // 解析前 100 行數據
-        for (let i = 1; i <= Math.min(100, lines.length - 1); i++) {
+        // 解析前 500 行數據，跳過沒有教師姓名的課程
+        for (let i = 1; i <= Math.min(500, lines.length - 1); i++) {
           const line = lines[i]
           if (!line.trim()) continue
           
@@ -91,11 +91,11 @@ export default function CourseResultsWithData() {
             dpt_code: values[3]?.trim() || '' // dpt_code (index 3)
           }
           
-          // 只添加有課程名稱的課程
-          if (course.cou_cname) {
+          // 只添加有課程名稱且有教師姓名的課程
+          if (course.cou_cname && course.tea_cname) {
             parsedCourses.push(course)
             // 調試：顯示前幾個課程的詳細信息
-            if (parsedCourses.length <= 3) {
+            if (parsedCourses.length <= 5) {
               console.log(`課程 ${parsedCourses.length}:`, {
                 ser_no: course.ser_no,
                 cou_cname: course.cou_cname,
@@ -109,6 +109,7 @@ export default function CourseResultsWithData() {
         }
         
         console.log('解析完成，課程數量:', parsedCourses.length)
+        console.log('前5門課程:', parsedCourses.slice(0, 5).map(c => ({ name: c.cou_cname, teacher: c.tea_cname })))
         setCourses(parsedCourses)
         
       } catch (err) {
