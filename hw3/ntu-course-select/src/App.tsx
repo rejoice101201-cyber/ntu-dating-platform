@@ -3,6 +3,7 @@ import { CourseProvider } from './context/CourseContext'
 import Home from './pages/Home'
 import CourseResults from './pages/CourseResults'
 import Favorites from './pages/Favorites'
+import PrioritySorting from './pages/PrioritySorting'
 import Selection from './pages/Selection'
 import Results from './pages/Results'
 import Schedule from './pages/Schedule'
@@ -17,6 +18,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/results" element={<CourseResults />} />
             <Route path="/favorites" element={<Favorites />} />
+            <Route path="/priority-sorting" element={<PrioritySorting />} />
             <Route path="/selection" element={<Selection />} />
             <Route path="/final-results" element={<Results />} />
             <Route path="/schedule" element={<Schedule />} />

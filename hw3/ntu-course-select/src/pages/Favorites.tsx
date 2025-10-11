@@ -50,7 +50,11 @@ export default function Favorites() {
   }
 
   const handleImportToSelection = () => {
-    navigate('/selection')
+    if (favoritesList.length > 20) {
+      alert('課程數量不能超過 20 門，請刪除多餘的課程')
+      return
+    }
+    navigate('/priority-sorting')
   }
 
   // 監聽滾動事件

@@ -110,8 +110,8 @@ export default function CourseResults() {
             pre_course: values[11]?.trim() || '',
             // 模擬機率：根據課程類型設定不同機率
             probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
-            time: parseNtuTime(values[25]?.trim(), values[24]?.trim()), // 正確解析時間
-            classroom: values[18]?.trim() || '' // clsrom_1 教室
+            time: parseNtuTime(values[25]?.trim(), values[24]?.trim()), // day1(索引25) + st1(索引24)
+            classroom: values[18]?.trim() || '' // clsrom_1(19)
           }
           
           // 只包含有課程名稱和教師的課程
@@ -181,13 +181,13 @@ export default function CourseResults() {
     }
   }
 
-  // 創建唯一的課程識別符
-  const getCourseUniqueId = (course: FullCourse) => {
-    return `${course.ser_no}-${course.cou_code}-${course.tea_cname}`
+  // 創建唯一的課程識別符 - 使用更強的組合
+  const getCourseUniqueId = (course: FullCourse, index: number) => {
+    return `${course.ser_no}-${course.cou_code}-${course.tea_cname}-${index}`
   }
 
-  const toggleFavorite = (course: FullCourse) => {
-    const uniqueId = getCourseUniqueId(course)
+  const toggleFavorite = (course: FullCourse, index: number) => {
+    const uniqueId = getCourseUniqueId(course, index)
     console.log('=== 點擊愛心 ===')
     console.log('課程信息:', {
       ser_no: course.ser_no,
@@ -337,8 +337,8 @@ export default function CourseResults() {
               </Typography>
             </Paper>
           ) : (
-            filteredCourses.map((course) => (
-              <Card key={getCourseUniqueId(course)} elevation={1} sx={{ borderRadius: 2 }}>
+            filteredCourses.map((course, index) => (
+              <Card key={getCourseUniqueId(course, index)} elevation={1} sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box sx={{ flex: 1 }}>
@@ -354,15 +354,15 @@ export default function CourseResults() {
                     </Box>
                     
                     <IconButton
-                      onClick={() => toggleFavorite(course)}
+                      onClick={() => toggleFavorite(course, index)}
                       sx={{ 
-                        color: favorites.has(getCourseUniqueId(course)) ? '#f44336' : '#757575',
+                        color: favorites.has(getCourseUniqueId(course, index)) ? '#f44336' : '#757575',
                         '&:hover': {
-                          backgroundColor: favorites.has(getCourseUniqueId(course)) ? '#ffebee' : '#f5f5f5'
+                          backgroundColor: favorites.has(getCourseUniqueId(course, index)) ? '#ffebee' : '#f5f5f5'
                         }
                       }}
                     >
-                      {favorites.has(getCourseUniqueId(course)) ? <Favorite /> : <FavoriteBorder />}
+                      {favorites.has(getCourseUniqueId(course, index)) ? <Favorite /> : <FavoriteBorder />}
                     </IconButton>
                   </Box>
             </CardContent>
