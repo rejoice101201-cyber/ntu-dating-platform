@@ -260,7 +260,7 @@ export default function CourseResultsNew() {
     navigate(`/results?${searchParams.toString()}`, { replace: true })
   }
 
-  // 即時搜尋功能
+  // 即時搜尋功能 - 僅針對關鍵字搜尋
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const searchParams = new URLSearchParams()
@@ -274,23 +274,29 @@ export default function CourseResultsNew() {
     }, 500) // 500ms 延遲
 
     return () => clearTimeout(timeoutId)
-  }, [searchKeyword, selectedFilters, navigate])
+  }, [searchKeyword, navigate]) // 移除 selectedFilters 依賴
 
   const handleKeywordChange = (value: string) => {
     setSearchKeyword(value)
   }
 
   const handleFilterToggle = (filter: string) => {
-    setSelectedFilters(prev => 
-      prev.includes(filter) 
-        ? prev.filter(f => f !== filter)
-        : [...prev, filter]
-    )
-    // 即時更新 URL 參數
+    // 計算新的篩選狀態
     const newFilters = selectedFilters.includes(filter) 
       ? selectedFilters.filter(f => f !== filter)
       : [...selectedFilters, filter]
     
+    console.log('🔄 Filter Toggle:', {
+      clicked: filter,
+      oldFilters: selectedFilters,
+      newFilters: newFilters,
+      action: selectedFilters.includes(filter) ? 'REMOVE' : 'ADD'
+    })
+    
+    // 更新狀態
+    setSelectedFilters(newFilters)
+    
+    // 立即更新 URL 參數
     const searchParams = new URLSearchParams()
     if (searchKeyword.trim()) {
       searchParams.set('keyword', searchKeyword.trim())
