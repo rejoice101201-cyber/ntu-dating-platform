@@ -65,7 +65,12 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   }, [favoriteCourses])
 
   const addToFavorites = (course: Course) => {
-    setFavorites(prev => new Set([...prev, course.ser_no]))
+    console.log('Adding to favorites:', course.ser_no, course.cou_cname)
+    setFavorites(prev => {
+      const newSet = new Set(prev)
+      newSet.add(course.ser_no)
+      return newSet
+    })
     setFavoriteCourses(prev => {
       if (!prev.find(c => c.ser_no === course.ser_no)) {
         return [...prev, course]
@@ -75,6 +80,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   }
 
   const removeFromFavorites = (courseId: string) => {
+    console.log('Removing from favorites:', courseId)
     setFavorites(prev => {
       const newSet = new Set(prev)
       newSet.delete(courseId)

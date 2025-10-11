@@ -46,18 +46,48 @@ export default function Favorites() {
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* 頂部導航欄 */}
-      <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
           <IconButton
             color="inherit"
-            onClick={() => navigate('/')}
-            sx={{ mr: 2 }}
+            onClick={() => navigate('/results')}
+            sx={{ mr: 2, color: '#424242' }}
           >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            我的最愛
+          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+            臺大課程網
           </Typography>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              課程資訊
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              選課結果
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              推薦課程
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/favorites')}
+            >
+              我的收藏
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
 

@@ -42,16 +42,32 @@ export default function Home() {
             臺大課程網
           </Typography>
           <Box sx={{ display: 'flex', gap: 3 }}>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
               課程資訊
             </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
               選課結果
             </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
               推薦課程
             </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/favorites')}
+            >
               我的收藏
             </Typography>
           </Box>

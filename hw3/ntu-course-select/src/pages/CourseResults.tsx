@@ -11,6 +11,8 @@ import {
   CircularProgress,
   TextField,
   IconButton,
+  AppBar,
+  Toolbar,
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
@@ -148,6 +150,7 @@ export default function CourseResults() {
   }
 
   const toggleFavorite = (course: FullCourse) => {
+    console.log('Toggling favorite for:', course.ser_no, 'Current favorites:', Array.from(favorites))
     if (favorites.has(course.ser_no)) {
       removeFromFavorites(course.ser_no)
     } else {
@@ -176,18 +179,46 @@ export default function CourseResults() {
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
       {/* Header */}
-      <Box sx={{ borderBottom: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
-        <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', alignItems: 'center', py: 2 }}>
-            <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
-              <ArrowBack />
-            </IconButton>
-            <Typography variant="h5" sx={{ color: '#424242', fontWeight: 600 }}>
-              課程搜尋結果
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
+        <Toolbar>
+          <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+            臺大課程網
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              課程資訊
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              選課結果
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/results')}
+            >
+              推薦課程
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/favorites')}
+            >
+              我的收藏
             </Typography>
           </Box>
-        </Container>
-      </Box>
+        </Toolbar>
+      </AppBar>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Search Section */}
