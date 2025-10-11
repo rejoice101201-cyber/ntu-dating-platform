@@ -9,16 +9,23 @@ function coerceNumber(value: unknown): number | undefined {
 }
 
 function calculateSelectionProbability(row: Record<string, unknown>): number {
+  // First, try to get the lottery rate from CSV if it exists
+  const lotteryRate = coerceNumber(row['lottery_rate']) || coerceNumber(row['中簽率'])
+  
+  if (lotteryRate !== undefined && lotteryRate >= 0 && lotteryRate <= 100) {
+    return lotteryRate
+  }
+  
+  // Fallback: calculate based on limit and co_select data
   const limit = coerceNumber(row['limit'])
   const coSelect = coerceNumber(row['co_select'])
   
-  // If we have both limit and co_select data, calculate based on ratio
   if (limit && coSelect && limit > 0) {
     const ratio = coSelect / limit
     return Math.min(100, Math.max(0, Math.round(ratio * 100)))
   }
   
-  // Otherwise, generate random probability between 20-80%
+  // Final fallback: generate random probability between 20-80%
   return Math.floor(Math.random() * 61) + 20 // 20-80%
 }
 

@@ -168,7 +168,7 @@ export const detectConflicts = (
   } = {}
 ): ConflictResult => {
   const {
-    checkClassroomDistance = false,
+    checkClassroomDistance = false, // Disabled by default
     maxClassroomDistance = 2,
     allowOverride = true
   } = options
@@ -205,25 +205,7 @@ export const detectConflicts = (
         slot: newSlot
       })
 
-      // Classroom distance conflict (if enabled)
-      if (checkClassroomDistance && newSlot.classroom && conflictingCourse) {
-        const conflictingSlots = getSlots(conflictingCourse)
-        const conflictingSlot = conflictingSlots.find(s => 
-          s.day === newSlot.day && s.period === newSlot.period
-        )
-        
-        if (conflictingSlot?.classroom) {
-          const distance = getClassroomDistance(newSlot.classroom, conflictingSlot.classroom)
-          if (distance > maxClassroomDistance) {
-            conflicts.push({
-              type: 'classroom',
-              message: `教室距離過遠：${newSlot.classroom} 與 ${conflictingSlot.classroom} 距離 ${distance.toFixed(1)} 單位`,
-              conflictingCourse,
-              slot: newSlot
-            })
-          }
-        }
-      }
+      // Classroom distance conflict removed as requested
 
       // Priority conflict (required vs elective)
       if (isRequiredCourse(conflictingCourse) && !isRequiredCourse(newCourse)) {

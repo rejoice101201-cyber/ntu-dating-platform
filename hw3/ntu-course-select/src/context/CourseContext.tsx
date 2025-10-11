@@ -172,6 +172,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     const sortedEntries = [...lotteryEntries].sort((a, b) => a.priority - b.priority)
     const selectedCourses = new Set<string>()
     const results: LotteryEntry[] = []
+    const newlySelectedCourseIds: string[] = []
 
     for (const entry of sortedEntries) {
       const probability = entry.course.selectionProbability || 50
@@ -189,12 +190,22 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         if (!hasConflict) {
           selectedCourses.add(entry.course.ser_no)
           results.push({ ...entry, isSelected: true })
+          newlySelectedCourseIds.push(entry.course.ser_no)
         } else {
           results.push({ ...entry, isSelected: false })
         }
       } else {
         results.push({ ...entry, isSelected: false })
       }
+    }
+
+    // Add newly selected courses to final selection
+    if (newlySelectedCourseIds.length > 0) {
+      setSubmittedIds(prev => {
+        const newSet = new Set(prev)
+        newlySelectedCourseIds.forEach(id => newSet.add(id))
+        return newSet
+      })
     }
 
     setLotteryEntries(results)

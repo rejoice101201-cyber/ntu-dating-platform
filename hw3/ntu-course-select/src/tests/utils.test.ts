@@ -191,7 +191,7 @@ describe('detectConflicts', () => {
     expect(result.conflicts[0].type).toBe('time')
   })
 
-  it('should detect classroom distance conflicts', () => {
+  it('should not detect classroom distance conflicts (feature disabled)', () => {
     const newCourse = createMockCourse({
       ser_no: '1',
       st1: 1,
@@ -213,8 +213,10 @@ describe('detectConflicts', () => {
       maxClassroomDistance: 1
     })
     
-    expect(result.hasConflict).toBe(true)
-    expect(result.conflicts.some(c => c.type === 'classroom')).toBe(true)
+    // There will be a time conflict (same time slot), but no classroom distance conflict
+    expect(result.hasConflict).toBe(true) // Time conflict exists
+    expect(result.conflicts.some(c => c.type === 'classroom')).toBe(false) // No classroom conflict
+    expect(result.conflicts.some(c => c.type === 'time')).toBe(true) // Time conflict exists
   })
 
   it('should detect priority conflicts', () => {
