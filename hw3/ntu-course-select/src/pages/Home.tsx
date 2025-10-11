@@ -281,6 +281,24 @@ export default function Home() {
             </CardContent>
           </Card>
         </Box>
+
+        {/* 智能分析鏈接 */}
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/analysis')}
+            sx={{
+              borderColor: '#1976d2',
+              color: '#1976d2',
+              '&:hover': {
+                borderColor: '#1565c0',
+                backgroundColor: '#e3f2fd'
+              }
+            }}
+          >
+            🧠 查看課程智能分析
+          </Button>
+        </Box>
       </Container>
     </Box>
   )

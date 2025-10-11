@@ -16,6 +16,8 @@ import {
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
+import { COURSE_CATEGORIES, classifyCourse, getCoursesByCategory } from '../utils/courseClassifier'
+import { analyzeCourses } from '../utils/courseAnalyzer'
 
 interface FullCourse {
   ser_no: string
@@ -151,98 +153,14 @@ export default function CourseResultsNew() {
       )
     }
     
-    // 篩選按鈕邏輯 - 基於實際數據分析
-    selectedFilters.forEach(filter => {
-      switch (filter) {
-        case '共同必修':
-          // 共同必修：國文領域、外文領域、英文領域等
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('國文領域') || 
-            c.cou_cname.includes('外文領域') ||
-            c.cou_cname.includes('英文領域') ||
-            c.cou_cname.includes('共同必修') ||
-            c.co_rep.includes('共同必修')
-          )
-          break
-        case '專題研究':
-          // 專題研究相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('專題研究') || 
-            c.cou_cname.includes('專題討論') ||
-            c.cou_cname.includes('碩士論文') ||
-            c.cou_cname.includes('博士論文') ||
-            c.cou_cname.includes('碩士專題研究') ||
-            c.cou_cname.includes('博士專題研究')
-          )
-          break
-        case '服務學習':
-          // 服務學習相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('服務學習') ||
-            c.cou_cname.includes('社會服務')
-          )
-          break
-        case '體育運動':
-          // 體育運動相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('體育') || 
-            c.cou_cname.includes('運動') ||
-            c.cou_cname.includes('專項運動') ||
-            c.cou_ename.toLowerCase().includes('physical') ||
-            c.cou_ename.toLowerCase().includes('sport')
-          )
-          break
-        case '數學':
-          // 數學相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('數學') || 
-            c.cou_cname.includes('微積分') ||
-            c.cou_cname.includes('統計') ||
-            c.cou_ename.toLowerCase().includes('mathematics') ||
-            c.cou_ename.toLowerCase().includes('calculus') ||
-            c.cou_ename.toLowerCase().includes('statistics')
-          )
-          break
-        case '物理':
-          // 物理相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('物理') || 
-            c.cou_ename.toLowerCase().includes('physics') ||
-            c.cou_ename.toLowerCase().includes('physical')
-          )
-          break
-        case '化學':
-          // 化學相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('化學') || 
-            c.cou_ename.toLowerCase().includes('chemistry') ||
-            c.cou_ename.toLowerCase().includes('chemical')
-          )
-          break
-        case '生物':
-          // 生物相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('生物') || 
-            c.cou_ename.toLowerCase().includes('biology') ||
-            c.cou_ename.toLowerCase().includes('biological')
-          )
-          break
-        case '經濟':
-          // 經濟相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('經濟') || 
-            c.cou_ename.toLowerCase().includes('economics') ||
-            c.cou_ename.toLowerCase().includes('economic')
-          )
-          break
-        case '心理':
-          // 心理相關課程
-          filtered = filtered.filter(c => 
-            c.cou_cname.includes('心理') || 
-            c.cou_ename.toLowerCase().includes('psychology') ||
-            c.cou_ename.toLowerCase().includes('psychological')
-          )
-          break
+    // 智能篩選邏輯 - 使用課程分類器
+    selectedFilters.forEach(filterId => {
+      const category = COURSE_CATEGORIES.find(cat => cat.id === filterId)
+      if (category) {
+        filtered = filtered.filter(course => {
+          const classification = classifyCourse(course)
+          return classification?.id === filterId
+        })
       }
     })
     
@@ -420,18 +338,18 @@ export default function CourseResultsNew() {
           快速篩選
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-          {['共同必修', '專題研究', '服務學習', '體育運動', '數學', '物理', '化學', '生物', '經濟', '心理'].map((filter) => (
+          {COURSE_CATEGORIES.slice(0, 10).map((category) => (
             <Chip
-              key={filter}
-              label={filter}
-              onClick={() => handleFilterToggle(filter)}
-              variant={selectedFilters.includes(filter) ? 'filled' : 'outlined'}
-              color={selectedFilters.includes(filter) ? 'primary' : 'default'}
+              key={category.id}
+              label={category.name}
+              onClick={() => handleFilterToggle(category.id)}
+              variant={selectedFilters.includes(category.id) ? 'filled' : 'outlined'}
+              color={selectedFilters.includes(category.id) ? 'primary' : 'default'}
               sx={{ 
                 cursor: 'pointer',
                 borderRadius: 2,
                 '&:hover': {
-                  backgroundColor: selectedFilters.includes(filter) ? '#1976d2' : '#f5f5f5'
+                  backgroundColor: selectedFilters.includes(category.id) ? '#1976d2' : '#f5f5f5'
                 }
               }}
             />
@@ -454,7 +372,7 @@ export default function CourseResultsNew() {
         </Button>
       </Box>
 
-      {/* 調試信息 - 簡化顯示 */}
+      {/* 智能分析調試信息 */}
       <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 2 }}>
         <Typography variant="body2" sx={{ color: '#666' }}>
           📊 總課程數: {courses.length} | 過濾後: {filteredCourses.length} | 搜尋: "{searchKeyword}" | 篩選: [{selectedFilters.join(', ')}]
@@ -462,6 +380,14 @@ export default function CourseResultsNew() {
         {filteredCourses.length > 0 && (
           <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
             🔍 前3門課程: {filteredCourses.slice(0, 3).map(c => c.cou_cname).join(', ')}
+          </Typography>
+        )}
+        {selectedFilters.length > 0 && (
+          <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+            🎯 智能分類: {selectedFilters.map(id => {
+              const category = COURSE_CATEGORIES.find(cat => cat.id === id)
+              return category ? category.name : id
+            }).join(', ')}
           </Typography>
         )}
       </Box>

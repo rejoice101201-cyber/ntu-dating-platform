@@ -12,6 +12,7 @@ import LotterySimulation from './pages/LotterySimulation'
 import FinalTimetable from './pages/FinalTimetable'
 import Help from './pages/Help'
 import Settings from './pages/Settings'
+import CourseAnalysis from './pages/CourseAnalysis'
 import './App.css'
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/final" element={<FinalTimetable />} />
             <Route path="/help" element={<Help />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/analysis" element={<CourseAnalysis />} />
           </Routes>
         </Router>
       </CourseProvider>
