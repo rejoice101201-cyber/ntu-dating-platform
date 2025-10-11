@@ -24,10 +24,10 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">臺大課程網</h1>
             </div>
             <nav className="flex space-x-8">
-              <a href="#" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">課程資訊</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">課程網站</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">課程資訊</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">選課結果</a>
+              <a href="/" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">課程資訊</a>
+              <a href="/results" className="text-gray-600 hover:text-gray-900">選課結果</a>
+              <a href="/recommendations" className="text-gray-600 hover:text-gray-900">推薦課程</a>
+              <a href="/favorites" className="text-gray-600 hover:text-gray-900">我的收藏</a>
             </nav>
           </div>
         </div>

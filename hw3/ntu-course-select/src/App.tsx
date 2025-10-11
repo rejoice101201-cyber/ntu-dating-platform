@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { CourseProvider } from './context/CourseContext'
 import Home from './pages/Home'
 import CourseResults from './pages/CourseResults'
+import Recommendations from './pages/Recommendations'
 import Favorites from './pages/Favorites'
 import SelectionStaging from './pages/SelectionStaging'
 import LotterySimulation from './pages/LotterySimulation'
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/results" element={<CourseResults />} />
+            <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/staging" element={<SelectionStaging />} />
             <Route path="/lottery" element={<LotterySimulation />} />

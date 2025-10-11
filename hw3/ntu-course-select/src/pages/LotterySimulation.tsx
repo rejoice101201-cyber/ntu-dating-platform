@@ -69,7 +69,7 @@ function DraggableLotteryEntry({
   })
 
   return (
-    <div ref={(node) => drag(drop(node))} className={`${isDragging ? 'opacity-50' : ''}`}>
+    <div ref={(node) => { drag(drop(node)) }} className={`${isDragging ? 'opacity-50' : ''}`}>
       <Card 
         className={`transition-all cursor-move ${
           entry.isSelected 

@@ -85,7 +85,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     return courses.filter(c => favorites.has(c.ser_no))
   }, [courses, favorites])
 
-  function toggleSelect(ser_no: string) {
+  const toggleSelect = useCallback((ser_no: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
       if (next.has(ser_no)) {
@@ -101,31 +101,31 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       }
       return next
     })
-  }
+  }, [])
 
-  function addToSelected(ser_no: string) {
+  const addToSelected = useCallback((ser_no: string) => {
     setSelectedIds(prev => new Set(prev).add(ser_no))
-  }
+  }, [])
 
-  function clearSelection() {
+  const clearSelection = useCallback(() => {
     setSelectedIds(new Set())
     setConflicts([])
-  }
+  }, [])
 
-  function submitSelection() {
+  const submitSelection = useCallback(() => {
     setSubmittedIds(new Set(selectedIds))
-  }
+  }, [selectedIds])
 
-  function resetSubmitted() {
+  const resetSubmitted = useCallback(() => {
     setSubmittedIds(new Set())
-  }
+  }, [])
 
-  function clearConflicts() {
+  const clearConflicts = useCallback(() => {
     setConflicts([])
-  }
+  }, [])
 
   // Favorites functionality
-  function toggleFavorite(ser_no: string) {
+  const toggleFavorite = useCallback((ser_no: string) => {
     setFavorites(prev => {
       const next = new Set(prev)
       if (next.has(ser_no)) {
@@ -135,10 +135,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       }
       return next
     })
-  }
+  }, [])
 
   // Lottery functionality
-  function addToLottery(course: Course, priority: number) {
+  const addToLottery = useCallback((course: Course, priority: number) => {
     setLotteryEntries(prev => {
       const existing = prev.find(entry => entry.course.ser_no === course.ser_no)
       if (existing) {
@@ -151,13 +151,13 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         return [...prev, { course, priority, isSelected: false }]
       }
     })
-  }
+  }, [])
 
-  function removeFromLottery(courseId: string) {
+  const removeFromLottery = useCallback((courseId: string) => {
     setLotteryEntries(prev => prev.filter(entry => entry.course.ser_no !== courseId))
-  }
+  }, [])
 
-  function updateLotteryPriority(courseId: string, priority: number) {
+  const updateLotteryPriority = useCallback((courseId: string, priority: number) => {
     setLotteryEntries(prev => 
       prev.map(entry => 
         entry.course.ser_no === courseId 
@@ -165,9 +165,9 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
           : entry
       )
     )
-  }
+  }, [])
 
-  function runLottery() {
+  const runLottery = useCallback(() => {
     // Sort by priority (1 = highest)
     const sortedEntries = [...lotteryEntries].sort((a, b) => a.priority - b.priority)
     const selectedCourses = new Set<string>()
@@ -198,21 +198,21 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     }
 
     setLotteryEntries(results)
-  }
+  }, [lotteryEntries])
 
-  function clearLottery() {
+  const clearLottery = useCallback(() => {
     setLotteryEntries([])
-  }
+  }, [])
 
   // Enhanced recommendations with multiple strategies
-  const recommendByProbability = (count = 8) => {
+  const recommendByProbability = useCallback((count = 8) => {
     return [...courses]
       .filter(c => !favorites.has(c.ser_no) && !selectedIds.has(c.ser_no)) // Exclude already favorited/selected
       .sort((a, b) => (b.selectionProbability || 0) - (a.selectionProbability || 0))
       .slice(0, count)
-  }
+  }, [courses, favorites, selectedIds])
 
-  const recommendSimilarToFavorites = (count = 8) => {
+  const recommendSimilarToFavorites = useCallback((count = 8) => {
     const favDepts = new Set<string>()
     const favKeywords = new Set<string>()
     
@@ -253,10 +253,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       .map(item => item.course)
     
     return scored
-  }
+  }, [courses, favorites, selectedIds, recommendByProbability])
 
   // New recommendation: courses with no time conflicts
-  const recommendNoConflicts = (count = 8) => {
+  const recommendNoConflicts = useCallback((count = 8) => {
     return [...courses]
       .filter(c => !favorites.has(c.ser_no) && !selectedIds.has(c.ser_no))
       .filter(c => {
@@ -265,7 +265,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       })
       .sort((a, b) => (b.selectionProbability || 0) - (a.selectionProbability || 0))
       .slice(0, count)
-  }
+  }, [courses, favorites, selectedIds])
 
   // Enhanced conflict detection with async support for user confirmation
   const addSelectedWithConflictCheck = useCallback(async (course: Course): Promise<ConflictResult> => {
@@ -328,12 +328,13 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     updateLotteryPriority,
     runLottery,
     clearLottery,
-      recommendByProbability,
-      recommendSimilarToFavorites,
-      recommendNoConflicts,
+    recommendByProbability,
+    recommendSimilarToFavorites,
+    recommendNoConflicts,
   }), [
-      courses, selectedIds, submittedIds, selectedCourses, conflicts,
-      addSelectedWithConflictCheck, favorites, favoriteCourses, lotteryEntries
+    courses, selectedIds, submittedIds, selectedCourses, conflicts,
+    addSelectedWithConflictCheck, favorites, favoriteCourses, lotteryEntries,
+    recommendByProbability, recommendSimilarToFavorites, recommendNoConflicts
   ])
 
   return <CourseContext.Provider value={value}>{children}</CourseContext.Provider>
