@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
+import { parseNtuTime } from '../utils/timeParser'
 
 interface FullCourse {
   ser_no: string
@@ -109,7 +110,7 @@ export default function CourseResults() {
             pre_course: values[11]?.trim() || '',
             // 模擬機率：根據課程類型設定不同機率
             probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
-            time: values[24]?.trim() || '', // st1 開始時間
+            time: parseNtuTime(values[25]?.trim(), values[24]?.trim()), // 正確解析時間
             classroom: values[18]?.trim() || '' // clsrom_1 教室
           }
           
