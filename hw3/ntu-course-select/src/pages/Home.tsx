@@ -14,6 +14,7 @@ import {
   Chip,
 } from '@mui/material'
 import { Search } from '@mui/icons-material'
+import FavoritesTest from '../components/FavoritesTest'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -55,13 +56,6 @@ export default function Home() {
               onClick={() => navigate('/results')}
             >
               選課結果
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
-            >
-              推薦課程
             </Typography>
             <Typography 
               variant="body1" 
@@ -242,6 +236,9 @@ export default function Home() {
             </CardContent>
           </Card>
         </Box>
+
+        {/* 測試組件 - 暫時用於驗證最愛功能 */}
+        <FavoritesTest />
       </Container>
     </Box>
   )

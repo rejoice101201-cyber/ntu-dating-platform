@@ -205,13 +205,6 @@ export default function CourseResults() {
             <Typography 
               variant="body1" 
               sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
-            >
-              推薦課程
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
               onClick={() => navigate('/favorites')}
             >
               我的收藏

@@ -6,7 +6,7 @@ interface Course {
   cou_ename: string
   tea_cname: string
   cou_code: string
-  credit: string
+  credit: string | number
   dpt_code: string
   dpt_abbr: string
   co_tp: string
