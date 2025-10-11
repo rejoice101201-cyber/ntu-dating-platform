@@ -162,24 +162,31 @@ export default function CourseResults() {
     }
   }
 
+  // 創建唯一的課程識別符
+  const getCourseUniqueId = (course: FullCourse) => {
+    return `${course.ser_no}-${course.cou_code}-${course.tea_cname}`
+  }
+
   const toggleFavorite = (course: FullCourse) => {
+    const uniqueId = getCourseUniqueId(course)
     console.log('=== 點擊愛心 ===')
     console.log('課程信息:', {
       ser_no: course.ser_no,
       cou_cname: course.cou_cname,
-      cou_code: course.cou_code
+      cou_code: course.cou_code,
+      uniqueId: uniqueId
     })
     console.log('當前最愛 Set:', Array.from(favorites))
-    console.log('是否已存在:', favorites.has(course.ser_no))
+    console.log('是否已存在:', favorites.has(uniqueId))
     
-    if (favorites.has(course.ser_no)) {
-      console.log('移除最愛:', course.ser_no)
-      removeFromFavorites(course.ser_no)
+    if (favorites.has(uniqueId)) {
+      console.log('移除最愛:', uniqueId)
+      removeFromFavorites(uniqueId)
     } else {
-      console.log('加入最愛:', course.ser_no)
-      // 轉換 FullCourse 到 Course 格式
+      console.log('加入最愛:', uniqueId)
+      // 轉換 FullCourse 到 Course 格式，使用唯一ID
       const courseForContext = {
-        ser_no: course.ser_no,
+        ser_no: uniqueId, // 使用唯一ID作為ser_no
         cou_cname: course.cou_cname,
         cou_ename: course.cou_ename,
         tea_cname: course.tea_cname,
@@ -311,8 +318,8 @@ export default function CourseResults() {
               </Typography>
             </Paper>
           ) : (
-            filteredCourses.map((course, index) => (
-              <Card key={`${course.ser_no}-${course.cou_code}-${index}`} elevation={1} sx={{ borderRadius: 2 }}>
+            filteredCourses.map((course) => (
+              <Card key={getCourseUniqueId(course)} elevation={1} sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box sx={{ flex: 1 }}>
@@ -330,13 +337,13 @@ export default function CourseResults() {
                     <IconButton
                       onClick={() => toggleFavorite(course)}
                       sx={{ 
-                        color: favorites.has(course.ser_no) ? '#f44336' : '#757575',
+                        color: favorites.has(getCourseUniqueId(course)) ? '#f44336' : '#757575',
                         '&:hover': {
-                          backgroundColor: favorites.has(course.ser_no) ? '#ffebee' : '#f5f5f5'
+                          backgroundColor: favorites.has(getCourseUniqueId(course)) ? '#ffebee' : '#f5f5f5'
                         }
                       }}
                     >
-                      {favorites.has(course.ser_no) ? <Favorite /> : <FavoriteBorder />}
+                      {favorites.has(getCourseUniqueId(course)) ? <Favorite /> : <FavoriteBorder />}
                     </IconButton>
                   </Box>
                 </CardContent>
