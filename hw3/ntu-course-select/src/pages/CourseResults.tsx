@@ -17,6 +17,7 @@ import {
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import useCourseData from '../hooks/useCourseData'
 import { useCourseContext } from '../context/CourseContext'
+import CourseDataDebug from '../components/CourseDataDebug'
 
 const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
 const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
@@ -33,10 +34,12 @@ export default function CourseResults() {
   const { favorites, toggleFavorite, addToSelected } = useCourseContext()
   
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
 
+    // 關鍵字搜尋
     if (keyword) {
       const kw = keyword.toLowerCase()
       filtered = filtered.filter(c =>
@@ -49,8 +52,30 @@ export default function CourseResults() {
       )
     }
 
+    // 類別過濾
+    if (selectedCategory) {
+      filtered = filtered.filter(c => {
+        switch (selectedCategory) {
+          case '系所':
+            return c.dpt_code && c.dpt_code.length > 0
+          case '通識':
+            return c.cou_cname.includes('通識') || c.cou_ename.toLowerCase().includes('general')
+          case '共同':
+            return c.cou_cname.includes('共同') || c.cou_cname.includes('國文') || c.cou_cname.includes('英文')
+          case '體育':
+            return c.cou_cname.includes('體育') || c.cou_ename.toLowerCase().includes('physical')
+          case '學程':
+            return c.cou_cname.includes('學程') || c.cou_ename.toLowerCase().includes('program')
+          case '英語':
+            return c.cou_cname.includes('英語') || c.cou_ename.toLowerCase().includes('english')
+          default:
+            return true
+        }
+      })
+    }
+
     return filtered.slice(0, 20) // 限制顯示數量
-  }, [courses, keyword])
+  }, [courses, keyword, selectedCategory])
 
 
   const handleSearch = () => {
@@ -67,6 +92,10 @@ export default function CourseResults() {
 
   const handleBack = () => {
     navigate('/')
+  }
+
+  const handleCategoryFilter = (category: string) => {
+    setSelectedCategory(selectedCategory === category ? '' : category)
   }
 
   if (isLoading) {
@@ -115,6 +144,7 @@ export default function CourseResults() {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <CourseDataDebug />
       {/* Header */}
       <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
@@ -146,12 +176,72 @@ export default function CourseResults() {
         <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
           {/* Filter Categories */}
           <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-            <Chip label="系所" variant="outlined" size="small" />
-            <Chip label="通識/溝通" variant="outlined" size="small" />
-            <Chip label="共同/新生" variant="outlined" size="small" />
-            <Chip label="體育/國防" variant="outlined" size="small" />
-            <Chip label="學程" variant="outlined" size="small" />
-            <Chip label="進階英語" variant="outlined" size="small" />
+            <Chip 
+              label="系所" 
+              variant={selectedCategory === '系所' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('系所')}
+              sx={{ 
+                backgroundColor: selectedCategory === '系所' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '系所' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
+            <Chip 
+              label="通識/溝通" 
+              variant={selectedCategory === '通識' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('通識')}
+              sx={{ 
+                backgroundColor: selectedCategory === '通識' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '通識' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
+            <Chip 
+              label="共同/新生" 
+              variant={selectedCategory === '共同' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('共同')}
+              sx={{ 
+                backgroundColor: selectedCategory === '共同' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '共同' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
+            <Chip 
+              label="體育/國防" 
+              variant={selectedCategory === '體育' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('體育')}
+              sx={{ 
+                backgroundColor: selectedCategory === '體育' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '體育' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
+            <Chip 
+              label="學程" 
+              variant={selectedCategory === '學程' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('學程')}
+              sx={{ 
+                backgroundColor: selectedCategory === '學程' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '學程' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
+            <Chip 
+              label="進階英語" 
+              variant={selectedCategory === '英語' ? 'filled' : 'outlined'} 
+              size="small" 
+              onClick={() => handleCategoryFilter('英語')}
+              sx={{ 
+                backgroundColor: selectedCategory === '英語' ? '#e3f2fd' : 'transparent',
+                color: selectedCategory === '英語' ? '#1976d2' : '#757575',
+                cursor: 'pointer'
+              }}
+            />
           </Box>
 
           {/* Search Bar */}
