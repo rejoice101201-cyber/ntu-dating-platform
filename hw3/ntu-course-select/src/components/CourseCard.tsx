@@ -1,52 +1,70 @@
-import { useState } from 'react'
-import { Heart, Plus, Clock, Users, BookOpen, Star } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { Heart, Plus, Clock, Users, BookOpen, Star, AlertTriangle } from 'lucide-react'
 import type { Course } from '../types/course'
 import { useCourseContext } from '../context/CourseContext'
+import { cn } from '../lib/utils'
 
 interface CourseCardProps {
   course: Course
   showActions?: boolean
   compact?: boolean
   onSelect?: (course: Course) => void
+  className?: string
+  variant?: 'default' | 'compact' | 'detailed'
+  showConflictWarning?: boolean
+  isSelected?: boolean
+  isFavorite?: boolean
 }
 
 export default function CourseCard({ 
   course, 
   showActions = true, 
   compact = false,
-  onSelect 
+  onSelect,
+  className,
+  variant = 'default',
+  showConflictWarning = false,
+  isSelected: propIsSelected,
+  isFavorite: propIsFavorite
 }: CourseCardProps) {
   const { favorites, toggleFavorite, addToSelected, selectedIds } = useCourseContext()
   const [isHovered, setIsHovered] = useState(false)
 
-  const isFavorite = favorites.has(course.ser_no)
-  const isSelected = selectedIds.has(course.ser_no)
+  // Use props if provided, otherwise use context
+  const isFavorite = propIsFavorite ?? favorites.has(course.ser_no)
+  const isSelected = propIsSelected ?? selectedIds.has(course.ser_no)
 
-  const handleAddToSelected = () => {
+  const handleAddToSelected = useCallback(() => {
     if (onSelect) {
       onSelect(course)
     } else {
       addToSelected(course.ser_no)
     }
-  }
+  }, [onSelect, course, addToSelected])
 
-  const formatTimeSlots = (timeSlots?: Array<{day: number, start: number, classroom?: string}>): string => {
-    if (!timeSlots || timeSlots.length === 0) return '無'
+  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleFavorite(course.ser_no)
+  }, [toggleFavorite, course.ser_no])
+
+  const formattedTimeSlots = useMemo(() => {
+    if (!course.timeSlots || course.timeSlots.length === 0) return '無'
     
     const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
     const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
     
-    return timeSlots.map(ts => 
+    return course.timeSlots.map(ts => 
       `${DAYS[ts.day]}${PERIODS[ts.start]}${ts.classroom ? `(${ts.classroom})` : ''}`
     ).join(', ')
-  }
+  }, [course.timeSlots])
 
-  const getProbabilityColor = (probability: number) => {
+  const probabilityColor = useMemo(() => {
+    const probability = course.selectionProbability || 0
     if (probability >= 80) return 'text-green-600 bg-green-100'
     if (probability >= 60) return 'text-yellow-600 bg-yellow-100'
     if (probability >= 40) return 'text-orange-600 bg-orange-100'
     return 'text-red-600 bg-red-100'
-  }
+  }, [course.selectionProbability])
 
   if (compact) {
     return (
@@ -68,15 +86,12 @@ export default function CourseCard({
             </p>
           </div>
           <div className="flex items-center space-x-2 ml-2">
-            <span className={`px-2 py-1 text-xs rounded-full ${getProbabilityColor(course.selectionProbability || 0)}`}>
+            <span className={`px-2 py-1 text-xs rounded-full ${probabilityColor}`}>
               {course.selectionProbability || 0}%
             </span>
             {showActions && (
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleFavorite(course.ser_no)
-                }}
+                onClick={handleToggleFavorite}
                 className={`p-1 rounded-full transition-colors ${
                   isFavorite ? 'text-red-500' : 'text-gray-400 hover:text-red-500'
                 }`}
@@ -110,12 +125,12 @@ export default function CourseCard({
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <span className={`px-3 py-1 text-sm font-medium rounded-full ${getProbabilityColor(course.selectionProbability || 0)}`}>
+            <span className={`px-3 py-1 text-sm font-medium rounded-full ${probabilityColor}`}>
               {course.selectionProbability || 0}%
             </span>
             {showActions && (
               <button
-                onClick={() => toggleFavorite(course.ser_no)}
+                onClick={handleToggleFavorite}
                 className={`p-2 rounded-full transition-colors ${
                   isFavorite ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
                 }`}
@@ -144,15 +159,15 @@ export default function CourseCard({
         </div>
 
         {/* Time Slots */}
-        <div className="flex items-start space-x-2">
-          <Clock className="w-4 h-4 text-gray-500 mt-0.5" />
-          <div>
-            <span className="text-sm text-gray-600">時間:</span>
-            <p className="text-sm font-medium text-gray-800">
-              {formatTimeSlots(course.timeSlots)}
-            </p>
+          <div className="flex items-start space-x-2">
+            <Clock className="w-4 h-4 text-gray-500 mt-0.5" />
+            <div>
+              <span className="text-sm text-gray-600">時間:</span>
+              <p className="text-sm font-medium text-gray-800">
+                {formattedTimeSlots}
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Course Code */}
         <div className="text-sm text-gray-600">
@@ -188,15 +203,22 @@ export default function CourseCard({
                   熱門
                 </span>
               )}
+              {showConflictWarning && (
+                <span className="px-2 py-1 text-xs font-medium text-orange-600 bg-orange-100 rounded-full flex items-center space-x-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>衝突</span>
+                </span>
+              )}
             </div>
             <button
               onClick={handleAddToSelected}
               disabled={isSelected}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-colors ${
+              className={cn(
+                "flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-colors",
                 isSelected
                   ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+              )}
             >
               <Plus className="w-4 h-4" />
               <span>{isSelected ? '已選' : '選課'}</span>

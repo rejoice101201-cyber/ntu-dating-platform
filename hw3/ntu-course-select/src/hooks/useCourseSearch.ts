@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import type { Course } from '../types/course'
 
 export interface SearchFilters {
@@ -15,7 +15,23 @@ export interface SortOptions {
   direction: 'asc' | 'desc'
 }
 
-export function useCourseSearch(courses: Course[]) {
+export interface UseCourseSearchReturn {
+  filters: SearchFilters
+  sortOptions: SortOptions
+  filteredCourses: Course[]
+  departments: string[]
+  timeSlots: string[]
+  updateFilters: (newFilters: Partial<SearchFilters>) => void
+  updateSortOptions: (newSortOptions: Partial<SortOptions>) => void
+  clearFilters: () => void
+  searchStats: {
+    totalCourses: number
+    filteredCount: number
+    filterActive: boolean
+  }
+}
+
+export function useCourseSearch(courses: Course[]): UseCourseSearchReturn {
   const [filters, setFilters] = useState<SearchFilters>({
     keyword: '',
     department: '',
@@ -30,13 +46,36 @@ export function useCourseSearch(courses: Course[]) {
     direction: 'asc'
   })
 
+  // Use ref to track previous search for performance optimization
+  const previousSearchRef = useRef<string>('')
+  const searchDebounceRef = useRef<NodeJS.Timeout>()
+
+  // Debounced search to improve performance
+  const [debouncedKeyword, setDebouncedKeyword] = useState(filters.keyword)
+
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current)
+    }
+    
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedKeyword(filters.keyword)
+    }, 300) // 300ms debounce
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current)
+      }
+    }
+  }, [filters.keyword])
+
   // Memoized filtered and sorted courses
   const filteredCourses = useMemo(() => {
     let filtered = courses
 
-    // Keyword search
-    if (filters.keyword) {
-      const keyword = filters.keyword.toLowerCase()
+    // Keyword search with debounced input
+    if (debouncedKeyword) {
+      const keyword = debouncedKeyword.toLowerCase()
       filtered = filtered.filter(course =>
         course.cou_cname.toLowerCase().includes(keyword) ||
         course.cou_ename.toLowerCase().includes(keyword) ||
@@ -90,7 +129,7 @@ export function useCourseSearch(courses: Course[]) {
     })
 
     return filtered
-  }, [courses, filters])
+  }, [courses, filters, debouncedKeyword])
 
   // Memoized sorted courses
   const sortedCourses = useMemo(() => {
@@ -177,6 +216,26 @@ export function useCourseSearch(courses: Course[]) {
     return Array.from(slotSet).sort()
   }, [courses])
 
+  // Search statistics
+  const searchStats = useMemo(() => {
+    const hasActiveFilters = Object.values(filters).some(value => {
+      if (typeof value === 'string') return value !== ''
+      if (Array.isArray(value)) {
+        if (value.length === 2) {
+          // Range filters
+          return value[0] !== 0 || value[1] !== (value[1] === 6 ? 6 : 100)
+        }
+      }
+      return false
+    })
+
+    return {
+      totalCourses: courses.length,
+      filteredCount: sortedCourses.length,
+      filterActive: hasActiveFilters
+    }
+  }, [courses.length, sortedCourses.length, filters])
+
   return {
     filters,
     sortOptions,
@@ -185,6 +244,7 @@ export function useCourseSearch(courses: Course[]) {
     timeSlots,
     updateFilters,
     updateSortOptions,
-    clearFilters
+    clearFilters,
+    searchStats
   }
 }
