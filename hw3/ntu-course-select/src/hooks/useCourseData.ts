@@ -90,17 +90,43 @@ function mapRowToCourse(row: Record<string, unknown>): Course | null {
     selectionProbability: calculateSelectionProbability(row),
   }
 
-  // Parse time slots
+  // Parse time slots - handle both compressed format (567) and separate format (st1, day1)
   const timeSlots: Array<{day: number, start: number, classroom?: string}> = []
+  
+  // First, try to parse compressed time format (e.g., "567" = Friday periods 6,7)
   for (let i = 1; i <= 6; i++) {
-    const start = course[`st${i}` as keyof Course] as number | undefined
-    const day = course[`day${i}` as keyof Course] as number | undefined
+    const compressedTime = course[`st${i}` as keyof Course] as number | undefined
     const classroom = course[`clsrom_${i}` as keyof Course] as string | undefined
     
-    if (start && day) {
-      timeSlots.push({ day, start, classroom })
+    if (compressedTime && compressedTime > 0) {
+      // Parse compressed format: first digit is day, remaining digits are periods
+      const timeStr = compressedTime.toString()
+      const day = parseInt(timeStr[0])
+      const periods = timeStr.slice(1).split('').map(p => parseInt(p))
+      
+      if (day >= 1 && day <= 7) {
+        periods.forEach(period => {
+          if (period >= 1 && period <= 14) {
+            timeSlots.push({ day, start: period, classroom })
+          }
+        })
+      }
     }
   }
+  
+  // Fallback: try separate format (st1, day1, etc.)
+  if (timeSlots.length === 0) {
+    for (let i = 1; i <= 6; i++) {
+      const start = course[`st${i}` as keyof Course] as number | undefined
+      const day = course[`day${i}` as keyof Course] as number | undefined
+      const classroom = course[`clsrom_${i}` as keyof Course] as string | undefined
+      
+      if (start && day && start >= 1 && start <= 14 && day >= 1 && day <= 7) {
+        timeSlots.push({ day, start, classroom })
+      }
+    }
+  }
+  
   course.timeSlots = timeSlots
 
   return course
