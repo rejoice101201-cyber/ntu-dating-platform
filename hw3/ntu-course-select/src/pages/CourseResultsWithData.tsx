@@ -56,8 +56,8 @@ export default function CourseResultsWithData() {
         
         const parsedCourses: SimpleCourse[] = []
         
-        // 解析前 5000 行數據，跳過沒有教師姓名的課程
-        for (let i = 1; i <= Math.min(5000, lines.length - 1); i++) {
+        // 解析所有數據（100% 覆蓋率），跳過沒有教師姓名的課程
+        for (let i = 1; i < lines.length; i++) {
           const line = lines[i]
           if (!line.trim()) continue
           
@@ -110,7 +110,7 @@ export default function CourseResultsWithData() {
         
         console.log('解析完成，課程數量:', parsedCourses.length)
         console.log('前5門課程:', parsedCourses.slice(0, 5).map(c => ({ name: c.cou_cname, teacher: c.tea_cname })))
-        console.log('載入範圍: 前', Math.min(5000, lines.length - 1), '行，總行數:', lines.length - 1)
+        console.log('載入範圍: 全部', lines.length - 1, '行（100% 覆蓋率）')
         setCourses(parsedCourses)
         
       } catch (err) {
