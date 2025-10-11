@@ -154,7 +154,22 @@ export default function CourseResults() {
     if (favorites.has(course.ser_no)) {
       removeFromFavorites(course.ser_no)
     } else {
-      addToFavorites(course)
+      // 轉換 FullCourse 到 Course 格式
+      const courseForContext = {
+        ser_no: course.ser_no,
+        cou_cname: course.cou_cname,
+        cou_ename: course.cou_ename,
+        tea_cname: course.tea_cname,
+        cou_code: course.cou_code,
+        credit: course.credit,
+        dpt_code: course.dpt_code,
+        dpt_abbr: course.dpt_abbr,
+        co_tp: course.co_tp,
+        mark: course.mark,
+        co_rep: course.co_rep,
+        pre_course: course.pre_course
+      }
+      addToFavorites(courseForContext)
     }
   }
 
