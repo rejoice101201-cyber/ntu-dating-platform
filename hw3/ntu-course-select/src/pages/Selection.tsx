@@ -41,7 +41,7 @@ export default function Selection() {
     // 模擬選課過程
     setTimeout(() => {
       const result = runLottery(selectedCourses, selectionProbability / 100, maxCourses)
-      navigate('/results', { state: { selectedCourses: result } })
+      navigate('/final-results', { state: { selectedCourses: result } })
     }, 2000)
   }
 

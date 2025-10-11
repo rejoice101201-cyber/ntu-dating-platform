@@ -1,285 +1,288 @@
-import { useState, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Heart, Filter, Plus } from 'lucide-react'
-import useCourseData from '../hooks/useCourseData'
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import { 
+  Container, 
+  Typography, 
+  Box, 
+  Button,
+  Paper,
+  Card,
+  CardContent,
+  CircularProgress,
+  TextField,
+  IconButton,
+} from '@mui/material'
+import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 
-const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
-const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
-
-function formatTimeSlots(timeSlots?: Array<{day: number, start: number, classroom?: string}>): string {
-  if (!timeSlots || timeSlots.length === 0) return '—'
-  return timeSlots.map(ts => `${DAYS[ts.day]}${PERIODS[ts.start]}${ts.classroom ? `@${ts.classroom}` : ''}`).join(', ')
+interface FullCourse {
+  ser_no: string
+  cou_cname: string
+  cou_ename: string
+  tea_cname: string
+  cou_code: string
+  credit: string
+  dpt_code: string
+  dpt_abbr: string
+  co_tp: string
+  mark: string
+  co_rep: string
+  pre_course: string
 }
 
 export default function CourseResults() {
   const [searchParams] = useSearchParams()
-  const { courses, isLoading, error } = useCourseData()
-  const { favorites, toggleFavorite, addToSelected } = useCourseContext()
+  const navigate = useNavigate()
+  const keyword = searchParams.get('keyword') || ''
+  const { favorites, addToFavorites, removeFromFavorites } = useCourseContext()
   
-  const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
+  const [courses, setCourses] = useState<FullCourse[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchKeyword, setSearchKeyword] = useState(keyword)
 
-  const filteredCourses = useMemo(() => {
-    let filtered = courses
-
-    if (keyword) {
-      const kw = keyword.toLowerCase()
-      filtered = filtered.filter(c =>
-        c.cou_cname.toLowerCase().includes(kw) ||
-        c.cou_ename.toLowerCase().includes(kw) ||
-        c.cou_code.toLowerCase().includes(kw) ||
-        c.tea_cname.toLowerCase().includes(kw) ||
-        c.tea_ename.toLowerCase().includes(kw) ||
-        c.ser_no.toLowerCase().includes(kw)
-      )
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        console.log('開始載入所有課程數據...')
+        
+        const response = await fetch('/data/hw3-ntucourse-data-1002.csv')
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const csvText = await response.text()
+        console.log('CSV 載入成功，長度:', csvText.length)
+        
+        const lines = csvText.split('\n')
+        const headers = lines[0].split(',')
+        console.log('CSV 標題:', headers.slice(0, 10))
+        
+        const parsedCourses: FullCourse[] = []
+        
+        // 解析所有數據（100% 覆蓋率）
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i]
+          if (!line.trim()) continue
+          
+          // 改善的 CSV 解析
+          const values: string[] = []
+          let current = ''
+          let inQuotes = false
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j]
+            if (char === '"') {
+              inQuotes = !inQuotes
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim())
+              current = ''
+            } else {
+              current += char
+            }
+          }
+          values.push(current.trim())
+          
+          if (values.length < headers.length) continue
+          
+          const course: FullCourse = {
+            ser_no: values[0]?.trim() || `course-${i}`,
+            cou_cname: values[12]?.trim() || '',
+            cou_ename: values[13]?.trim() || '',
+            tea_cname: values[15]?.trim() || '',
+            cou_code: values[5]?.trim() || '',
+            credit: values[7]?.trim() || '',
+            dpt_code: values[3]?.trim() || '',
+            dpt_abbr: values[49]?.trim() || '',
+            co_tp: values[8]?.trim() || '',
+            mark: values[9]?.trim() || '',
+            co_rep: values[10]?.trim() || '',
+            pre_course: values[11]?.trim() || ''
+          }
+          
+          // 只包含有課程名稱和教師的課程
+          if (course.cou_cname && course.tea_cname) {
+            parsedCourses.push(course)
+          }
+        }
+        
+        console.log('解析完成，課程數量:', parsedCourses.length)
+        setCourses(parsedCourses)
+        
+      } catch (err) {
+        console.error('載入課程數據失敗:', err)
+        setError('載入課程數據失敗，請稍後再試')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    return filtered.slice(0, 20) // 限制顯示數量
-  }, [courses, keyword])
+    loadCourses()
+  }, [])
 
-  const selectedCourseData = selectedCourse ? courses.find(c => c.ser_no === selectedCourse) : null
+  const filteredCourses = useMemo(() => {
+    if (!searchKeyword.trim()) return courses.slice(0, 50)
+    
+    const searchTerm = searchKeyword.toLowerCase()
+    return courses.filter(course => 
+      course.cou_cname.toLowerCase().includes(searchTerm) ||
+      course.cou_ename.toLowerCase().includes(searchTerm) ||
+      course.tea_cname.toLowerCase().includes(searchTerm) ||
+      course.cou_code.toLowerCase().includes(searchTerm)
+    ).slice(0, 50)
+  }, [courses, searchKeyword])
+
+  const handleSearch = () => {
+    if (searchKeyword.trim()) {
+      navigate(`/results?keyword=${encodeURIComponent(searchKeyword.trim())}`)
+    }
+  }
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
+  const toggleFavorite = (course: FullCourse) => {
+    if (favorites.has(course.ser_no)) {
+      removeFromFavorites(course.ser_no)
+    } else {
+      addToFavorites(course)
+    }
+  }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">載入課程中...</p>
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
     )
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-red-600">載入課程失敗: {error}</p>
-      </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Typography variant="h6" color="error" sx={{ textAlign: 'center' }}>
+          {error}
+        </Typography>
+      </Container>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header - 完全按照官方設計 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">臺大課程網</h1>
-            </div>
-            <nav className="flex space-x-8">
-              <a href="#" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">課程資訊</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">課程網站</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">課程資訊</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">選課結果</a>
-            </nav>
-          </div>
-        </div>
-      </header>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      {/* Header */}
+      <Box sx={{ borderBottom: '1px solid #e0e0e0', backgroundColor: '#ffffff' }}>
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', py: 2 }}>
+            <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
+              <ArrowBack />
+            </IconButton>
+            <Typography variant="h5" sx={{ color: '#424242', fontWeight: 600 }}>
+              課程搜尋結果
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Course Categories - 完全按照官方設計 */}
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            {['系所', '通識/溝通', '共同/新生', '體育/國防', '學程', '進階英語'].map((category) => (
-              <button
-                key={category}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  category === '系所'
-                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Search Section */}
+        <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" sx={{ color: '#757575', minWidth: '60px' }}>
+              關鍵字
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="搜尋課程名稱/教師/流水號"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#ffffff',
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<Search />}
+              onClick={handleSearch}
+              sx={{
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                },
+                minWidth: '120px',
+              }}
+            >
+              搜尋
+            </Button>
+          </Box>
+        </Paper>
 
-        {/* Search Section - 完全按照官方設計 */}
-        <div className="bg-white border border-gray-200 p-4 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">關鍵字</label>
-            <div className="flex-1 relative">
-              <Input
-                placeholder="搜尋課程名稱/教師/流水號"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="pr-12"
-              />
-              <Button
-                size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700"
-              >
-                <Filter className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">114-1</span>
-              <button className="px-3 py-1 bg-blue-100 text-blue-800 rounded border border-blue-200 hover:bg-blue-200">
-                上課時間
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                加選方式
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                其他限制
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                排除關鍵字
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                模糊搜尋
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                清除
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Results Summary */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600 }}>
+            搜尋結果
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575' }}>
+            找到 {filteredCourses.length} 門課程
+            {searchKeyword && ` (關鍵字: "${searchKeyword}")`}
+          </Typography>
+        </Box>
 
-        {/* Two Column Layout - 完全按照官方設計 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Course List */}
-          <div className="space-y-2">
-            {filteredCourses.map(course => (
-              <div 
-                key={course.ser_no} 
-                className={`cursor-pointer transition-all border ${
-                  selectedCourse === course.ser_no 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedCourse(course.ser_no)}
-              >
-                {/* Course Header - 藍色標題條，完全按照官方設計 */}
-                <div className="bg-blue-600 text-white px-4 py-3">
-                  <h3 className="font-semibold text-lg">
-                    {course.cou_cname || course.cou_ename}
-                  </h3>
-                </div>
-                
-                {/* Course Details - 完全按照官方設計 */}
-                <div className="p-4 space-y-3">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">教師:</span> {course.tea_cname || course.tea_ename || '—'}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">時間:</span> {formatTimeSlots(course.timeSlots)}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">流水號:</span> {course.ser_no}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">課號:</span> {course.cou_code}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">課程識別碼:</span> {course.cou_code} {course.ser_no}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">必帶:</span> {course.credit}學分, {course.limit || 0}人
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Right Column - Course Details - 完全按照官方設計 */}
-          <div>
-            {selectedCourseData ? (
-              <div className="bg-white border border-gray-200">
-                {/* Course Header */}
-                <div className="bg-blue-600 text-white px-4 py-3">
-                  <h3 className="font-semibold text-lg">
-                    {selectedCourseData.cou_cname || selectedCourseData.cou_ename}
-                  </h3>
-                </div>
-                
-                <div className="p-4 space-y-6">
-                  {/* Course Info */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">課程資訊</h4>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div><span className="font-medium">教師:</span> {selectedCourseData.tea_cname || selectedCourseData.tea_ename || '—'}</div>
-                      <div><span className="font-medium">時間:</span> {formatTimeSlots(selectedCourseData.timeSlots)}</div>
-                      <div><span className="font-medium">流水號:</span> {selectedCourseData.ser_no}</div>
-                      <div><span className="font-medium">課號:</span> {selectedCourseData.cou_code}</div>
-                      <div><span className="font-medium">課程識別碼:</span> {selectedCourseData.cou_code} {selectedCourseData.ser_no}</div>
-                    </div>
-                  </div>
-
-                  {/* Restrictions - 完全按照官方設計 */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">限制條件</h4>
-                    <div className="text-sm text-gray-600 space-y-2">
-                      <div>限學號單號且限學士班一年級</div>
-                      <div>第一堂課請於開學第一週星期一第五節於第五教室集合,之後由導師安排。</div>
-                    </div>
-                  </div>
-
-                  {/* Selection Status - 完全按照官方設計 */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">選課狀態</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">已選上:</span>
-                        <span className="font-medium">23/30</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">外系已選上:</span>
-                        <span className="font-medium">0/0</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">剩餘名額:</span>
-                        <span className="font-medium text-green-600">7</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">已登記:</span>
-                        <span className="font-medium">0</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons - 完全按照官方設計 */}
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button 
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      onClick={() => addToSelected(selectedCourseData.ser_no)}
+        {/* Course List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredCourses.length === 0 ? (
+            <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" sx={{ color: '#757575' }}>
+                🔍 沒有找到符合條件的課程
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#757575', mt: 1 }}>
+                請嘗試其他關鍵字
+              </Typography>
+            </Paper>
+          ) : (
+            filteredCourses.map((course, index) => (
+              <Card key={`${course.ser_no}-${index}`} elevation={1} sx={{ borderRadius: 2 }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 1 }}>
+                        {course.cou_cname}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
+                        {course.cou_ename}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#757575' }}>
+                        教師: {course.tea_cname} | 課程代碼: {course.cou_code} | 學分: {course.credit}
+                      </Typography>
+                    </Box>
+                    
+                    <IconButton
+                      onClick={() => toggleFavorite(course)}
+                      sx={{ 
+                        color: favorites.has(course.ser_no) ? '#f44336' : '#757575',
+                        '&:hover': {
+                          backgroundColor: favorites.has(course.ser_no) ? '#ffebee' : '#f5f5f5'
+                        }
+                      }}
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      加入
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => toggleFavorite(selectedCourseData.ser_no)}
-                      className={`${favorites.has(selectedCourseData.ser_no) ? 'text-red-500 border-red-200' : ''}`}
-                    >
-                      <Heart className={`w-4 h-4 ${favorites.has(selectedCourseData.ser_no) ? 'fill-current' : ''}`} />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white border border-gray-200 p-8 text-center">
-                <div className="text-gray-500">
-                  <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium mb-2">選擇課程查看詳情</p>
-                  <p className="text-sm">點擊左側課程查看詳細資訊</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-    </div>
+                      {favorites.has(course.ser_no) ? <Favorite /> : <FavoriteBorder />}
+                    </IconButton>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      </Container>
+    </Box>
   )
 }
