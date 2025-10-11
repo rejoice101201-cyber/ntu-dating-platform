@@ -1,15 +1,12 @@
 import { useState, useMemo } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Heart, Filter, Star } from 'lucide-react'
+import { Heart, Filter, Plus } from 'lucide-react'
 import useCourseData from '../hooks/useCourseData'
 import { useCourseContext } from '../context/CourseContext'
 
-const DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
 const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
 
 function formatTimeSlots(timeSlots?: Array<{day: number, start: number, classroom?: string}>): string {
@@ -17,29 +14,17 @@ function formatTimeSlots(timeSlots?: Array<{day: number, start: number, classroo
   return timeSlots.map(ts => `${DAYS[ts.day]}${PERIODS[ts.start]}${ts.classroom ? `@${ts.classroom}` : ''}`).join(', ')
 }
 
-function getProbabilityColor(probability: number): string {
-  if (probability >= 80) return 'text-green-600 bg-green-100'
-  if (probability >= 60) return 'text-yellow-600 bg-yellow-100'
-  if (probability >= 40) return 'text-orange-600 bg-orange-100'
-  return 'text-red-600 bg-red-100'
-}
-
 export default function CourseResults() {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const { courses, isLoading, error, departments } = useCourseData()
-  const { favorites, toggleFavorite } = useCourseContext()
+  const { courses, isLoading, error } = useCourseData()
+  const { favorites, toggleFavorite, addToSelected } = useCourseContext()
   
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
-  const [department, setDepartment] = useState(searchParams.get('department') || '')
-  const [sortBy, setSortBy] = useState<'ser_no' | 'cou_cname' | 'probability'>('ser_no')
-  const [page, setPage] = useState(1)
-  const pageSize = 20
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
 
-    // Apply filters from URL params
     if (keyword) {
       const kw = keyword.toLowerCase()
       filtered = filtered.filter(c =>
@@ -52,73 +37,10 @@ export default function CourseResults() {
       )
     }
 
-    if (department && department !== 'all') {
-      filtered = filtered.filter(c => c.dpt_abbr === department)
-    }
+    return filtered.slice(0, 20) // 限制顯示數量
+  }, [courses, keyword])
 
-    const minCredits = parseInt(searchParams.get('minCredits') || '0')
-    const maxCredits = parseInt(searchParams.get('maxCredits') || '6')
-    filtered = filtered.filter(c => c.credit >= minCredits && c.credit <= maxCredits)
-
-    const courseType = searchParams.get('courseType')
-    if (courseType) {
-      filtered = filtered.filter(c => {
-        if (courseType === '必修') return c.co_tp === '1' || c.mark === '1'
-        if (courseType === '選修') return c.co_tp === '0' || c.mark === '0'
-        return true
-      })
-    }
-
-    const instructor = searchParams.get('instructor')
-    if (instructor) {
-      const inst = instructor.toLowerCase()
-      filtered = filtered.filter(c =>
-        c.tea_cname.toLowerCase().includes(inst) ||
-        c.tea_ename.toLowerCase().includes(inst)
-      )
-    }
-
-    // Tags AND/OR support from Home
-    const tagsParam = (searchParams.get('tags') || '').trim()
-    const mode = (searchParams.get('mode') || 'OR').toUpperCase()
-    if (tagsParam) {
-      const tags = tagsParam
-        .split(',')
-        .map(t => t.trim())
-        .filter(Boolean)
-        .map(t => t.toLowerCase())
-      if (tags.length) {
-        filtered = filtered.filter(c => {
-          const haystack = [
-            c.cou_cname,
-            c.cou_ename,
-            c.dpt_abbr,
-            c.co_rep || '',
-            c.pre_course || ''
-          ].join(' ').toLowerCase()
-          const matches = tags.map(tag => haystack.includes(tag))
-          return mode === 'AND' ? matches.every(Boolean) : matches.some(Boolean)
-        })
-      }
-    }
-
-    // Sort courses
-    filtered = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'cou_cname':
-          return String(a.cou_cname).localeCompare(String(b.cou_cname))
-        case 'probability':
-          return (b.selectionProbability || 0) - (a.selectionProbability || 0)
-        default:
-          return String(a.ser_no).localeCompare(String(b.ser_no))
-      }
-    })
-
-    return filtered
-  }, [courses, keyword, department, searchParams, sortBy])
-
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / pageSize))
-  const pageData = filteredCourses.slice(0, page * pageSize)
+  const selectedCourseData = selectedCourse ? courses.find(c => c.ser_no === selectedCourse) : null
 
   if (isLoading) {
     return (
@@ -140,122 +62,223 @@ export default function CourseResults() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-700">課程搜尋結果</h1>
-          <p className="text-gray-600">找到 {filteredCourses.length} 門課程</p>
+    <div className="min-h-screen bg-white">
+      {/* Header - 完全按照官方設計 */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">臺大課程網</h1>
+            </div>
+            <nav className="flex space-x-8">
+              <a href="#" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">課程資訊</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900">課程網站</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900">課程資訊</a>
+              <a href="#" className="text-gray-600 hover:text-gray-900">選課結果</a>
+            </nav>
+          </div>
         </div>
-        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => navigate('/filter')}>
-          <Filter className="w-4 h-4 mr-2" />
-          重新篩選
-        </Button>
-      </div>
+      </header>
 
-      {/* Search and Sort Controls */}
-      <Card className="bg-white border-gray-200">
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">關鍵字</label>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Course Categories - 完全按照官方設計 */}
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {['系所', '通識/溝通', '共同/新生', '體育/國防', '學程', '進階英語'].map((category) => (
+              <button
+                key={category}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  category === '系所'
+                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search Section - 完全按照官方設計 */}
+        <div className="bg-white border border-gray-200 p-4 mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">關鍵字</label>
+            <div className="flex-1 relative">
               <Input
                 placeholder="搜尋課程名稱/教師/流水號"
                 value={keyword}
-                onChange={e => { setPage(1); setKeyword(e.target.value) }}
-                className="w-80 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                onChange={(e) => setKeyword(e.target.value)}
+                className="pr-12"
               />
-            </div>
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">系所</label>
-              <Select value={department} onValueChange={value => { setPage(1); setDepartment(value) }}>
-                <SelectTrigger className="w-48 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="全部系所" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部系所</SelectItem>
-                  {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium text-gray-700">排序</label>
-              <Select value={sortBy} onValueChange={(value: 'ser_no' | 'cou_cname' | 'probability') => setSortBy(value)}>
-                <SelectTrigger className="w-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ser_no">流水號</SelectItem>
-                  <SelectItem value="cou_cname">課程名稱</SelectItem>
-                  <SelectItem value="probability">中籤機率</SelectItem>
-                </SelectContent>
-              </Select>
+              <Button
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="flex flex-wrap gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">114-1</span>
+              <button className="px-3 py-1 bg-blue-100 text-blue-800 rounded border border-blue-200 hover:bg-blue-200">
+                上課時間
+              </button>
+              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
+                加選方式
+              </button>
+              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
+                其他限制
+              </button>
+              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
+                排除關鍵字
+              </button>
+              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
+                模糊搜尋
+              </button>
+              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
+                清除
+              </button>
+            </div>
+          </div>
+        </div>
 
-      {/* Results count */}
-      <div className="text-sm text-gray-600">
-        第 {page} / {totalPages} 頁 • 共 {filteredCourses.length} 筆課程
-      </div>
-
-      {/* Course grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {pageData.map(course => (
-          <Card key={course.ser_no} className="hover:shadow-md transition-shadow bg-white border-gray-200">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-gray-700 truncate">
+        {/* Two Column Layout - 完全按照官方設計 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Course List */}
+          <div className="space-y-2">
+            {filteredCourses.map(course => (
+              <div 
+                key={course.ser_no} 
+                className={`cursor-pointer transition-all border ${
+                  selectedCourse === course.ser_no 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+                onClick={() => setSelectedCourse(course.ser_no)}
+              >
+                {/* Course Header - 藍色標題條，完全按照官方設計 */}
+                <div className="bg-blue-600 text-white px-4 py-3">
+                  <h3 className="font-semibold text-lg">
                     {course.cou_cname || course.cou_ename}
                   </h3>
-                  <p className="text-xs text-gray-500 mb-2 truncate">👤 {course.tea_cname || course.tea_ename || '—'}</p>
-                  <div className="flex flex-wrap gap-1 text-xs text-gray-600 mb-2">
-                    <span>流水號 {course.ser_no}</span>
-                    <span>· 課號 {course.cou_code}</span>
-                    <span>· {course.dpt_abbr}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <Badge variant="secondary">{course.credit}學分</Badge>
-                    {course.tlec > 0 && <Badge variant="outline">{course.tlec}講</Badge>}
-                    {course.tlab > 0 && <Badge variant="outline">{course.tlab}實</Badge>}
-                    {course.limit && <Badge variant="outline">限{course.limit}人</Badge>}
-                    {course.selectionProbability && (
-                      <Badge className={getProbabilityColor(course.selectionProbability)}>
-                        <Star className="w-3 h-3 mr-1" />
-                        {course.selectionProbability}%
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600 line-clamp-2">
-                    <span className="font-medium">時間:</span> {formatTimeSlots(course.timeSlots)}
-                  </p>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleFavorite(course.ser_no)}
-                    className={`p-2 ${favorites.has(course.ser_no) ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
-                    title={favorites.has(course.ser_no) ? '移除最愛' : '加入最愛'}
-                  >
-                    <Heart className={`h-5 w-5 ${favorites.has(course.ser_no) ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">加入暫存</Button>
+                
+                {/* Course Details - 完全按照官方設計 */}
+                <div className="p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-700">教師:</span> {course.tea_cname || course.tea_ename || '—'}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">時間:</span> {formatTimeSlots(course.timeSlots)}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">流水號:</span> {course.ser_no}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">課號:</span> {course.cou_code}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">課程識別碼:</span> {course.cou_code} {course.ser_no}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-700">必帶:</span> {course.credit}學分, {course.limit || 0}人
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))}
+          </div>
 
-      {/* Load more */}
-      {page * pageSize < filteredCourses.length && (
-        <div className="flex justify-center">
-          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => setPage(p => p + 1)}>載入更多</Button>
+          {/* Right Column - Course Details - 完全按照官方設計 */}
+          <div>
+            {selectedCourseData ? (
+              <div className="bg-white border border-gray-200">
+                {/* Course Header */}
+                <div className="bg-blue-600 text-white px-4 py-3">
+                  <h3 className="font-semibold text-lg">
+                    {selectedCourseData.cou_cname || selectedCourseData.cou_ename}
+                  </h3>
+                </div>
+                
+                <div className="p-4 space-y-6">
+                  {/* Course Info */}
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-3">課程資訊</h4>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div><span className="font-medium">教師:</span> {selectedCourseData.tea_cname || selectedCourseData.tea_ename || '—'}</div>
+                      <div><span className="font-medium">時間:</span> {formatTimeSlots(selectedCourseData.timeSlots)}</div>
+                      <div><span className="font-medium">流水號:</span> {selectedCourseData.ser_no}</div>
+                      <div><span className="font-medium">課號:</span> {selectedCourseData.cou_code}</div>
+                      <div><span className="font-medium">課程識別碼:</span> {selectedCourseData.cou_code} {selectedCourseData.ser_no}</div>
+                    </div>
+                  </div>
+
+                  {/* Restrictions - 完全按照官方設計 */}
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-3">限制條件</h4>
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <div>限學號單號且限學士班一年級</div>
+                      <div>第一堂課請於開學第一週星期一第五節於第五教室集合,之後由導師安排。</div>
+                    </div>
+                  </div>
+
+                  {/* Selection Status - 完全按照官方設計 */}
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-3">選課狀態</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">已選上:</span>
+                        <span className="font-medium">23/30</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">外系已選上:</span>
+                        <span className="font-medium">0/0</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">剩餘名額:</span>
+                        <span className="font-medium text-green-600">7</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">已登記:</span>
+                        <span className="font-medium">0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - 完全按照官方設計 */}
+                  <div className="flex gap-2 pt-4 border-t">
+                    <Button 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => addToSelected(selectedCourseData.ser_no)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      加入
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => toggleFavorite(selectedCourseData.ser_no)}
+                      className={`${favorites.has(selectedCourseData.ser_no) ? 'text-red-500 border-red-200' : ''}`}
+                    >
+                      <Heart className={`w-4 h-4 ${favorites.has(selectedCourseData.ser_no) ? 'fill-current' : ''}`} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 p-8 text-center">
+                <div className="text-gray-500">
+                  <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium mb-2">選擇課程查看詳情</p>
+                  <p className="text-sm">點擊左側課程查看詳細資訊</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

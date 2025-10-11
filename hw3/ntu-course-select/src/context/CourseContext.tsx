@@ -7,6 +7,7 @@ interface CourseContextValue {
   setCourses: (c: Course[]) => void
   selectedIds: Set<string>
   toggleSelect: (id: string) => void
+  addToSelected: (id: string) => void
   clearSelection: () => void
   submittedIds: Set<string>
   submitSelection: () => void
@@ -100,6 +101,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       }
       return next
     })
+  }
+
+  function addToSelected(ser_no: string) {
+    setSelectedIds(prev => new Set(prev).add(ser_no))
   }
 
   function clearSelection() {
@@ -305,6 +310,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     setCourses,
     selectedIds,
     toggleSelect,
+    addToSelected,
     clearSelection,
     submittedIds,
     submitSelection,
