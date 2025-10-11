@@ -17,6 +17,7 @@ import { ArrowBack, Home, BugReport } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 import type { Course } from '../types/course'
 import { parseNtuTime } from '../utils/timeParser'
+import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
 
 const DAY_NAMES = ['', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const TIME_SLOTS = [
@@ -34,13 +35,13 @@ export default function Schedule() {
     const newScheduleData: { [key: string]: Course } = {}
     
     lotteryResults.forEach((course: Course) => {
-      // 從 Course 中提取原始時間數據
-      const courseData = course as any
+      // 為課程分配隨機的連續3節課
+      const courseWithTime = assignRandomTimeSlots(course as any)
       
       // 解析第一個時間段
-      if (courseData.day1 && courseData.st1) {
-        const dayIndex = getDayIndex(courseData.day1)
-        const timeIndex = getTimeIndex(courseData.st1)
+      if (courseWithTime.day1 && courseWithTime.st1) {
+        const dayIndex = getDayIndex(courseWithTime.day1)
+        const timeIndex = getTimeIndex(courseWithTime.st1)
         
         if (dayIndex > 0 && timeIndex >= 0) {
           const timeKey = `${dayIndex}-${timeIndex}`
@@ -49,9 +50,9 @@ export default function Schedule() {
       }
       
       // 解析第二個時間段
-      if (courseData.day2 && courseData.st2) {
-        const dayIndex = getDayIndex(courseData.day2)
-        const timeIndex = getTimeIndex(courseData.st2)
+      if (courseWithTime.day2 && courseWithTime.st2) {
+        const dayIndex = getDayIndex(courseWithTime.day2)
+        const timeIndex = getTimeIndex(courseWithTime.st2)
         
         if (dayIndex > 0 && timeIndex >= 0) {
           const timeKey = `${dayIndex}-${timeIndex}`
@@ -60,9 +61,9 @@ export default function Schedule() {
       }
       
       // 解析第三個時間段
-      if (courseData.day3 && courseData.st3) {
-        const dayIndex = getDayIndex(courseData.day3)
-        const timeIndex = getTimeIndex(courseData.st3)
+      if (courseWithTime.day3 && courseWithTime.st3) {
+        const dayIndex = getDayIndex(courseWithTime.day3)
+        const timeIndex = getTimeIndex(courseWithTime.st3)
         
         if (dayIndex > 0 && timeIndex >= 0) {
           const timeKey = `${dayIndex}-${timeIndex}`

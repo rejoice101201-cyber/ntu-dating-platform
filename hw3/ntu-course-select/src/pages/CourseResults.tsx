@@ -17,6 +17,7 @@ import {
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 import { parseNtuTime } from '../utils/timeParser'
+import { assignRandomTimeSlots, generateTimeString } from '../utils/simpleTimeAssigner'
 
 interface FullCourse {
   ser_no: string
@@ -95,7 +96,7 @@ export default function CourseResults() {
           
           if (values.length < headers.length) continue
           
-          const course: FullCourse = {
+          const baseCourse = {
             ser_no: values[0]?.trim() || `course-${i}-${Date.now()}`,
             cou_cname: values[12]?.trim() || '',
             cou_ename: values[13]?.trim() || '',
@@ -110,8 +111,15 @@ export default function CourseResults() {
             pre_course: values[11]?.trim() || '',
             // 模擬機率：根據課程類型設定不同機率
             probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
-            time: parseNtuTime(values[25]?.trim(), values[24]?.trim()), // day1(索引25) + st1(索引24)
             classroom: values[18]?.trim() || '' // clsrom_1(19)
+          }
+
+          // 為課程分配隨機的連續3節課
+          const courseWithTime = assignRandomTimeSlots(baseCourse)
+          
+          const course: FullCourse = {
+            ...courseWithTime,
+            time: generateTimeString(courseWithTime)
           }
           
           // 只包含有課程名稱和教師的課程

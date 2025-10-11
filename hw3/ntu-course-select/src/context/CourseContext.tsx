@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
 
 interface Course {
   ser_no: string
@@ -135,21 +136,22 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   const resolveTimeConflicts = (courses: Course[]): Course[] => {
     const timeSlots = new Map<string, Course[]>()
     
-    // 按時間分組課程 - 使用原始時間數據
+    // 按時間分組課程 - 使用簡單時間分配器
     courses.forEach(course => {
-      const courseData = course as any
+      // 為課程分配隨機的連續3節課
+      const courseWithTime = assignRandomTimeSlots(course as any)
       
       // 檢查所有時間段
       const timeKeys: string[] = []
       
-      if (courseData.day1 && courseData.st1) {
-        timeKeys.push(`${courseData.day1}-${courseData.st1}`)
+      if (courseWithTime.day1 && courseWithTime.st1) {
+        timeKeys.push(`${courseWithTime.day1}-${courseWithTime.st1}`)
       }
-      if (courseData.day2 && courseData.st2) {
-        timeKeys.push(`${courseData.day2}-${courseData.st2}`)
+      if (courseWithTime.day2 && courseWithTime.st2) {
+        timeKeys.push(`${courseWithTime.day2}-${courseWithTime.st2}`)
       }
-      if (courseData.day3 && courseData.st3) {
-        timeKeys.push(`${courseData.day3}-${courseData.st3}`)
+      if (courseWithTime.day3 && courseWithTime.st3) {
+        timeKeys.push(`${courseWithTime.day3}-${courseWithTime.st3}`)
       }
       
       // 將課程添加到所有相關時間段
