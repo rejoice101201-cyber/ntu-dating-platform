@@ -1,19 +1,25 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { ThemeProvider } from '@mui/material/styles'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { CourseProvider } from './context/CourseContext'
-import { theme } from './theme/theme'
 import Home from './pages/Home'
-import CourseResultsNew from './pages/CourseResultsNew'
-import Recommendations from './pages/Recommendations'
+import CourseList from './pages/CourseList'
 import Favorites from './pages/Favorites'
-import SelectionStaging from './pages/SelectionStaging'
-import LotterySimulation from './pages/LotterySimulation'
-import FinalTimetable from './pages/FinalTimetable'
-import Help from './pages/Help'
-import Settings from './pages/Settings'
-import CourseAnalysis from './pages/CourseAnalysis'
+import Selection from './pages/Selection'
+import Results from './pages/Results'
+import Schedule from './pages/Schedule'
 import './App.css'
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+})
 
 function App() {
   return (
@@ -23,15 +29,11 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/results" element={<CourseResultsNew />} />
-            <Route path="/recommendations" element={<Recommendations />} />
+            <Route path="/courses" element={<CourseList />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/staging" element={<SelectionStaging />} />
-            <Route path="/lottery" element={<LotterySimulation />} />
-            <Route path="/final" element={<FinalTimetable />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/analysis" element={<CourseAnalysis />} />
+            <Route path="/selection" element={<Selection />} />
+            <Route path="/results" element={<Results />} />
+            <Route path="/schedule" element={<Schedule />} />
           </Routes>
         </Router>
       </CourseProvider>

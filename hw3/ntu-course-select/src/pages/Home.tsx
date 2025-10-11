@@ -1,48 +1,26 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
+import { 
+  Container, 
+  Typography, 
+  Box, 
+  TextField, 
+  Button, 
+  Paper,
   AppBar,
   Toolbar,
-  Typography,
-  Container,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Box,
-  Chip,
-  Paper,
+  IconButton
 } from '@mui/material'
-import { Search } from '@mui/icons-material'
+import { Search, Favorite } from '@mui/icons-material'
 
 export default function Home() {
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
 
   const handleSearch = () => {
-    const searchParams = new URLSearchParams()
     if (keyword.trim()) {
-      searchParams.set('keyword', keyword.trim())
+      navigate(`/courses?keyword=${encodeURIComponent(keyword.trim())}`)
     }
-    if (selectedFilters.length > 0) {
-      searchParams.set('filters', selectedFilters.join(','))
-    }
-    navigate(`/results?${searchParams.toString()}`)
-  }
-
-  const handleFilterToggle = (filter: string) => {
-    // 單選模式：如果點擊已選中的篩選，則取消；否則選擇新的篩選
-    setSelectedFilters(prev => 
-      prev.includes(filter) 
-        ? [] // 取消當前篩選
-        : [filter] // 只選擇一個篩選
-    )
-  }
-
-  const clearFilters = () => {
-    setSelectedFilters([])
-    setKeyword('')
   }
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
@@ -52,253 +30,109 @@ export default function Home() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-      {/* Header */}
-      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
+    <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+      {/* 頂部導航欄 */}
+      <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
         <Toolbar>
-          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             臺大課程網
           </Typography>
-          <Box sx={{ display: 'flex', gap: 3 }}>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-              課程資訊
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-              選課結果
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-              推薦課程
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-              我的收藏
-            </Typography>
-          </Box>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate('/favorites')}
+            sx={{ mr: 1 }}
+          >
+            <Favorite />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Search Section */}
-        <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
-          {/* Filter Categories */}
-          <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-            {['共同必修', '專題研究', '服務學習', '體育運動', '數學', '物理'].map((filter) => (
-              <Chip
-                key={filter}
-                label={filter}
-                variant={selectedFilters.includes(filter) ? 'filled' : 'outlined'}
-                color={selectedFilters.includes(filter) ? 'primary' : 'default'}
-                size="small"
-                onClick={() => handleFilterToggle(filter)}
-                sx={{ cursor: 'pointer' }}
-              />
-            ))}
-          </Box>
+        {/* 標題 */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600, mb: 2 }}>
+            臺大課程搜尋
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#757575' }}>
+            請輸入課程名稱、教師姓名或課程代碼進行搜尋
+          </Typography>
+        </Box>
 
-          {/* Search Bar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Typography variant="body2" sx={{ color: '#757575', minWidth: '60px' }}>
-              關鍵字
-            </Typography>
+        {/* 搜尋區域 */}
+        <Paper elevation={2} sx={{ p: 4, mb: 4 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <TextField
               fullWidth
-              placeholder="搜尋課程名稱/教師/流水號"
+              placeholder="搜尋課程名稱、教師姓名或課程代碼..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
-              size="small"
+              variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#ffffff',
-                },
+                  borderRadius: 2,
+                  fontSize: '1.1rem'
+                }
               }}
             />
             <Button
               variant="contained"
-              startIcon={<Search />}
+              size="large"
               onClick={handleSearch}
+              startIcon={<Search />}
               sx={{
-                backgroundColor: '#1976d2',
-                '&:hover': {
-                  backgroundColor: '#1565c0',
-                },
-                minWidth: '120px',
+                minWidth: 120,
+                height: 56,
+                borderRadius: 2,
+                fontSize: '1.1rem',
+                fontWeight: 600
               }}
             >
               搜尋
             </Button>
           </Box>
-
-          {/* Advanced Filters */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {['化學', '生物', '經濟', '心理'].map((filter) => (
-              <Chip
-                key={filter}
-                label={filter}
-                variant={selectedFilters.includes(filter) ? 'filled' : 'outlined'}
-                color={selectedFilters.includes(filter) ? 'primary' : 'default'}
-                size="small"
-                onClick={() => handleFilterToggle(filter)}
-                sx={{ cursor: 'pointer' }}
-              />
-            ))}
-            <Chip 
-              label="清除" 
-              variant="outlined" 
-              size="small" 
-              onClick={clearFilters}
-              sx={{ cursor: 'pointer', color: '#d32f2f', borderColor: '#d32f2f' }}
-            />
-          </Box>
         </Paper>
 
-        {/* Main Title */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600, mb: 1 }}>
-            114學年度第一學期
+        {/* 選課流程說明 */}
+        <Paper elevation={1} sx={{ p: 3, backgroundColor: '#e3f2fd' }}>
+          <Typography variant="h6" sx={{ color: '#1976d2', fontWeight: 600, mb: 2 }}>
+            📚 選課流程
           </Typography>
-          <Typography variant="h5" sx={{ color: '#424242', fontWeight: 500 }}>
-            選課流程
-          </Typography>
-        </Box>
-
-        {/* Course Selection Timeline - 橫向四個框框 */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
-          {/* 初選一階 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                初選一階
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 200 }}>
+              <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                1. 搜尋課程
               </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="08.18 → 08.20"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#e3f2fd',
-                    color: '#1976d2',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  開放一階預選: 8.1(五) → 8.17(日)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  二階選課: 8.18(一) → 8.20(三)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  公布一階結果: 8.22(五) 15:00
-                </Typography>
-              </Box>
-        </CardContent>
-      </Card>
-
-          {/* 初選二階 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                初選二階
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                輸入關鍵字找到想要的課程
               </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="08.25 → 08.26"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#e8f5e8',
-                    color: '#2e7d32',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  開放一階預選: 8.22(五) → 8.24(日)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  二階選課: 8.25(一) → 8.26(三)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  公布一階結果: 8.28(五) 15:00
-                </Typography>
-              </Box>
-        </CardContent>
-      </Card>
-
-          {/* 網路加退選 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                網路加退選
+            </Box>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 200 }}>
+              <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                2. 加入最愛
               </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="09.01 → 09.15"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#fff3e0',
-                    color: '#f57c00',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  第一週加退選: 9.1(一) → 9.7(日)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  第二週加退選: 9.8(一) → 9.15(一)
-                </Typography>
-              </Box>
-          </CardContent>
-        </Card>
-
-          {/* 選課結果確認 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                選課結果確認
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                將感興趣的課程加入收藏
               </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="09.17 → 09.19"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#f3e5f5',
-                    color: '#7b1fa2',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  選課結果確認: 9.17(三) → 9.19(五)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  停修: 9.17(三) → 12.5(五)
-                </Typography>
-              </Box>
-          </CardContent>
-        </Card>
-        </Box>
-
-        {/* 智能分析鏈接 */}
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/analysis')}
-            sx={{
-              borderColor: '#1976d2',
-              color: '#1976d2',
-              '&:hover': {
-                borderColor: '#1565c0',
-                backgroundColor: '#e3f2fd'
-              }
-            }}
-          >
-            🧠 查看課程智能分析
-          </Button>
-        </Box>
+            </Box>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 200 }}>
+              <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                3. 匯入選課
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                將最愛課程匯入選課系統
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', flex: 1, minWidth: 200 }}>
+              <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                4. 查看結果
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                查看選課結果和課表
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
       </Container>
     </Box>
   )
