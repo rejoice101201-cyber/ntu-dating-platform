@@ -18,11 +18,30 @@ import { Search } from '@mui/icons-material'
 export default function Home() {
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
 
   const handleSearch = () => {
+    const searchParams = new URLSearchParams()
     if (keyword.trim()) {
-      navigate(`/results?keyword=${encodeURIComponent(keyword.trim())}`)
+      searchParams.set('keyword', keyword.trim())
     }
+    if (selectedFilters.length > 0) {
+      searchParams.set('filters', selectedFilters.join(','))
+    }
+    navigate(`/results?${searchParams.toString()}`)
+  }
+
+  const handleFilterToggle = (filter: string) => {
+    setSelectedFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    )
+  }
+
+  const clearFilters = () => {
+    setSelectedFilters([])
+    setKeyword('')
   }
 
   const handleKeyPress = (event: React.KeyboardEvent) => {
@@ -61,12 +80,17 @@ export default function Home() {
         <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
           {/* Filter Categories */}
           <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-            <Chip label="系所" variant="outlined" size="small" />
-            <Chip label="通識/溝通" variant="outlined" size="small" />
-            <Chip label="共同/新生" variant="outlined" size="small" />
-            <Chip label="體育/國防" variant="outlined" size="small" />
-            <Chip label="學程" variant="outlined" size="small" />
-            <Chip label="進階英語" variant="outlined" size="small" />
+            {['系所', '通識', '共同', '體育', '學程', '英語'].map((filter) => (
+              <Chip
+                key={filter}
+                label={filter}
+                variant={selectedFilters.includes(filter) ? 'filled' : 'outlined'}
+                color={selectedFilters.includes(filter) ? 'primary' : 'default'}
+                size="small"
+                onClick={() => handleFilterToggle(filter)}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
           </Box>
 
           {/* Search Bar */}
@@ -105,12 +129,24 @@ export default function Home() {
 
           {/* Advanced Filters */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip label="上課時間" variant="outlined" size="small" />
-            <Chip label="加選方式" variant="outlined" size="small" />
-            <Chip label="其他限制" variant="outlined" size="small" />
-            <Chip label="排除關鍵字" variant="outlined" size="small" />
-            <Chip label="模糊搜尋" variant="outlined" size="small" />
-            <Chip label="清除" variant="outlined" size="small" />
+            {['必修', '選修', '有教師', '有先修'].map((filter) => (
+              <Chip
+                key={filter}
+                label={filter}
+                variant={selectedFilters.includes(filter) ? 'filled' : 'outlined'}
+                color={selectedFilters.includes(filter) ? 'primary' : 'default'}
+                size="small"
+                onClick={() => handleFilterToggle(filter)}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+            <Chip 
+              label="清除" 
+              variant="outlined" 
+              size="small" 
+              onClick={clearFilters}
+              sx={{ cursor: 'pointer', color: '#d32f2f', borderColor: '#d32f2f' }}
+            />
           </Box>
         </Paper>
 

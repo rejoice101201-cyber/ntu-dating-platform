@@ -37,13 +37,16 @@ export default function CourseResultsFull() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const keyword = searchParams.get('keyword') || ''
+  const filtersParam = searchParams.get('filters') || ''
   const { favorites, toggleFavorite, addToSelected } = useCourseContext()
   
   const [courses, setCourses] = useState<FullCourse[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchKeyword, setSearchKeyword] = useState(keyword)
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([])
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(
+    filtersParam ? filtersParam.split(',') : []
+  )
 
   useEffect(() => {
     const loadCourses = async () => {
