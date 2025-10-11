@@ -104,7 +104,7 @@ export interface UseCourseDataOptions {
 }
 
 export function useCourseData(options?: UseCourseDataOptions) {
-  const defaultCandidates = ['/data/hw3-ntucourse-data-1002.csv', '/data/courses.csv']
+  const defaultCandidates = ['/src/public/data/hw3-ntucourse-data-1002.csv', '/data/hw3-ntucourse-data-1002.csv', '/data/courses.csv']
   const csvCandidates = options?.csvPath ? [options.csvPath, ...defaultCandidates] : defaultCandidates
   const [courses, setCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)
