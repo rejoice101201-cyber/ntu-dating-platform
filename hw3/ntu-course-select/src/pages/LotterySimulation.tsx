@@ -327,7 +327,7 @@ function LotterySimulationContent() {
           .sort((a, b) => a.priority - b.priority)
           .map((entry, index) => (
             <DraggableLotteryEntry
-              key={entry.course.ser_no}
+              key={entry.course.ser_no} 
               entry={entry}
               index={index}
               onEditPriority={handleEditPriority}

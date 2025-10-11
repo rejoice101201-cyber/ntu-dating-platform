@@ -18,6 +18,7 @@ import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material
 import { useCourseContext } from '../context/CourseContext'
 import { COURSE_CATEGORIES, classifyCourse, getCoursesByCategory } from '../utils/courseClassifier'
 import { analyzeCourses } from '../utils/courseAnalyzer'
+import { classifyCourseWithNLP, classifyCoursesBatch, generateNLPImprovements } from '../utils/nlpClassifier'
 
 interface FullCourse {
   ser_no: string
@@ -153,13 +154,13 @@ export default function CourseResultsNew() {
       )
     }
     
-    // 智能篩選邏輯 - 使用課程分類器
+    // NLP 智能篩選邏輯 - 使用自然語言處理
     selectedFilters.forEach(filterId => {
       const category = COURSE_CATEGORIES.find(cat => cat.id === filterId)
       if (category) {
         filtered = filtered.filter(course => {
-          const classification = classifyCourse(course)
-          return classification?.id === filterId
+          const nlpResult = classifyCourseWithNLP(course)
+          return nlpResult.category === filterId && nlpResult.confidence > 0.5
         })
       }
     })
@@ -384,9 +385,17 @@ export default function CourseResultsNew() {
         )}
         {selectedFilters.length > 0 && (
           <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
-            🎯 智能分類: {selectedFilters.map(id => {
+            🧠 NLP 智能分類: {selectedFilters.map(id => {
               const category = COURSE_CATEGORIES.find(cat => cat.id === id)
               return category ? category.name : id
+            }).join(', ')}
+          </Typography>
+        )}
+        {filteredCourses.length > 0 && selectedFilters.length > 0 && (
+          <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+            🔍 分類置信度: {filteredCourses.slice(0, 1).map(course => {
+              const nlpResult = classifyCourseWithNLP(course)
+              return `${(nlpResult.confidence * 100).toFixed(1)}%`
             }).join(', ')}
           </Typography>
         )}

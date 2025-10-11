@@ -19,6 +19,7 @@ import { ArrowBack } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { COURSE_CATEGORIES, classifyCourse, getCategoryStats } from '../utils/courseClassifier'
 import { analyzeCourses, generateClassificationSuggestions } from '../utils/courseAnalyzer'
+import { classifyCourseWithNLP, classifyCoursesBatch, generateNLPImprovements } from '../utils/nlpClassifier'
 
 interface FullCourse {
   ser_no: string
@@ -41,6 +42,8 @@ export default function CourseAnalysis() {
   const [loading, setLoading] = useState(true)
   const [analysis, setAnalysis] = useState<any>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [nlpAnalysis, setNlpAnalysis] = useState<any>(null)
+  const [nlpSuggestions, setNlpSuggestions] = useState<string[]>([])
 
   useEffect(() => {
     loadCourses()
@@ -94,6 +97,14 @@ export default function CourseAnalysis() {
       const classificationSuggestions = generateClassificationSuggestions(courseData)
       setSuggestions(classificationSuggestions)
       
+      // NLP 分析
+      const nlpResult = classifyCoursesBatch(courseData)
+      setNlpAnalysis(nlpResult)
+      
+      // NLP 改進建議
+      const nlpImprovements = generateNLPImprovements(courseData)
+      setNlpSuggestions(nlpImprovements)
+      
     } catch (error) {
       console.error('載入課程數據失敗:', error)
     } finally {
@@ -145,7 +156,7 @@ export default function CourseAnalysis() {
           返回首頁
         </Button>
         <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600 }}>
-          🧠 台大課程智能分析
+          🧠 台大課程 NLP 智能分析
         </Typography>
       </Box>
 
@@ -158,7 +169,7 @@ export default function CourseAnalysis() {
           <Grid item xs={12} sm={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
               <Typography variant="h4" sx={{ color: '#1976d2', fontWeight: 'bold' }}>
-                {analysis?.totalCourses || 0}
+                {nlpAnalysis?.classified?.length + nlpAnalysis?.uncategorized?.length || 0}
               </Typography>
               <Typography variant="body2" sx={{ color: '#666' }}>
                 總課程數
@@ -168,20 +179,20 @@ export default function CourseAnalysis() {
           <Grid item xs={12} sm={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#e8f5e8', borderRadius: 2 }}>
               <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                {analysis?.categorizedCourses || 0}
+                {nlpAnalysis?.classified?.length || 0}
               </Typography>
               <Typography variant="body2" sx={{ color: '#666' }}>
-                已分類課程
+                NLP 已分類
               </Typography>
             </Box>
           </Grid>
           <Grid item xs={12} sm={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: '#fff3e0', borderRadius: 2 }}>
               <Typography variant="h4" sx={{ color: '#ff9800', fontWeight: 'bold' }}>
-                {analysis?.uncategorizedCourses || 0}
+                {nlpAnalysis?.uncategorized?.length || 0}
               </Typography>
               <Typography variant="body2" sx={{ color: '#666' }}>
-                未分類課程
+                NLP 未分類
               </Typography>
             </Box>
           </Grid>
@@ -264,11 +275,27 @@ export default function CourseAnalysis() {
         </TableContainer>
       </Paper>
 
-      {/* 分類建議 */}
+      {/* NLP 改進建議 */}
+      {nlpSuggestions.length > 0 && (
+        <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: '#424242' }}>
+            🧠 NLP 智能分析建議
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {nlpSuggestions.map((suggestion, index) => (
+              <Typography key={index} variant="body2" sx={{ color: '#666', pl: 2 }}>
+                • {suggestion}
+              </Typography>
+            ))}
+          </Box>
+        </Paper>
+      )}
+
+      {/* 傳統分類建議 */}
       {suggestions.length > 0 && (
         <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2, color: '#424242' }}>
-            💡 智能分類建議
+            💡 傳統分類建議
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {suggestions.map((suggestion, index) => (
