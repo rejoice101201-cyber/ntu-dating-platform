@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input'
 import { Heart, Filter, Plus } from 'lucide-react'
 import useCourseData from '../hooks/useCourseData'
 import { useCourseContext } from '../context/CourseContext'
-import DebugCourseData from '../components/DebugCourseData'
 
 const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
 const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
@@ -281,10 +280,6 @@ export default function CourseResults() {
         </div>
       </div>
 
-      {/* Debug Component - Temporary */}
-      <div className="mt-8">
-        <DebugCourseData />
-      </div>
     </div>
   )
 }
