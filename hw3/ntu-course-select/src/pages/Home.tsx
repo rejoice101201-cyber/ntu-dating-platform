@@ -110,45 +110,45 @@ export default function Home() {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <div className="text-center py-16 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-        <h1 className="text-5xl font-bold text-gray-900 mb-6">
-          NTU Course Selection
+      <div className="text-center py-16 bg-white rounded-lg border border-gray-200 shadow-sm">
+        <h1 className="text-5xl font-bold text-gray-700 mb-6">
+          臺大課程網
         </h1>
         <p className="text-xl text-gray-700 mb-8 max-w-4xl mx-auto leading-relaxed">
           歡迎使用臺大課程選擇系統！本系統提供智能化的課程搜尋、時間衝突檢測、抽籤模擬等功能，
           幫助您輕鬆完成選課流程。請按照以下步驟進行選課：
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-3xl mb-3">🔍</div>
-            <h3 className="font-semibold text-gray-900 mb-2">1. 搜尋課程</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">1. 課程資訊</h3>
             <p className="text-sm text-gray-600">使用關鍵字、系所、學分等條件篩選課程</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-3xl mb-3">❤️</div>
-            <h3 className="font-semibold text-gray-900 mb-2">2. 收藏課程</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">2. 選課結果</h3>
             <p className="text-sm text-gray-600">將感興趣的課程加入收藏清單</p>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="bg-gray-50 p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="text-3xl mb-3">🎲</div>
-            <h3 className="font-semibold text-gray-900 mb-2">3. 抽籤模擬</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">3. 抽籤模擬</h3>
             <p className="text-sm text-gray-600">設定優先順序並模擬抽籤結果</p>
           </div>
         </div>
         <div className="flex flex-wrap justify-center gap-4">
-          <Badge variant="secondary" className="px-4 py-2">
+          <Badge variant="secondary" className="px-4 py-2 bg-blue-50 text-blue-700 border-blue-200">
             <Search className="w-4 h-4 mr-2" />
             智能搜尋
           </Badge>
-          <Badge variant="secondary" className="px-4 py-2">
+          <Badge variant="secondary" className="px-4 py-2 bg-blue-50 text-blue-700 border-blue-200">
             <Calendar className="w-4 h-4 mr-2" />
             時間衝突檢測
           </Badge>
-          <Badge variant="secondary" className="px-4 py-2">
+          <Badge variant="secondary" className="px-4 py-2 bg-blue-50 text-blue-700 border-blue-200">
             <BookOpen className="w-4 h-4 mr-2" />
             課程收藏
           </Badge>
-          <Badge variant="secondary" className="px-4 py-2">
+          <Badge variant="secondary" className="px-4 py-2 bg-blue-50 text-blue-700 border-blue-200">
             <Users className="w-4 h-4 mr-2" />
             抽籤模擬
           </Badge>
@@ -156,10 +156,10 @@ export default function Home() {
       </div>
 
       {/* Quick Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5" />
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
+          <CardTitle className="flex items-center gap-2 text-gray-700">
+            <Search className="w-5 h-5 text-blue-500" />
             快速搜尋課程
           </CardTitle>
         </CardHeader>
@@ -236,7 +236,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-end">
-              <Button onClick={handleSearch} className="w-full">
+              <Button onClick={handleSearch} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
                 <Search className="w-4 h-4 mr-2" />
                 搜尋課程
               </Button>
@@ -247,9 +247,9 @@ export default function Home() {
 
       {/* Selection Timeline */}
       <Card className="bg-white border border-gray-200">
-        <CardHeader className="bg-blue-50 border-b border-blue-100">
-          <CardTitle className="flex items-center gap-2 text-blue-800">
-            <Clock className="w-5 h-5" />
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
+          <CardTitle className="flex items-center gap-2 text-gray-700">
+            <Clock className="w-5 h-5 text-blue-500" />
             選課時程表 - 2025學年度第一學期
           </CardTitle>
         </CardHeader>
@@ -259,11 +259,11 @@ export default function Home() {
               <Card key={index} className={`transition-all hover:shadow-md ${
                 phase.isActive 
                   ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' 
-                  : 'bg-white border-gray-200'
+                  : 'bg-gray-50 border-gray-200'
               }`}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900 text-sm">{phase.name}</h3>
+                    <h3 className="font-semibold text-gray-700 text-sm">{phase.name}</h3>
                     {phase.isActive && (
                       <Badge className="bg-green-500 text-white text-xs">
                         進行中
@@ -288,32 +288,32 @@ export default function Home() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/favorites')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-white border-gray-200" onClick={() => navigate('/favorites')}>
           <CardContent className="p-6 text-center">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-6 h-6 text-red-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">我的最愛</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">我的最愛</h3>
             <p className="text-sm text-gray-600">查看已收藏的課程</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/staging')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-white border-gray-200" onClick={() => navigate('/staging')}>
           <CardContent className="p-6 text-center">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-6 h-6 text-blue-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">選課暫存</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">選課暫存</h3>
             <p className="text-sm text-gray-600">管理暫存的課程選擇</p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/lottery')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer bg-white border-gray-200" onClick={() => navigate('/lottery')}>
           <CardContent className="p-6 text-center">
             <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Users className="w-6 h-6 text-purple-600" />
             </div>
-            <h3 className="font-semibold text-gray-900 mb-2">抽籤模擬</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">抽籤模擬</h3>
             <p className="text-sm text-gray-600">模擬選課抽籤結果</p>
           </CardContent>
         </Card>

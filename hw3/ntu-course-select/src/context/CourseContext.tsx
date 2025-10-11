@@ -30,6 +30,7 @@ interface CourseContextValue {
   // Recommendation helpers
   recommendByProbability: (count?: number) => Course[]
   recommendSimilarToFavorites: (count?: number) => Course[]
+  recommendNoConflicts: (count?: number) => Course[]
 }
 
 const CourseContext = createContext<CourseContextValue | undefined>(undefined)
@@ -42,11 +43,21 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lotteryEntries, setLotteryEntries] = useState<LotteryEntry[]>([])
 
-  // Load favorites from localStorage on mount
+  // Load data from localStorage on mount
   useEffect(() => {
     const savedFavorites = localStorage.getItem('ntu-course-favorites')
     if (savedFavorites) {
       setFavorites(new Set(JSON.parse(savedFavorites)))
+    }
+
+    const savedSelected = localStorage.getItem('ntu-course-selected')
+    if (savedSelected) {
+      setSelectedIds(new Set(JSON.parse(savedSelected)))
+    }
+
+    const savedLottery = localStorage.getItem('ntu-course-lottery')
+    if (savedLottery) {
+      setLotteryEntries(JSON.parse(savedLottery))
     }
   }, [])
 
@@ -54,6 +65,16 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ntu-course-favorites', JSON.stringify([...favorites]))
   }, [favorites])
+
+  // Save selected courses to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('ntu-course-selected', JSON.stringify([...selectedIds]))
+  }, [selectedIds])
+
+  // Save lottery entries to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('ntu-course-lottery', JSON.stringify(lotteryEntries))
+  }, [lotteryEntries])
 
   const selectedCourses = useMemo(() => {
     return courses.filter(c => selectedIds.has(c.ser_no))
@@ -178,30 +199,72 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     setLotteryEntries([])
   }
 
-  // Simple recommendations: high probability; and similar department to favorites
+  // Enhanced recommendations with multiple strategies
   const recommendByProbability = (count = 8) => {
     return [...courses]
+      .filter(c => !favorites.has(c.ser_no) && !selectedIds.has(c.ser_no)) // Exclude already favorited/selected
       .sort((a, b) => (b.selectionProbability || 0) - (a.selectionProbability || 0))
       .slice(0, count)
   }
 
   const recommendSimilarToFavorites = (count = 8) => {
     const favDepts = new Set<string>()
+    const favKeywords = new Set<string>()
+    
+    // Extract department and keywords from favorites
     for (const c of courses) {
-      if (favorites.has(c.ser_no) && c.dpt_abbr) favDepts.add(c.dpt_abbr)
+      if (favorites.has(c.ser_no)) {
+        if (c.dpt_abbr) favDepts.add(c.dpt_abbr)
+        // Extract keywords from course names
+        const keywords = (c.cou_cname + ' ' + c.cou_ename).toLowerCase()
+          .split(/\s+/)
+          .filter(word => word.length > 2)
+        keywords.forEach(kw => favKeywords.add(kw))
+      }
     }
-    const pool = courses.filter(c => c.dpt_abbr && favDepts.has(c.dpt_abbr))
-    if (pool.length === 0) return recommendByProbability(count)
-    return pool.slice(0, count)
+    
+    if (favDepts.size === 0 && favKeywords.size === 0) {
+      return recommendByProbability(count)
+    }
+    
+    // Score courses based on department and keyword matches
+    const scored = courses
+      .filter(c => !favorites.has(c.ser_no) && !selectedIds.has(c.ser_no))
+      .map(course => {
+        let score = 0
+        if (course.dpt_abbr && favDepts.has(course.dpt_abbr)) score += 3
+        if (course.selectionProbability) score += course.selectionProbability / 100
+        
+        // Keyword matching
+        const courseText = (course.cou_cname + ' ' + course.cou_ename).toLowerCase()
+        for (const keyword of favKeywords) {
+          if (courseText.includes(keyword)) score += 1
+        }
+        
+        return { course, score }
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, count)
+      .map(item => item.course)
+    
+    return scored
+  }
+
+  // New recommendation: courses with no time conflicts
+  const recommendNoConflicts = (count = 8) => {
+    return [...courses]
+      .filter(c => !favorites.has(c.ser_no) && !selectedIds.has(c.ser_no))
+      .filter(c => {
+        const conflictResult = detectConflicts(c, selectedCourses)
+        return !conflictResult.hasConflict
+      })
+      .sort((a, b) => (b.selectionProbability || 0) - (a.selectionProbability || 0))
+      .slice(0, count)
   }
 
   // Enhanced conflict detection with async support for user confirmation
   const addSelectedWithConflictCheck = useCallback(async (course: Course): Promise<ConflictResult> => {
-    const conflictResult = detectConflicts(course, selectedCourses, {
-      checkClassroomDistance: true,
-      maxClassroomDistance: 2,
-      allowOverride: true
-    })
+      const conflictResult = detectConflicts(course, selectedCourses)
 
     if (conflictResult.hasConflict) {
       // Store conflict for display
@@ -261,6 +324,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     clearLottery,
       recommendByProbability,
       recommendSimilarToFavorites,
+      recommendNoConflicts,
   }), [
       courses, selectedIds, submittedIds, selectedCourses, conflicts,
       addSelectedWithConflictCheck, favorites, favoriteCourses, lotteryEntries

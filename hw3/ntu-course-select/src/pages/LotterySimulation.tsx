@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { DndProvider, useDrag, useDrop } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Shuffle, CheckCircle, XCircle, Star, AlertTriangle } from 'lucide-react'
+import { Trash2, Shuffle, CheckCircle, XCircle, Star, AlertTriangle, GripVertical } from 'lucide-react'
 import { useCourseContext } from '../context/CourseContext'
 import type { LotteryEntry } from '../types/course'
 
@@ -22,7 +24,176 @@ function getPriorityColor(priority: number): string {
   return 'bg-green-100 text-green-800'
 }
 
-export default function LotterySimulation() {
+// Draggable Lottery Entry Component
+function DraggableLotteryEntry({ 
+  entry, 
+  index, 
+  onEditPriority, 
+  onSavePriority, 
+  onRemove,
+  editingPriority,
+  newPriority,
+  setNewPriority,
+  setEditingPriority
+}: {
+  entry: LotteryEntry
+  index: number
+  onEditPriority: (entry: LotteryEntry) => void
+  onSavePriority: (courseId: string) => void
+  onRemove: (courseId: string) => void
+  editingPriority: string | null
+  newPriority: string
+  setNewPriority: (value: string) => void
+  setEditingPriority: (value: string | null) => void
+}) {
+  const { updateLotteryPriority } = useCourseContext()
+  
+  const [{ isDragging }, drag] = useDrag({
+    type: 'lottery-entry',
+    item: { id: entry.course.ser_no, index },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  })
+
+  const [, drop] = useDrop({
+    accept: 'lottery-entry',
+    hover: (draggedItem: { id: string; index: number }) => {
+      if (draggedItem.index !== index) {
+        // Calculate new priority based on position
+        const newPriority = index + 1
+        updateLotteryPriority(draggedItem.id, newPriority)
+        draggedItem.index = index
+      }
+    },
+  })
+
+  return (
+    <div ref={(node) => drag(drop(node))} className={`${isDragging ? 'opacity-50' : ''}`}>
+      <Card 
+        className={`transition-all cursor-move ${
+          entry.isSelected 
+            ? 'ring-2 ring-green-500 bg-green-50' 
+            : 'hover:shadow-md bg-white border-gray-200'
+        }`}
+      >
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full text-sm font-medium text-gray-600">
+                {entry.priority}
+              </div>
+              <GripVertical className="w-5 h-5 text-gray-400 mt-1" />
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-700">
+                    {entry.course.cou_cname || entry.course.cou_ename}
+                  </h3>
+                  {entry.isSelected ? (
+                    <Badge className="bg-green-500 text-white">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      中籤
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-gray-500">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      未中籤
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
+                  <div>
+                    <span className="font-medium">流水號:</span> {entry.course.ser_no}
+                  </div>
+                  <div>
+                    <span className="font-medium">課號:</span> {entry.course.cou_code}
+                  </div>
+                  <div>
+                    <span className="font-medium">系所:</span> {entry.course.dpt_abbr}
+                  </div>
+                  <div>
+                    <span className="font-medium">教師:</span> {entry.course.tea_cname || entry.course.tea_ename}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="flex gap-2">
+                    <Badge variant="secondary">{entry.course.credit}學分</Badge>
+                    {entry.course.selectionProbability && (
+                      <Badge className={getProbabilityColor(entry.course.selectionProbability)}>
+                        <Star className="w-3 h-3 mr-1" />
+                        {entry.course.selectionProbability}%
+                      </Badge>
+                    )}
+                    <Badge className={getPriorityColor(entry.priority)}>
+                      優先順序: {entry.priority}
+                    </Badge>
+                  </div>
+                </div>
+
+                {entry.course.co_rep && (
+                  <div className="text-xs text-gray-500">
+                    {entry.course.co_rep}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2 ml-4">
+              {editingPriority === entry.course.ser_no ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value)}
+                    className="w-20 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => onSavePriority(entry.course.ser_no)}
+                    className="bg-blue-500 hover:bg-blue-600"
+                  >
+                    儲存
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingPriority(null)}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    取消
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEditPriority(entry)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  編輯優先順序
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemove(entry.course.ser_no)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function LotterySimulationContent() {
   const navigate = useNavigate()
   const { 
     lotteryEntries, 
@@ -95,7 +266,7 @@ export default function LotterySimulation() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">抽籤模擬系統</h1>
+          <h1 className="text-2xl font-bold text-gray-700">抽籤模擬系統</h1>
           <p className="text-gray-600">
             共 {lotteryEntries.length} 門課程參與抽籤
             {selectedCount > 0 && ` • ${selectedCount} 門中籤 • ${totalCredits} 學分`}
@@ -110,7 +281,7 @@ export default function LotterySimulation() {
             <Shuffle className="w-4 h-4 mr-2" />
             {isRunning ? '抽籤中...' : '開始抽籤'}
           </Button>
-          <Button variant="outline" onClick={clearLottery}>
+          <Button variant="outline" onClick={clearLottery} className="border-gray-300 text-gray-700 hover:bg-gray-50">
             <Trash2 className="w-4 h-4 mr-2" />
             清空
           </Button>
@@ -149,128 +320,32 @@ export default function LotterySimulation() {
 
       {/* Lottery Entries */}
       <div className="space-y-4">
+        <div className="text-sm text-gray-600 mb-4">
+          💡 拖拽課程卡片可調整優先順序，數字越小優先順序越高
+        </div>
         {lotteryEntries
           .sort((a, b) => a.priority - b.priority)
-          .map(entry => (
-            <Card 
-              key={entry.course.ser_no} 
-              className={`transition-all ${
-                entry.isSelected 
-                  ? 'ring-2 ring-green-500 bg-green-50' 
-                  : 'hover:shadow-md'
-              }`}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {entry.course.cou_cname || entry.course.cou_ename}
-                      </h3>
-                      {entry.isSelected ? (
-                        <Badge className="bg-green-500 text-white">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          中籤
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-gray-500">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          未中籤
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
-                      <div>
-                        <span className="font-medium">流水號:</span> {entry.course.ser_no}
-                      </div>
-                      <div>
-                        <span className="font-medium">課號:</span> {entry.course.cou_code}
-                      </div>
-                      <div>
-                        <span className="font-medium">系所:</span> {entry.course.dpt_abbr}
-                      </div>
-                      <div>
-                        <span className="font-medium">教師:</span> {entry.course.tea_cname || entry.course.tea_ename}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex gap-2">
-                        <Badge variant="secondary">{entry.course.credit}學分</Badge>
-                        {entry.course.selectionProbability && (
-                          <Badge className={getProbabilityColor(entry.course.selectionProbability)}>
-                            <Star className="w-3 h-3 mr-1" />
-                            {entry.course.selectionProbability}%
-                          </Badge>
-                        )}
-                        <Badge className={getPriorityColor(entry.priority)}>
-                          優先順序: {entry.priority}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {entry.course.co_rep && (
-                      <div className="text-xs text-gray-500">
-                        {entry.course.co_rep}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-end gap-2 ml-4">
-                    {editingPriority === entry.course.ser_no ? (
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={newPriority}
-                          onChange={(e) => setNewPriority(e.target.value)}
-                          className="w-20"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleSavePriority(entry.course.ser_no)}
-                        >
-                          儲存
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingPriority(null)}
-                        >
-                          取消
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditPriority(entry)}
-                      >
-                        編輯優先順序
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeFromLottery(entry.course.ser_no)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          .map((entry, index) => (
+            <DraggableLotteryEntry
+              key={entry.course.ser_no}
+              entry={entry}
+              index={index}
+              onEditPriority={handleEditPriority}
+              onSavePriority={handleSavePriority}
+              onRemove={removeFromLottery}
+              editingPriority={editingPriority}
+              newPriority={newPriority}
+              setNewPriority={setNewPriority}
+              setEditingPriority={setEditingPriority}
+            />
           ))}
       </div>
 
       {/* Recommendations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle>高機率推薦</CardTitle>
+            <CardTitle className="text-gray-700">高機率推薦</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-gray-700">
             {recoHighProb.map(c => (
@@ -281,9 +356,9 @@ export default function LotterySimulation() {
             ))}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle>與最愛相似</CardTitle>
+            <CardTitle className="text-gray-700">與最愛相似</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-gray-700">
             {recoSimilar.map(c => (
@@ -297,9 +372,9 @@ export default function LotterySimulation() {
       </div>
 
       {/* Instructions */}
-      <Card>
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-gray-700">
             <AlertTriangle className="w-5 h-5" />
             抽籤說明
           </CardTitle>
@@ -314,5 +389,14 @@ export default function LotterySimulation() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+// Main component with DndProvider
+export default function LotterySimulation() {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <LotterySimulationContent />
+    </DndProvider>
   )
 }

@@ -144,32 +144,32 @@ export default function CourseResults() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">課程搜尋結果</h1>
+          <h1 className="text-2xl font-bold text-gray-700">課程搜尋結果</h1>
           <p className="text-gray-600">找到 {filteredCourses.length} 門課程</p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/filter')}>
+        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => navigate('/filter')}>
           <Filter className="w-4 h-4 mr-2" />
           重新篩選
         </Button>
       </div>
 
       {/* Search and Sort Controls */}
-      <Card>
+      <Card className="bg-white border-gray-200">
         <CardContent className="p-6">
           <div className="flex flex-wrap gap-4 items-end">
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">關鍵字</label>
+              <label className="text-sm font-medium text-gray-700">關鍵字</label>
               <Input
                 placeholder="搜尋課程名稱/教師/流水號"
                 value={keyword}
                 onChange={e => { setPage(1); setKeyword(e.target.value) }}
-                className="w-80"
+                className="w-80 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">系所</label>
+              <label className="text-sm font-medium text-gray-700">系所</label>
               <Select value={department} onValueChange={value => { setPage(1); setDepartment(value) }}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="全部系所" />
                 </SelectTrigger>
                 <SelectContent>
@@ -179,9 +179,9 @@ export default function CourseResults() {
               </Select>
             </div>
             <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">排序</label>
+              <label className="text-sm font-medium text-gray-700">排序</label>
               <Select value={sortBy} onValueChange={(value: 'ser_no' | 'cou_cname' | 'probability') => setSortBy(value)}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-32 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,11 +203,11 @@ export default function CourseResults() {
       {/* Course grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {pageData.map(course => (
-          <Card key={course.ser_no} className="hover:shadow-md transition-shadow">
+          <Card key={course.ser_no} className="hover:shadow-md transition-shadow bg-white border-gray-200">
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-gray-900 truncate">
+                  <h3 className="text-base font-semibold text-gray-700 truncate">
                     {course.cou_cname || course.cou_ename}
                   </h3>
                   <p className="text-xs text-gray-500 mb-2 truncate">👤 {course.tea_cname || course.tea_ename || '—'}</p>
@@ -242,7 +242,7 @@ export default function CourseResults() {
                   >
                     <Heart className={`h-5 w-5 ${favorites.has(course.ser_no) ? 'fill-current' : ''}`} />
                   </Button>
-                  <Button size="sm" variant="outline">加入暫存</Button>
+                  <Button size="sm" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">加入暫存</Button>
                 </div>
               </div>
             </CardContent>
@@ -253,7 +253,7 @@ export default function CourseResults() {
       {/* Load more */}
       {page * pageSize < filteredCourses.length && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={() => setPage(p => p + 1)}>載入更多</Button>
+          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50" onClick={() => setPage(p => p + 1)}>載入更多</Button>
         </div>
       )}
     </div>

@@ -15,4 +15,9 @@ export default defineConfig({
     strictPort: true, // Error if 5173 in use, no auto-change
     host: true, // Allow external connections
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.ts'],
+    globals: true,
+  }
 })
