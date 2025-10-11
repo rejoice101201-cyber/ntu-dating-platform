@@ -16,11 +16,11 @@ export function useCourseDataSimple() {
       header: true,
       worker: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        console.log('CSV loaded:', results.data.length, 'rows')
-        
-        // Simple mapping without complex logic
-        const mappedCourses: Course[] = results.data.slice(0, 50).map((row: any, index: number) => {
+        complete: (results) => {
+          console.log('CSV loaded:', results.data.length, 'rows')
+          
+          // Simple mapping without complex logic
+          const mappedCourses: Course[] = results.data.slice(0, 20).map((row: any, index: number) => {
           const ser_no = String(row['ser_no'] ?? '').trim() || `course-${index}`
           const cou_cname = String(row['cou_cname'] ?? '').trim()
           const cou_ename = String(row['cou_ename'] ?? '').trim()

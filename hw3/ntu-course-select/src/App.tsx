@@ -4,7 +4,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import { CourseProvider } from './context/CourseContext'
 import { theme } from './theme/theme'
 import Home from './pages/Home'
-import CourseResultsTest from './pages/CourseResultsTest'
+import CourseResultsSimple from './pages/CourseResultsSimple'
 import Recommendations from './pages/Recommendations'
 import Favorites from './pages/Favorites'
 import SelectionStaging from './pages/SelectionStaging'
@@ -22,7 +22,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/results" element={<CourseResultsTest />} />
+            <Route path="/results" element={<CourseResultsSimple />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/staging" element={<SelectionStaging />} />
