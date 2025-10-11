@@ -28,11 +28,15 @@ function mapRowToCourse(row: Record<string, unknown>): Course | null {
   const ser_no = String(row['ser_no'] ?? '').trim()
   const cou_cname = String(row['cou_cname'] ?? '').trim()
   const cou_ename = String(row['cou_ename'] ?? '').trim()
+  const cou_code = String(row['cou_code'] ?? '').trim()
   
-  if (!ser_no || (!cou_cname && !cou_ename)) return null
+  // Generate ser_no if it's empty, using cou_code as fallback
+  const finalSerNo = ser_no || cou_code || `course-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  
+  if (!finalSerNo || (!cou_cname && !cou_ename)) return null
 
   const course: Course = {
-    ser_no,
+    ser_no: finalSerNo,
     cou_code: String(row['cou_code'] ?? '').trim(),
     cou_cname,
     cou_ename,
@@ -100,7 +104,7 @@ export interface UseCourseDataOptions {
 }
 
 export function useCourseData(options?: UseCourseDataOptions) {
-  const defaultCandidates = ['/src/public/data/hw3-ntucourse-data-1002.csv', '/data/hw3-ntucourse-data-1002.csv', '/data/courses.csv']
+  const defaultCandidates = ['/data/hw3-ntucourse-data-1002.csv', '/data/courses.csv']
   const csvCandidates = options?.csvPath ? [options.csvPath, ...defaultCandidates] : defaultCandidates
   const [courses, setCourses] = useState<Course[]>([])
   const [isLoading, setIsLoading] = useState(true)

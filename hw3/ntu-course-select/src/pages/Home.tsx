@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
+import CSVTest from '../components/CSVTest'
+import CourseDataTest from '../components/CourseDataTest'
+import SearchTest from '../components/SearchTest'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -186,6 +189,13 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Test Components - Temporary for debugging */}
+        <div className="mt-8 space-y-4">
+          <CSVTest />
+          <CourseDataTest />
+          <SearchTest />
         </div>
       </div>
     </div>
