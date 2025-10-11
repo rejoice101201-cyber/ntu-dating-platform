@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Box, Typography, Button, Alert } from '@mui/material'
 import Papa from 'papaparse'
-import { mapRowToCourse } from '../hooks/useCourseData'
 
 export default function CourseDataDebug() {
   const [status, setStatus] = useState('Testing CSV loading...')
@@ -21,12 +20,17 @@ export default function CourseDataDebug() {
           console.log('CSV loaded successfully:', results.data.length, 'rows')
           console.log('First few rows:', results.data.slice(0, 3))
           
-          // Test mapping
-          const mapped = results.data.slice(0, 5).map(mapRowToCourse).filter(Boolean)
-          console.log('Mapped courses:', mapped)
+          // Test mapping - simplified version
+          const sampleData = results.data.slice(0, 5).map((row: any) => ({
+            cou_cname: row.cou_cname || row.cou_ename || 'No name',
+            tea_cname: row.tea_cname || row.tea_ename || '—',
+            ser_no: row.ser_no || '—',
+            timeSlots: []
+          }))
+          console.log('Sample data:', sampleData)
           
-          setData(mapped)
-          setStatus(`✅ CSV loaded successfully! ${results.data.length} rows found, ${mapped.length} valid courses.`)
+          setData(sampleData)
+          setStatus(`✅ CSV loaded successfully! ${results.data.length} rows found, ${sampleData.length} sample courses.`)
         },
         error: (error) => {
           console.error('CSV loading error:', error)

@@ -17,7 +17,6 @@ import {
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import useCourseData from '../hooks/useCourseData'
 import { useCourseContext } from '../context/CourseContext'
-import CourseDataDebug from '../components/CourseDataDebug'
 
 const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
 const PERIODS = ['', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
@@ -144,7 +143,6 @@ export default function CourseResults() {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-      <CourseDataDebug />
       {/* Header */}
       <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
@@ -294,6 +292,9 @@ export default function CourseResults() {
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600 }}>
             搜尋結果: {filteredCourses.length} 門課程
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575' }}>
+            總課程數: {courses.length} | 關鍵字: "{keyword}" | 類別: "{selectedCategory || '全部'}"
           </Typography>
         </Box>
 
