@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
 import { CourseProvider } from './context/CourseContext'
+import { theme } from './theme/theme'
 import Home from './pages/Home'
 import CourseResults from './pages/CourseResults'
 import Recommendations from './pages/Recommendations'
@@ -13,9 +16,10 @@ import './App.css'
 
 function App() {
   return (
-    <CourseProvider>
-      <Router>
-        <div className="min-h-screen bg-white antialiased">
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <CourseProvider>
+        <Router>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/results" element={<CourseResults />} />
@@ -27,9 +31,9 @@ function App() {
             <Route path="/help" element={<Help />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
-        </div>
-      </Router>
-    </CourseProvider>
+        </Router>
+      </CourseProvider>
+    </ThemeProvider>
   )
 }
 

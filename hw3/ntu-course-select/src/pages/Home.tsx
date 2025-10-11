@@ -1,8 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Box,
+  Chip,
+  Paper,
+} from '@mui/material'
+import { Search } from '@mui/icons-material'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -14,189 +25,226 @@ export default function Home() {
     }
   }
 
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      handleSearch()
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header - 完全按照官方設計，沒有藍色標題 */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">臺大課程網</h1>
-            </div>
-            <nav className="flex space-x-8">
-              <a href="/" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">課程資訊</a>
-              <a href="/results" className="text-gray-600 hover:text-gray-900">選課結果</a>
-              <a href="/recommendations" className="text-gray-600 hover:text-gray-900">推薦課程</a>
-              <a href="/favorites" className="text-gray-600 hover:text-gray-900">我的收藏</a>
-            </nav>
-          </div>
-        </div>
-      </header>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      {/* Header */}
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
+        <Toolbar>
+          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+            臺大課程網
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+              課程資訊
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+              選課結果
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+              推薦課程
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+              我的收藏
+            </Typography>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Course Categories - 完全按照官方設計 */}
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            {['系所', '通識/溝通', '共同/新生', '體育/國防', '學程', '進階英語'].map((category) => (
-              <button
-                key={category}
-                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                  category === '系所'
-                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Search Section */}
+        <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
+          {/* Filter Categories */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+            <Chip label="系所" variant="outlined" size="small" />
+            <Chip label="通識/溝通" variant="outlined" size="small" />
+            <Chip label="共同/新生" variant="outlined" size="small" />
+            <Chip label="體育/國防" variant="outlined" size="small" />
+            <Chip label="學程" variant="outlined" size="small" />
+            <Chip label="進階英語" variant="outlined" size="small" />
+          </Box>
 
-        {/* Search Section - 完全按照官方設計 */}
-        <div className="bg-white border border-gray-200 p-4 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">關鍵字</label>
-            <div className="flex-1 relative">
-              <Input
-                placeholder="搜尋課程名稱/教師/流水號"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="pr-12"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button
-                size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700"
-                onClick={handleSearch}
-              >
-                <Search className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">114-1</span>
-              <button className="px-3 py-1 bg-blue-100 text-blue-800 rounded border border-blue-200 hover:bg-blue-200">
-                上課時間
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                加選方式
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                其他限制
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                排除關鍵字
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                模糊搜尋
-              </button>
-              <button className="px-3 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50">
-                清除
-              </button>
-            </div>
-          </div>
-        </div>
+          {/* Search Bar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#757575', minWidth: '60px' }}>
+              關鍵字
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="搜尋課程名稱/教師/流水號"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              size="small"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#ffffff',
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<Search />}
+              onClick={handleSearch}
+              sx={{
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                },
+                minWidth: '120px',
+              }}
+            >
+              搜尋
+            </Button>
+          </Box>
 
-        {/* Main Title - 完全按照官方設計 */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">114學年度第一學期</h2>
-          <h3 className="text-xl font-semibold text-gray-800">選課流程</h3>
-        </div>
+          {/* Advanced Filters */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip label="上課時間" variant="outlined" size="small" />
+            <Chip label="加選方式" variant="outlined" size="small" />
+            <Chip label="其他限制" variant="outlined" size="small" />
+            <Chip label="排除關鍵字" variant="outlined" size="small" />
+            <Chip label="模糊搜尋" variant="outlined" size="small" />
+            <Chip label="清除" variant="outlined" size="small" />
+          </Box>
+        </Paper>
 
-        {/* Selection Timeline - 橫向四個框框布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Main Title */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600, mb: 1 }}>
+            114學年度第一學期
+          </Typography>
+          <Typography variant="h5" sx={{ color: '#424242', fontWeight: 500 }}>
+            選課流程
+          </Typography>
+        </Box>
+
+        {/* Course Selection Timeline - 橫向四個框框 */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
           {/* 初選一階 */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">初選一階</h3>
-              <div className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
-                08.18 → 08.20
-              </div>
-            </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>開放一階預選<br/>8.1(五) → 8.17(日)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>二階選課<br/>8.18(一) → 8.20(三)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>公布一階結果<br/>8.22(五) 15:00</span>
-              </div>
-            </div>
-          </div>
+          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
+                初選一階
+              </Typography>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Chip
+                  label="08.18 → 08.20"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#e3f2fd',
+                    color: '#1976d2',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+              <Box sx={{ '& > *': { mb: 1 } }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  開放一階預選: 8.1(五) → 8.17(日)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  二階選課: 8.18(一) → 8.20(三)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  公布一階結果: 8.22(五) 15:00
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* 初選二階 */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">初選二階</h3>
-              <div className="text-sm font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
-                08.25 → 08.26
-              </div>
-            </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>開放一階預選<br/>8.22(五) → 8.24(日)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>二階選課<br/>8.25(一) → 8.26(三)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>公布一階結果<br/>8.28(五) 15:00</span>
-              </div>
-            </div>
-          </div>
+          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
+                初選二階
+              </Typography>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Chip
+                  label="08.25 → 08.26"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#e8f5e8',
+                    color: '#2e7d32',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+              <Box sx={{ '& > *': { mb: 1 } }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  開放一階預選: 8.22(五) → 8.24(日)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  二階選課: 8.25(一) → 8.26(三)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  公布一階結果: 8.28(五) 15:00
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* 網路加退選 */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">網路加退選</h3>
-              <div className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full inline-block">
-                09.01 → 09.15
-              </div>
-            </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>第一週加退選<br/>9.1(一) → 9.7(日)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>第二週加退選<br/>9.8(一) → 9.15(一)</span>
-              </div>
-            </div>
-          </div>
+          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
+                網路加退選
+              </Typography>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Chip
+                  label="09.01 → 09.15"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#fff3e0',
+                    color: '#f57c00',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+              <Box sx={{ '& > *': { mb: 1 } }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  第一週加退選: 9.1(一) → 9.7(日)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  第二週加退選: 9.8(一) → 9.15(一)
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
           {/* 選課結果確認 */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">選課結果確認</h3>
-              <div className="text-sm font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full inline-block">
-                09.17 → 09.19
-              </div>
-            </div>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>選課結果確認<br/>9.17(三) → 9.19(五)</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>停修<br/>9.17(三) → 12.5(五)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
+          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
+            <CardContent sx={{ p: 3 }}>
+              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
+                選課結果確認
+              </Typography>
+              <Box sx={{ textAlign: 'center', mb: 3 }}>
+                <Chip
+                  label="09.17 → 09.19"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#f3e5f5',
+                    color: '#7b1fa2',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+              <Box sx={{ '& > *': { mb: 1 } }}>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  選課結果確認: 9.17(三) → 9.19(五)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
+                  停修: 9.17(三) → 12.5(五)
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      </Container>
+    </Box>
   )
 }
