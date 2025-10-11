@@ -49,34 +49,62 @@ export default function CourseResultsWithData() {
         const csvText = await response.text()
         console.log('CSV 載入成功，長度:', csvText.length)
         
-        // 簡單的 CSV 解析
+        // 改善的 CSV 解析
         const lines = csvText.split('\n')
         const headers = lines[0].split(',')
         console.log('CSV 標題:', headers.slice(0, 10)) // 只顯示前10個標題
         
         const parsedCourses: SimpleCourse[] = []
         
-        // 只解析前 20 行數據
-        for (let i = 1; i <= Math.min(20, lines.length - 1); i++) {
+        // 解析前 100 行數據
+        for (let i = 1; i <= Math.min(100, lines.length - 1); i++) {
           const line = lines[i]
           if (!line.trim()) continue
           
-          const values = line.split(',')
+          // 簡單的 CSV 解析，處理引號
+          const values: string[] = []
+          let current = ''
+          let inQuotes = false
+          
+          for (let j = 0; j < line.length; j++) {
+            const char = line[j]
+            if (char === '"') {
+              inQuotes = !inQuotes
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim())
+              current = ''
+            } else {
+              current += char
+            }
+          }
+          values.push(current.trim()) // 添加最後一個值
+          
           if (values.length < headers.length) continue
           
           const course: SimpleCourse = {
-            ser_no: values[1]?.trim() || `course-${i}`,
-            cou_cname: values[12]?.trim() || '',
-            cou_ename: values[13]?.trim() || '',
-            tea_cname: values[17]?.trim() || '',
-            cou_code: values[6]?.trim() || '',
-            credit: parseInt(values[7]) || 0,
-            dpt_code: values[3]?.trim() || ''
+            ser_no: values[1]?.trim() || `course-${i}`, // ser_no (index 1)
+            cou_cname: values[12]?.trim() || '', // cou_cname (index 12)
+            cou_ename: values[13]?.trim() || '', // cou_ename (index 13)
+            tea_cname: values[16]?.trim() || '', // tea_cname (index 16)
+            cou_code: values[5]?.trim() || '', // cou_code (index 5)
+            credit: parseInt(values[7]) || 0, // credit (index 7)
+            dpt_code: values[3]?.trim() || '' // dpt_code (index 3)
           }
           
           // 只添加有課程名稱的課程
           if (course.cou_cname) {
             parsedCourses.push(course)
+            // 調試：顯示前幾個課程的詳細信息
+            if (parsedCourses.length <= 3) {
+              console.log(`課程 ${parsedCourses.length}:`, {
+                ser_no: course.ser_no,
+                cou_cname: course.cou_cname,
+                tea_cname: course.tea_cname,
+                cou_code: course.cou_code,
+                credit: course.credit,
+                dpt_code: course.dpt_code
+              })
+            }
           }
         }
         
