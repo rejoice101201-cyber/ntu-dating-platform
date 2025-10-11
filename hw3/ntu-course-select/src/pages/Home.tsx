@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
+import EmergencyDebug from '../components/EmergencyDebug'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      <EmergencyDebug />
       {/* Header - 完全按照官方設計，沒有藍色標題 */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
