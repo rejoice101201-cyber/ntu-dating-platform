@@ -80,7 +80,7 @@ export default function Home() {
         <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
           {/* Filter Categories */}
           <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-            {['系所', '通識', '共同', '體育', '學程', '英語'].map((filter) => (
+            {['共同必修', '專題研究', '服務學習', '體育運動', '數學', '物理'].map((filter) => (
               <Chip
                 key={filter}
                 label={filter}
@@ -129,7 +129,7 @@ export default function Home() {
 
           {/* Advanced Filters */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {['必修', '選修', '有教師', '有先修'].map((filter) => (
+            {['化學', '生物', '經濟', '心理'].map((filter) => (
               <Chip
                 key={filter}
                 label={filter}
