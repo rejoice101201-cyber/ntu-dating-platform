@@ -40,7 +40,7 @@ export default function Selection() {
     
     // 模擬選課過程
     setTimeout(() => {
-      const result = runLottery(selectedCourses, selectionProbability / 100, maxCourses)
+      const result = runLottery(selectedCourses)
       navigate('/final-results', { state: { selectedCourses: result } })
     }, 2000)
   }

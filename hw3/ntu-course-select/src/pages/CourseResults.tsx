@@ -30,6 +30,10 @@ interface FullCourse {
   mark: string
   co_rep: string
   pre_course: string
+  probability?: number
+  priority?: number
+  time?: string
+  classroom?: string
 }
 
 export default function CourseResults() {
@@ -102,7 +106,11 @@ export default function CourseResults() {
             co_tp: values[8]?.trim() || '',
             mark: values[9]?.trim() || '',
             co_rep: values[10]?.trim() || '',
-            pre_course: values[11]?.trim() || ''
+            pre_course: values[11]?.trim() || '',
+            // 模擬機率：根據課程類型設定不同機率
+            probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
+            time: values[16]?.trim() || '', // 假設第16欄是時間
+            classroom: values[17]?.trim() || '' // 假設第17欄是教室
           }
           
           // 只包含有課程名稱和教師的課程
@@ -267,7 +275,7 @@ export default function CourseResults() {
             </Typography>
             <TextField
               fullWidth
-              placeholder="搜尋課程名稱/教師/流水號"
+                placeholder="搜尋課程名稱/教師/流水號"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -278,7 +286,7 @@ export default function CourseResults() {
                 },
               }}
             />
-            <Button
+                  <Button
               variant="contained"
               startIcon={<Search />}
               onClick={handleSearch}
@@ -291,7 +299,7 @@ export default function CourseResults() {
               }}
             >
               搜尋
-            </Button>
+                  </Button>
           </Box>
         </Paper>
 
@@ -346,8 +354,8 @@ export default function CourseResults() {
                       {favorites.has(getCourseUniqueId(course)) ? <Favorite /> : <FavoriteBorder />}
                     </IconButton>
                   </Box>
-                </CardContent>
-              </Card>
+            </CardContent>
+          </Card>
             ))
           )}
         </Box>

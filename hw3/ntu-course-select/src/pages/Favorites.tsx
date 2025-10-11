@@ -4,22 +4,26 @@ import {
   Container, 
   Typography, 
   Box, 
-  Button, 
+  Button,
   Paper,
   AppBar,
   Toolbar,
   IconButton,
   Card,
   CardContent,
-  Fab
+  Fab,
+  TextField,
+  Chip
 } from '@mui/material'
-import { Favorite, ArrowBack, KeyboardArrowUp, Upload } from '@mui/icons-material'
+import { Favorite, ArrowBack, KeyboardArrowUp, Upload, Edit, Save, Cancel } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 
 export default function Favorites() {
   const navigate = useNavigate()
-  const { favorites, removeFromFavorites, favoriteCourses } = useCourseContext()
+  const { favorites, removeFromFavorites, favoriteCourses, updateCoursePriority } = useCourseContext()
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [editingPriority, setEditingPriority] = useState<string | null>(null)
+  const [tempPriority, setTempPriority] = useState<number>(1)
 
   const handleScroll = () => {
     setShowScrollTop(window.scrollY > 300)
@@ -27,6 +31,22 @@ export default function Favorites() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleEditPriority = (courseId: string, currentPriority?: number) => {
+    setEditingPriority(courseId)
+    setTempPriority(currentPriority || 1)
+  }
+
+  const handleSavePriority = (courseId: string) => {
+    if (tempPriority >= 1 && tempPriority <= 20) {
+      updateCoursePriority(courseId, tempPriority)
+    }
+    setEditingPriority(null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingPriority(null)
   }
 
   const handleImportToSelection = () => {
@@ -127,9 +147,58 @@ export default function Favorites() {
                         <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
                           {course?.cou_ename}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#757575' }}>
+                        <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
                           教師: {course?.tea_cname} | 課程代碼: {course?.cou_code} | 學分: {course?.credit}
                         </Typography>
+                        
+                        {/* 志願序設定 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                          <Typography variant="body2" sx={{ color: '#666', minWidth: '60px' }}>
+                            志願序:
+                          </Typography>
+                          {editingPriority === course?.ser_no ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <TextField
+                                type="number"
+                                value={tempPriority}
+                                onChange={(e) => setTempPriority(parseInt(e.target.value) || 1)}
+                                inputProps={{ min: 1, max: 20 }}
+                                size="small"
+                                sx={{ width: '80px' }}
+                              />
+                              <IconButton
+                                size="small"
+                                onClick={() => handleSavePriority(course?.ser_no)}
+                                sx={{ color: '#4caf50' }}
+                              >
+                                <Save fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={handleCancelEdit}
+                                sx={{ color: '#f44336' }}
+                              >
+                                <Cancel fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ) : (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                label={course?.priority ? `第 ${course.priority} 志願` : '未設定'}
+                                size="small"
+                                color={course?.priority ? 'primary' : 'default'}
+                                variant={course?.priority ? 'filled' : 'outlined'}
+                              />
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditPriority(course?.ser_no, course?.priority)}
+                                sx={{ color: '#1976d2' }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          )}
+                        </Box>
                       </Box>
                       
                       <IconButton
