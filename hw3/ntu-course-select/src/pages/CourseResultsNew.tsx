@@ -151,35 +151,51 @@ export default function CourseResultsNew() {
       )
     }
     
-    // 篩選按鈕邏輯
+    // 篩選按鈕邏輯 - 基於實際 CSV 數據結構
     selectedFilters.forEach(filter => {
       switch (filter) {
         case '系所':
-          filtered = filtered.filter(c => c.dpt_code && c.dpt_code.length > 0)
+          // 系所課程：有具體系所代碼且不是共同必修
+          filtered = filtered.filter(c => 
+            c.dpt_code && 
+            c.dpt_code.length > 0 && 
+            !c.dpt_abbr.includes('Common') &&
+            !c.cou_cname.includes('領域') &&
+            !c.cou_cname.includes('共同')
+          )
           break
         case '通識':
+          // 通識課程：課程名稱包含"通識"或系所代碼為通識相關
           filtered = filtered.filter(c => 
             c.cou_cname.includes('通識') || 
             c.cou_ename.toLowerCase().includes('general') ||
-            c.dpt_abbr.includes('通識')
+            c.dpt_abbr.includes('通識') ||
+            c.cou_cname.includes('通識教育')
           )
           break
         case '共同':
+          // 共同必修：包含"共同"、"國文領域"、"外文領域"等
           filtered = filtered.filter(c => 
             c.cou_cname.includes('共同') || 
-            c.cou_cname.includes('國文') || 
+            c.cou_cname.includes('國文領域') || 
+            c.cou_cname.includes('外文領域') ||
+            c.cou_cname.includes('國文') ||
             c.cou_cname.includes('英文') ||
-            c.dpt_abbr.includes('Common')
+            c.dpt_abbr.includes('Common') ||
+            c.co_rep.includes('共同必修')
           )
           break
         case '體育':
+          // 體育課程：課程名稱包含"體育"或相關英文
           filtered = filtered.filter(c => 
             c.cou_cname.includes('體育') || 
             c.cou_ename.toLowerCase().includes('physical') ||
+            c.cou_ename.toLowerCase().includes('sport') ||
             c.dpt_abbr.includes('體育')
           )
           break
         case '學程':
+          // 學程課程：課程名稱包含"學程"或相關英文
           filtered = filtered.filter(c => 
             c.cou_cname.includes('學程') || 
             c.cou_ename.toLowerCase().includes('program') ||
@@ -187,26 +203,34 @@ export default function CourseResultsNew() {
           )
           break
         case '英語':
+          // 英語課程：課程名稱包含"英語"、"英文"或相關英文
           filtered = filtered.filter(c => 
             c.cou_cname.includes('英語') || 
+            c.cou_cname.includes('英文') ||
             c.cou_ename.toLowerCase().includes('english') ||
-            c.cou_code.includes('ENGL')
+            c.cou_ename.toLowerCase().includes('language') ||
+            c.cou_code.includes('ENGL') ||
+            c.cou_code.includes('LANG')
           )
           break
         case '必修':
+          // 必修課程：co_tp 或 mark 為 '1'
           filtered = filtered.filter(c => 
             c.co_tp === '1' || c.mark === '1' || c.co_rep.includes('必修')
           )
           break
         case '選修':
+          // 選修課程：co_tp 或 mark 為 '0'
           filtered = filtered.filter(c => 
             c.co_tp === '0' || c.mark === '0' || c.co_rep.includes('選修')
           )
           break
         case '有教師':
+          // 有指定教師的課程
           filtered = filtered.filter(c => c.tea_cname && c.tea_cname.length > 0)
           break
         case '有先修':
+          // 有先修課程要求的課程
           filtered = filtered.filter(c => c.pre_course && c.pre_course.length > 0)
           break
       }
@@ -419,6 +443,11 @@ export default function CourseResultsNew() {
         <Typography variant="body2" sx={{ color: '#666' }}>
           📊 總課程數: {courses.length} | 過濾後: {filteredCourses.length} | 搜尋: "{searchKeyword}" | 篩選: [{selectedFilters.join(', ')}]
         </Typography>
+        {filteredCourses.length > 0 && (
+          <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+            🔍 前3門課程: {filteredCourses.slice(0, 3).map(c => c.cou_cname).join(', ')}
+          </Typography>
+        )}
       </Box>
 
       {/* 課程列表 */}
