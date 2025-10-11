@@ -281,16 +281,16 @@ export default function CourseResultsNew() {
   }
 
   const handleFilterToggle = (filter: string) => {
-    // 計算新的篩選狀態
+    // 單選模式：如果點擊已選中的篩選，則取消；否則選擇新的篩選
     const newFilters = selectedFilters.includes(filter) 
-      ? selectedFilters.filter(f => f !== filter)
-      : [...selectedFilters, filter]
+      ? [] // 取消當前篩選
+      : [filter] // 只選擇一個篩選
     
-    console.log('🔄 Filter Toggle:', {
+    console.log('🔄 Filter Toggle (Single Select):', {
       clicked: filter,
       oldFilters: selectedFilters,
       newFilters: newFilters,
-      action: selectedFilters.includes(filter) ? 'REMOVE' : 'ADD'
+      action: selectedFilters.includes(filter) ? 'CLEAR' : 'SELECT'
     })
     
     // 更新狀態
@@ -478,8 +478,8 @@ export default function CourseResultsNew() {
             </Typography>
           </Paper>
         ) : (
-          filteredCourses.map((course) => (
-            <Card key={course.ser_no} elevation={1} sx={{ borderRadius: 2 }}>
+          filteredCourses.map((course, index) => (
+            <Card key={`${course.ser_no}-${course.cou_code}-${index}`} elevation={1} sx={{ borderRadius: 2 }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                   <Box sx={{ flex: 1 }}>

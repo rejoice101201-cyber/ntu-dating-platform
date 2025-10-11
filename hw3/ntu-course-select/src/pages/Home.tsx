@@ -32,10 +32,11 @@ export default function Home() {
   }
 
   const handleFilterToggle = (filter: string) => {
+    // 單選模式：如果點擊已選中的篩選，則取消；否則選擇新的篩選
     setSelectedFilters(prev => 
       prev.includes(filter) 
-        ? prev.filter(f => f !== filter)
-        : [...prev, filter]
+        ? [] // 取消當前篩選
+        : [filter] // 只選擇一個篩選
     )
   }
 
