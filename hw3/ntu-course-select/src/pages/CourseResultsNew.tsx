@@ -216,7 +216,34 @@ export default function CourseResultsNew() {
   }, [courses, searchKeyword, selectedFilters])
 
   const handleSearch = () => {
-    navigate(`/results?keyword=${encodeURIComponent(searchKeyword)}`)
+    const searchParams = new URLSearchParams()
+    if (searchKeyword.trim()) {
+      searchParams.set('keyword', searchKeyword.trim())
+    }
+    if (selectedFilters.length > 0) {
+      searchParams.set('filters', selectedFilters.join(','))
+    }
+    navigate(`/results?${searchParams.toString()}`, { replace: true })
+  }
+
+  // 即時搜尋功能
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const searchParams = new URLSearchParams()
+      if (searchKeyword.trim()) {
+        searchParams.set('keyword', searchKeyword.trim())
+      }
+      if (selectedFilters.length > 0) {
+        searchParams.set('filters', selectedFilters.join(','))
+      }
+      navigate(`/results?${searchParams.toString()}`, { replace: true })
+    }, 500) // 500ms 延遲
+
+    return () => clearTimeout(timeoutId)
+  }, [searchKeyword, selectedFilters, navigate])
+
+  const handleKeywordChange = (value: string) => {
+    setSearchKeyword(value)
   }
 
   const handleFilterToggle = (filter: string) => {
@@ -225,11 +252,26 @@ export default function CourseResultsNew() {
         ? prev.filter(f => f !== filter)
         : [...prev, filter]
     )
+    // 即時更新 URL 參數
+    const newFilters = selectedFilters.includes(filter) 
+      ? selectedFilters.filter(f => f !== filter)
+      : [...selectedFilters, filter]
+    
+    const searchParams = new URLSearchParams()
+    if (searchKeyword.trim()) {
+      searchParams.set('keyword', searchKeyword.trim())
+    }
+    if (newFilters.length > 0) {
+      searchParams.set('filters', newFilters.join(','))
+    }
+    navigate(`/results?${searchParams.toString()}`, { replace: true })
   }
 
   const clearFilters = () => {
     setSelectedFilters([])
     setSearchKeyword('')
+    // 即時清除 URL 參數
+    navigate('/results', { replace: true })
   }
 
   if (isLoading) {
@@ -303,7 +345,7 @@ export default function CourseResultsNew() {
             variant="outlined"
             placeholder="搜尋課程名稱、教師、課程代碼..."
             value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+            onChange={(e) => handleKeywordChange(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             sx={{ 
               flex: 1,
