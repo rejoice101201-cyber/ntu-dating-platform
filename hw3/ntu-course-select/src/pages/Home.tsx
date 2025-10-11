@@ -14,7 +14,6 @@ import {
   Chip,
 } from '@mui/material'
 import { Search } from '@mui/icons-material'
-import FavoritesTest from '../components/FavoritesTest'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -236,9 +235,6 @@ export default function Home() {
             </CardContent>
           </Card>
         </Box>
-
-        {/* 測試組件 - 暫時用於驗證最愛功能 */}
-        <FavoritesTest />
       </Container>
     </Box>
   )
