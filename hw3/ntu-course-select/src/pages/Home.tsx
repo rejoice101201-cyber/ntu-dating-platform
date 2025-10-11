@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
-import EmergencyDebug from '../components/EmergencyDebug'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -17,7 +16,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <EmergencyDebug />
       {/* Header - 完全按照官方設計，沒有藍色標題 */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -107,84 +105,92 @@ export default function Home() {
           <h3 className="text-xl font-semibold text-gray-800">選課流程</h3>
         </div>
 
-        {/* Selection Timeline - 完全按照官方設計，更緊湊的布局 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Selection Timeline - 橫向四個框框布局 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* 初選一階 */}
-          <div className="bg-white border border-gray-200 rounded p-4">
-            <div className="mb-3">
-              <h3 className="text-base font-semibold text-gray-800 mb-1">初選一階</h3>
-              <div className="text-sm font-medium text-blue-600">08.18 → 08.20</div>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">初選一階</h3>
+              <div className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
+                08.18 → 08.20
+              </div>
             </div>
-            <div className="space-y-1 text-xs text-gray-700">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>開放一階預選: 8.1(五) → 8.17(日)</span>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>開放一階預選<br/>8.1(五) → 8.17(日)</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>二階選課: 8.18(一) → 8.20(三)</span>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>二階選課<br/>8.18(一) → 8.20(三)</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>公布一階結果: 8.22(五) 15:00</span>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>公布一階結果<br/>8.22(五) 15:00</span>
               </div>
             </div>
           </div>
 
           {/* 初選二階 */}
-          <div className="bg-white border border-gray-200 rounded p-4">
-            <div className="mb-3">
-              <h3 className="text-base font-semibold text-gray-800 mb-1">初選二階</h3>
-              <div className="text-sm font-medium text-blue-600">08.25 → 08.26</div>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">初選二階</h3>
+              <div className="text-sm font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-block">
+                08.25 → 08.26
+              </div>
             </div>
-            <div className="space-y-1 text-xs text-gray-700">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>開放一階預選: 8.22(五) → 8.24(日)</span>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>開放一階預選<br/>8.22(五) → 8.24(日)</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>二階選課: 8.25(一) → 8.26(三)</span>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>二階選課<br/>8.25(一) → 8.26(三)</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>公布一階結果: 8.28(五) 15:00</span>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>公布一階結果<br/>8.28(五) 15:00</span>
               </div>
             </div>
           </div>
 
           {/* 網路加退選 */}
-          <div className="bg-white border border-gray-200 rounded p-4">
-            <div className="mb-3">
-              <h3 className="text-base font-semibold text-gray-800 mb-1">網路加退選</h3>
-              <div className="text-sm font-medium text-blue-600">08.18 → 08.20</div>
-            </div>
-            <div className="space-y-1 text-xs text-gray-700">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>第一週加退選: 9.1(一) → 9.7(日)</span>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">網路加退選</h3>
+              <div className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full inline-block">
+                09.01 → 09.15
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>第二週加退選: 9.8(一) → 9.15(一)</span>
+            </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>第一週加退選<br/>9.1(一) → 9.7(日)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>第二週加退選<br/>9.8(一) → 9.15(一)</span>
               </div>
             </div>
           </div>
 
           {/* 選課結果確認 */}
-          <div className="bg-white border border-gray-200 rounded p-4">
-            <div className="mb-3">
-              <h3 className="text-base font-semibold text-gray-800 mb-1">選課結果確認</h3>
-              <div className="text-sm font-medium text-blue-600">09.17 → 09.19</div>
-            </div>
-            <div className="space-y-1 text-xs text-gray-700">
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>選課結果確認: 9.17(三) → 9.19(五)</span>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">選課結果確認</h3>
+              <div className="text-sm font-semibold text-purple-600 bg-purple-50 px-3 py-1 rounded-full inline-block">
+                09.17 → 09.19
               </div>
-              <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                <span>停修: 9.17(三) → 12.5(五)</span>
+            </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>選課結果確認<br/>9.17(三) → 9.19(五)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full mt-1.5 flex-shrink-0"></span>
+                <span>停修<br/>9.17(三) → 12.5(五)</span>
               </div>
             </div>
           </div>
