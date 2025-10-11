@@ -15,7 +15,7 @@ import {
   IconButton,
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
-import useCourseData from '../hooks/useCourseData'
+import { useCourseDataSimple } from '../hooks/useCourseDataSimple'
 import { useCourseContext } from '../context/CourseContext'
 
 const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
@@ -29,7 +29,7 @@ function formatTimeSlots(timeSlots?: Array<{day: number, start: number, classroo
 export default function CourseResults() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { courses, isLoading, error } = useCourseData()
+  const { courses, isLoading, error } = useCourseDataSimple()
   const { favorites, toggleFavorite, addToSelected } = useCourseContext()
   
   const [keyword, setKeyword] = useState(searchParams.get('keyword') || '')
