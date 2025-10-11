@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Container, 
@@ -16,7 +16,7 @@ import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material
 import { useCourseDataSimple } from '../hooks/useCourseDataSimple'
 import { useCourseContext } from '../context/CourseContext'
 
-const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
+// const DAYS = ['', '一', '二', '三', '四', '五', '六', '日']
 
 export default function CourseResultsSimple() {
   const [searchParams] = useSearchParams()

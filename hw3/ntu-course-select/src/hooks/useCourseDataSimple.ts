@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Papa from 'papaparse'
-import { Course } from '../types/course'
+import type { Course } from '../types/course'
 
 export function useCourseDataSimple() {
   const [courses, setCourses] = useState<Course[]>([])
@@ -28,6 +28,7 @@ export function useCourseDataSimple() {
           const tea_ename = String(row['tea_ename'] ?? '').trim()
           const cou_code = String(row['cou_code'] ?? '').trim()
           const dpt_code = String(row['dpt_code'] ?? '').trim()
+          const dpt_abbr = String(row['dpt_abbr'] ?? '').trim() || dpt_code
           const credit = Number(row['credit']) || 0
           const limit = Number(row['limit']) || 0
           const co_rep = String(row['co_rep'] ?? '').trim()
@@ -40,6 +41,7 @@ export function useCourseDataSimple() {
             tea_cname,
             tea_ename,
             dpt_code,
+            dpt_abbr,
             credit,
             limit,
             co_rep,
