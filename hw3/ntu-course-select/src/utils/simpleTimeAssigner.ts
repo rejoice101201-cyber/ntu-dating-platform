@@ -5,42 +5,52 @@
 // 星期編碼 (1-5 對應星期一到星期五)
 const DAYS = ['1', '2', '3', '4', '5']
 
-// 時間段編碼 (1-8 對應第1-8節課，但只使用1-6節課以確保有連續3節課)
-const TIME_SLOTS = ['1', '2', '3', '4', '5', '6']
+// 時間段編碼 (1-8 對應第1-8節課，使用1-8節課以支持更多時段)
+const TIME_SLOTS = ['1', '2', '3', '4', '5', '6', '7', '8']
 
 /**
- * 為課程分配隨機的連續3節課
+ * 為課程分配隨機時段，根據學分數分配對應數量的時段
  */
 export function assignRandomTimeSlots(course: any): any {
   // 使用課程代碼作為種子，確保同一門課程總是得到相同的時間
   const seed = hashString(course.cou_code || course.ser_no)
   const random = seededRandom(seed)
   
+  // 根據學分數決定時段數量
+  const credit = parseInt(course.credit) || 3
+  const timeSlotCount = Math.min(credit, 3) // 最多3個時段
+  
   // 隨機選擇星期
   const dayIndex = Math.floor(random() * DAYS.length)
   const selectedDay = DAYS[dayIndex]
   
-  // 隨機選擇起始時間段 (確保有連續3節課的空間)
-  const maxStartTime = TIME_SLOTS.length - 3 // 最多只能從第4節課開始
+  // 隨機選擇起始時間段 (確保有足夠的連續時段空間)
+  const maxStartTime = TIME_SLOTS.length - timeSlotCount
   const startTimeIndex = Math.floor(random() * (maxStartTime + 1))
-  const startTime = TIME_SLOTS[startTimeIndex]
   
-  // 生成連續3節課
-  const timeSlots = [
-    TIME_SLOTS[startTimeIndex],
-    TIME_SLOTS[startTimeIndex + 1],
-    TIME_SLOTS[startTimeIndex + 2]
-  ]
-  
-  return {
-    ...course,
-    day1: selectedDay,
-    st1: timeSlots[0],
-    day2: selectedDay,
-    st2: timeSlots[1],
-    day3: selectedDay,
-    st3: timeSlots[2]
+  // 生成連續時段
+  const timeSlots: string[] = []
+  for (let i = 0; i < timeSlotCount; i++) {
+    timeSlots.push(TIME_SLOTS[startTimeIndex + i])
   }
+  
+  const result: any = { ...course }
+  
+  // 根據時段數量設置對應的 day/st 字段
+  if (timeSlots.length >= 1) {
+    result.day1 = selectedDay
+    result.st1 = timeSlots[0]
+  }
+  if (timeSlots.length >= 2) {
+    result.day2 = selectedDay
+    result.st2 = timeSlots[1]
+  }
+  if (timeSlots.length >= 3) {
+    result.day3 = selectedDay
+    result.st3 = timeSlots[2]
+  }
+  
+  return result
 }
 
 /**
