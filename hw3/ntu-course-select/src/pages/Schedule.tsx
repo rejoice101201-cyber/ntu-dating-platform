@@ -110,111 +110,87 @@ export default function Schedule() {
         day8: courseWithTime.day8, st8: courseWithTime.st8
       })
       
-      // 嘗試放置課程的所有時段
-      let placedSlots = 0
+      // 檢查課程是否可以放置所有時段
       const requiredSlots = parseInt(course.credit) || 3
+      let canPlaceAll = true
+      const timeSlots = []
       
-      // 嘗試放置時段1
+      // 收集所有需要的時段
       if (courseWithTime.day1 && courseWithTime.st1) {
         const dayIndex = parseInt(courseWithTime.day1) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st1]) {
-          schedule[day][courseWithTime.st1] = course
-          placedSlots++
-          console.log(`✅ 放置時段1: ${day} ${courseWithTime.st1} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st1]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st1} 已被 ${schedule[day][courseWithTime.st1].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st1 })
         }
       }
-      
-      // 嘗試放置時段2
       if (courseWithTime.day2 && courseWithTime.st2) {
         const dayIndex = parseInt(courseWithTime.day2) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st2]) {
-          schedule[day][courseWithTime.st2] = course
-          placedSlots++
-          console.log(`✅ 放置時段2: ${day} ${courseWithTime.st2} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st2]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st2} 已被 ${schedule[day][courseWithTime.st2].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st2 })
         }
       }
-      
-      // 嘗試放置時段3
       if (courseWithTime.day3 && courseWithTime.st3) {
         const dayIndex = parseInt(courseWithTime.day3) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st3]) {
-          schedule[day][courseWithTime.st3] = course
-          placedSlots++
-          console.log(`✅ 放置時段3: ${day} ${courseWithTime.st3} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st3]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st3} 已被 ${schedule[day][courseWithTime.st3].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st3 })
         }
       }
-      
       if (courseWithTime.day4 && courseWithTime.st4) {
-        const dayIndex = parseInt(courseWithTime.day4) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day4) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st4]) {
-          schedule[day][courseWithTime.st4] = course
-          console.log(`✅ 放置時段4: ${day} ${courseWithTime.st4} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st4]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st4} 已被 ${schedule[day][courseWithTime.st4].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st4 })
         }
       }
-      
       if (courseWithTime.day5 && courseWithTime.st5) {
-        const dayIndex = parseInt(courseWithTime.day5) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day5) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st5]) {
-          schedule[day][courseWithTime.st5] = course
-          console.log(`✅ 放置時段5: ${day} ${courseWithTime.st5} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st5]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st5} 已被 ${schedule[day][courseWithTime.st5].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st5 })
         }
       }
-      
       if (courseWithTime.day6 && courseWithTime.st6) {
-        const dayIndex = parseInt(courseWithTime.day6) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day6) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st6]) {
-          schedule[day][courseWithTime.st6] = course
-          console.log(`✅ 放置時段6: ${day} ${courseWithTime.st6} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st6]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st6} 已被 ${schedule[day][courseWithTime.st6].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st6 })
         }
       }
-      
       if (courseWithTime.day7 && courseWithTime.st7) {
-        const dayIndex = parseInt(courseWithTime.day7) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day7) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st7]) {
-          schedule[day][courseWithTime.st7] = course
-          console.log(`✅ 放置時段7: ${day} ${courseWithTime.st7} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st7]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st7} 已被 ${schedule[day][courseWithTime.st7].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st7 })
         }
       }
-      
       if (courseWithTime.day8 && courseWithTime.st8) {
-        const dayIndex = parseInt(courseWithTime.day8) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day8) - 1
         const day = DAYS[dayIndex]
-        if (day && !schedule[day][courseWithTime.st8]) {
-          schedule[day][courseWithTime.st8] = course
-          console.log(`✅ 放置時段8: ${day} ${courseWithTime.st8} = ${course.cou_cname}`)
-        } else if (day && schedule[day][courseWithTime.st8]) {
-          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st8} 已被 ${schedule[day][courseWithTime.st8].cou_cname} 佔用`)
+        if (day) {
+          timeSlots.push({ day, slot: courseWithTime.st8 })
         }
       }
       
-      // 記錄課程放置結果
-      if (placedSlots === requiredSlots) {
-        console.log(`🎉 課程 "${course.cou_cname}" 成功放置所有 ${placedSlots}/${requiredSlots} 個時段`)
-      } else if (placedSlots > 0) {
-        console.log(`⚠️ 課程 "${course.cou_cname}" 部分放置 ${placedSlots}/${requiredSlots} 個時段`)
+      // 檢查所有時段是否都可用
+      for (const timeSlot of timeSlots) {
+        if (schedule[timeSlot.day][timeSlot.slot]) {
+          canPlaceAll = false
+          console.log(`⚠️ 時段衝突: ${timeSlot.day} ${timeSlot.slot} 已被 ${schedule[timeSlot.day][timeSlot.slot].cou_cname} 佔用`)
+          break
+        }
+      }
+      
+      // 只有當所有時段都可用時才放置課程
+      if (canPlaceAll && timeSlots.length >= requiredSlots) {
+        for (const timeSlot of timeSlots) {
+          schedule[timeSlot.day][timeSlot.slot] = course
+          console.log(`✅ 放置時段: ${timeSlot.day} ${timeSlot.slot} = ${course.cou_cname}`)
+        }
+        console.log(`🎉 課程 "${course.cou_cname}" 成功放置所有 ${timeSlots.length} 個時段`)
       } else {
-        console.log(`❌ 課程 "${course.cou_cname}" 無法放置任何時段`)
+        console.log(`❌ 課程 "${course.cou_cname}" 無法放置所有時段，已移除`)
       }
     })
 
