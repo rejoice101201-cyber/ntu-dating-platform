@@ -30,6 +30,10 @@ interface CourseContextValue {
   updateCoursePriority: (courseId: string, priority: number) => void
   // Lottery functionality
   runLottery: (courses: Course[]) => Course[]
+  // Last lottery results (persistent until new lottery)
+  lastLotteryResults: Course[]
+  setLastLotteryResults: (results: Course[]) => void
+  clearLastLotteryResults: () => void
 }
 
 const CourseContext = createContext<CourseContextValue | undefined>(undefined)
@@ -37,11 +41,13 @@ const CourseContext = createContext<CourseContextValue | undefined>(undefined)
 export function CourseProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [favoriteCourses, setFavoriteCourses] = useState<Course[]>([])
+  const [lastLotteryResults, setLastLotteryResults] = useState<Course[]>([])
 
   // Load data from localStorage on mount
   useEffect(() => {
     const savedFavorites = localStorage.getItem('ntu-course-favorites')
     const savedFavoriteCourses = localStorage.getItem('ntu-course-favorite-courses')
+    const savedLastLotteryResults = localStorage.getItem('ntu-course-last-lottery-results')
     
     if (savedFavorites) {
       try {
@@ -60,6 +66,15 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to load favorite courses from localStorage:', error)
       }
     }
+    
+    if (savedLastLotteryResults) {
+      try {
+        const parsed = JSON.parse(savedLastLotteryResults)
+        setLastLotteryResults(parsed)
+      } catch (error) {
+        console.error('Failed to load last lottery results from localStorage:', error)
+      }
+    }
   }, [])
 
   // Save favorites to localStorage whenever it changes
@@ -70,6 +85,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('ntu-course-favorite-courses', JSON.stringify(favoriteCourses))
   }, [favoriteCourses])
+
+  useEffect(() => {
+    localStorage.setItem('ntu-course-last-lottery-results', JSON.stringify(lastLotteryResults))
+  }, [lastLotteryResults])
 
   const addToFavorites = (course: Course) => {
     console.log('Adding to favorites:', course.ser_no, course.cou_cname)
@@ -207,13 +226,20 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     return finalCourses
   }
 
+  const clearLastLotteryResults = () => {
+    setLastLotteryResults([])
+  }
+
   const value: CourseContextValue = {
     favorites,
     addToFavorites,
     removeFromFavorites,
     favoriteCourses,
     updateCoursePriority,
-    runLottery
+    runLottery,
+    lastLotteryResults,
+    setLastLotteryResults,
+    clearLastLotteryResults
   }
 
   return (

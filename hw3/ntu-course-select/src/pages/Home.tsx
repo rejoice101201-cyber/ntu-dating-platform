@@ -14,10 +14,12 @@ import {
   Chip,
 } from '@mui/material'
 import { Search } from '@mui/icons-material'
+import CourseInfoMenu from '../components/CourseInfoMenu'
 
 export default function Home() {
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
+  const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
 
   const handleSearch = () => {
     const searchParams = new URLSearchParams()
@@ -56,18 +58,24 @@ export default function Home() {
           >
             臺大課程網
           </Typography>
-          <Box sx={{ display: 'flex', gap: 3 }}>
+          <Box sx={{ display: 'flex', gap: 3, position: 'relative' }}>
+            <Box sx={{ position: 'relative' }}>
+              <Typography 
+                variant="body1" 
+                sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                onClick={() => setCourseInfoMenuOpen(!courseInfoMenuOpen)}
+              >
+                課程資訊
+              </Typography>
+              <CourseInfoMenu 
+                open={courseInfoMenuOpen} 
+                onClose={() => setCourseInfoMenuOpen(false)} 
+              />
+            </Box>
             <Typography 
               variant="body1" 
               sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
-            >
-              課程資訊
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
+              onClick={() => navigate('/schedule')}
             >
               選課結果
             </Typography>

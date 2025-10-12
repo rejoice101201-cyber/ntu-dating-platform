@@ -19,7 +19,7 @@ import { useCourseContext } from '../context/CourseContext'
 
 export default function Selection() {
   const navigate = useNavigate()
-  const { favoriteCourses, runLottery } = useCourseContext()
+  const { favoriteCourses, runLottery, setLastLotteryResults, clearLastLotteryResults } = useCourseContext()
   const [selectedCourses, setSelectedCourses] = useState(favoriteCourses)
   const [isSelecting, setIsSelecting] = useState(false)
 
@@ -34,9 +34,14 @@ export default function Selection() {
   const handleLottery = async () => {
     setIsSelecting(true)
     
+    // 清除上次的選課結果
+    clearLastLotteryResults()
+    
     // 模擬選課過程
     setTimeout(() => {
       const result = runLottery(selectedCourses)
+      // 保存新的選課結果
+      setLastLotteryResults(result)
       navigate('/final-results', { state: { selectedCourses: result } })
     }, 2000)
   }

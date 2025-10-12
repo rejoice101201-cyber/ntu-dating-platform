@@ -20,6 +20,7 @@ import {
 } from '@mui/material'
 import { ArrowBack, List } from '@mui/icons-material'
 import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
+import { useCourseContext } from '../context/CourseContext'
 
 interface Course {
   ser_no: string
@@ -53,15 +54,19 @@ const DAYS = ['一', '二', '三', '四', '五', '六', '日']
 export default function Schedule() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { lastLotteryResults } = useCourseContext()
   const [courses, setCourses] = useState<Course[]>([])
 
   useEffect(() => {
+    // 優先使用傳遞的課程，否則使用上次的選課結果
     if (location.state?.courses) {
       setCourses(location.state.courses)
+    } else if (lastLotteryResults.length > 0) {
+      setCourses(lastLotteryResults)
     } else {
       navigate('/')
     }
-  }, [location.state, navigate])
+  }, [location.state, lastLotteryResults, navigate])
 
   // 使用真實時間數據安排課程
   const getRealSchedule = () => {

@@ -285,7 +285,7 @@ export default function CourseResults() {
             <Typography 
               variant="body1" 
               sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
+              onClick={() => navigate('/schedule')}
             >
               選課結果
             </Typography>
