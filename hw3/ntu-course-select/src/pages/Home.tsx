@@ -138,125 +138,231 @@ export default function Home() {
           </Typography>
         </Box>
 
-        {/* Course Selection Timeline - 橫向四個框框 */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3 }}>
+        {/* Course Selection Timeline - 填滿整個區域的互動式卡片 */}
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, 
+          gap: 4,
+          minHeight: '400px',
+          width: '100%'
+        }}>
           {/* 初選一階 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                初選一階
-              </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="08.18 → 08.20"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#e3f2fd',
-                    color: '#1976d2',
-                    fontWeight: 600,
-                  }}
-                />
+          <Card 
+            sx={{ 
+              height: '100%', 
+              border: '2px solid #e3f2fd',
+              borderRadius: 3,
+              transition: 'all 0.3s ease-in-out',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 24px rgba(25, 118, 210, 0.15)',
+                borderColor: '#1976d2',
+                backgroundColor: '#f8fbff'
+              }
+            }}
+            onClick={() => navigate('/results')}
+          >
+            <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h5" sx={{ color: '#1976d2', fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                  初選一階
+                </Typography>
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Chip
+                    label="08.18 → 08.20"
+                    size="medium"
+                    sx={{
+                      backgroundColor: '#e3f2fd',
+                      color: '#1976d2',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      px: 2,
+                      py: 1
+                    }}
+                  />
+                </Box>
+                <Box sx={{ '& > *': { mb: 2 } }}>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    開放一階預選: 8.1(五) → 8.17(日)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    二階選課: 8.18(一) → 8.20(三)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    公布一階結果: 8.22(五) 15:00
+                  </Typography>
+                </Box>
               </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  開放一階預選: 8.1(五) → 8.17(日)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  二階選課: 8.18(一) → 8.20(三)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  公布一階結果: 8.22(五) 15:00
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="body2" sx={{ color: '#1976d2', fontWeight: 600 }}>
+                  點擊開始選課 →
                 </Typography>
               </Box>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
           {/* 初選二階 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                初選二階
-              </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="08.25 → 08.26"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#e8f5e8',
-                    color: '#2e7d32',
-                    fontWeight: 600,
-                  }}
-                />
+          <Card 
+            sx={{ 
+              height: '100%', 
+              border: '2px solid #e8f5e8',
+              borderRadius: 3,
+              transition: 'all 0.3s ease-in-out',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 24px rgba(46, 125, 50, 0.15)',
+                borderColor: '#2e7d32',
+                backgroundColor: '#f8fff8'
+              }
+            }}
+            onClick={() => navigate('/results')}
+          >
+            <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h5" sx={{ color: '#2e7d32', fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                  初選二階
+                </Typography>
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Chip
+                    label="08.25 → 08.26"
+                    size="medium"
+                    sx={{
+                      backgroundColor: '#e8f5e8',
+                      color: '#2e7d32',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      px: 2,
+                      py: 1
+                    }}
+                  />
+                </Box>
+                <Box sx={{ '& > *': { mb: 2 } }}>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    開放一階預選: 8.22(五) → 8.24(日)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    二階選課: 8.25(一) → 8.26(三)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    公布二階結果: 8.28(五) 15:00
+                  </Typography>
+                </Box>
               </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  開放一階預選: 8.22(五) → 8.24(日)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  二階選課: 8.25(一) → 8.26(三)
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  公布一階結果: 8.28(五) 15:00
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="body2" sx={{ color: '#2e7d32', fontWeight: 600 }}>
+                  點擊開始選課 →
                 </Typography>
               </Box>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
           {/* 網路加退選 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                網路加退選
-              </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="09.01 → 09.15"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#fff3e0',
-                    color: '#f57c00',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  第一週加退選: 9.1(一) → 9.7(日)
+          <Card 
+            sx={{ 
+              height: '100%', 
+              border: '2px solid #fff3e0',
+              borderRadius: 3,
+              transition: 'all 0.3s ease-in-out',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 24px rgba(245, 124, 0, 0.15)',
+                borderColor: '#f57c00',
+                backgroundColor: '#fffbf5'
+              }
+            }}
+            onClick={() => navigate('/results')}
+          >
+            <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h5" sx={{ color: '#f57c00', fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                  網路加退選
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  第二週加退選: 9.8(一) → 9.15(一)
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Chip
+                    label="09.01 → 09.15"
+                    size="medium"
+                    sx={{
+                      backgroundColor: '#fff3e0',
+                      color: '#f57c00',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      px: 2,
+                      py: 1
+                    }}
+                  />
+                </Box>
+                <Box sx={{ '& > *': { mb: 2 } }}>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    第一週加退選: 9.1(一) → 9.7(日)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    第二週加退選: 9.8(一) → 9.15(一)
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="body2" sx={{ color: '#f57c00', fontWeight: 600 }}>
+                  點擊開始選課 →
                 </Typography>
               </Box>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
           {/* 選課結果確認 */}
-          <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2, textAlign: 'center' }}>
-                選課結果確認
-              </Typography>
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip
-                  label="09.17 → 09.19"
-                  size="small"
-                  sx={{
-                    backgroundColor: '#f3e5f5',
-                    color: '#7b1fa2',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-              <Box sx={{ '& > *': { mb: 1 } }}>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  選課結果確認: 9.17(三) → 9.19(五)
+          <Card 
+            sx={{ 
+              height: '100%', 
+              border: '2px solid #f3e5f5',
+              borderRadius: 3,
+              transition: 'all 0.3s ease-in-out',
+              cursor: 'pointer',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 24px rgba(123, 31, 162, 0.15)',
+                borderColor: '#7b1fa2',
+                backgroundColor: '#fdf7ff'
+              }
+            }}
+            onClick={() => navigate('/schedule')}
+          >
+            <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h5" sx={{ color: '#7b1fa2', fontWeight: 700, mb: 3, textAlign: 'center' }}>
+                  選課結果確認
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#757575', fontSize: '0.75rem' }}>
-                  停修: 9.17(三) → 12.5(五)
+                <Box sx={{ textAlign: 'center', mb: 4 }}>
+                  <Chip
+                    label="09.17 → 09.19"
+                    size="medium"
+                    sx={{
+                      backgroundColor: '#f3e5f5',
+                      color: '#7b1fa2',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      px: 2,
+                      py: 1
+                    }}
+                  />
+                </Box>
+                <Box sx={{ '& > *': { mb: 2 } }}>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    選課結果確認: 9.17(三) → 9.19(五)
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: '#424242', fontSize: '0.9rem', fontWeight: 500 }}>
+                    停修: 9.17(三) → 12.5(五)
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ textAlign: 'center', mt: 3 }}>
+                <Typography variant="body2" sx={{ color: '#7b1fa2', fontWeight: 600 }}>
+                  查看結果 →
                 </Typography>
               </Box>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </Box>
       </Container>
     </Box>

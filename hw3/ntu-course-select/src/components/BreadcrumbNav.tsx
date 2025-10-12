@@ -32,10 +32,19 @@ export default function BreadcrumbNav({ items }: BreadcrumbNavProps) {
               key={item.label}
               underline="hover"
               color="inherit"
-              href={item.path}
-              onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-                event.preventDefault();
-                navigate(item.path);
+              component="button"
+              onClick={() => navigate(item.path)}
+              sx={{ 
+                cursor: 'pointer',
+                border: 'none',
+                background: 'none',
+                padding: 0,
+                font: 'inherit',
+                color: 'inherit',
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline'
+                }
               }}
             >
               {item.label}
