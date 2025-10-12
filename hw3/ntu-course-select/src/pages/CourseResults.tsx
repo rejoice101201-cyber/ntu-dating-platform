@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
@@ -122,7 +123,7 @@ export default function CourseResults() {
           if (values.length < headers.length) continue
           
           const baseCourse = {
-            ser_no: values[0]?.trim() || `course-${i}-${Date.now()}`,
+            ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
             cou_cname: values[12]?.trim() || '',
             cou_ename: values[13]?.trim() || '',
             tea_cname: values[16]?.trim() || '', // 修正：tea_cname 在第17欄（索引16）
@@ -165,19 +166,25 @@ export default function CourseResults() {
           })))
         }
         
-        // 檢查 ser_no 重複問題
-        const serNoCounts = new Map<string, number>()
-        parsedCourses.forEach(course => {
-          const count = serNoCounts.get(course.ser_no) || 0
-          serNoCounts.set(course.ser_no, count + 1)
+        // 確保 ser_no 唯一性
+        const serNoSet = new Set<string>()
+        const finalCourses = parsedCourses.map((course, index) => {
+          let uniqueSerNo = course.ser_no
+          let counter = 1
+          
+          // 如果 ser_no 重複，添加後綴確保唯一性
+          while (serNoSet.has(uniqueSerNo)) {
+            uniqueSerNo = `${course.ser_no}-${counter}`
+            counter++
+          }
+          
+          serNoSet.add(uniqueSerNo)
+          return { ...course, ser_no: uniqueSerNo }
         })
         
-        const duplicates = Array.from(serNoCounts.entries()).filter(([_, count]) => count > 1)
-        if (duplicates.length > 0) {
-          console.warn('發現重複的 ser_no:', duplicates.slice(0, 5))
-        }
+        console.log(`✅ 課程數據處理完成，共 ${finalCourses.length} 門課程，所有 ser_no 已確保唯一性`)
         
-        setCourses(parsedCourses)
+        setCourses(finalCourses)
         
       } catch (err) {
         console.error('載入課程數據失敗:', err)
