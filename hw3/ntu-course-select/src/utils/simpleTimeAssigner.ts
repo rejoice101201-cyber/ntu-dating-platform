@@ -18,7 +18,7 @@ export function assignRandomTimeSlots(course: any): any {
   
   // 根據學分數決定時段數量
   const credit = parseInt(course.credit) || 3
-  const timeSlotCount = Math.min(credit, 3) // 最多3個時段
+  const timeSlotCount = Math.max(1, Math.min(credit, 8)) // 至少1個時段，最多8個時段
   
   // 隨機選擇星期
   const dayIndex = Math.floor(random() * DAYS.length)
@@ -48,6 +48,26 @@ export function assignRandomTimeSlots(course: any): any {
   if (timeSlots.length >= 3) {
     result.day3 = selectedDay
     result.st3 = timeSlots[2]
+  }
+  if (timeSlots.length >= 4) {
+    result.day4 = selectedDay
+    result.st4 = timeSlots[3]
+  }
+  if (timeSlots.length >= 5) {
+    result.day5 = selectedDay
+    result.st5 = timeSlots[4]
+  }
+  if (timeSlots.length >= 6) {
+    result.day6 = selectedDay
+    result.st6 = timeSlots[5]
+  }
+  if (timeSlots.length >= 7) {
+    result.day7 = selectedDay
+    result.st7 = timeSlots[6]
+  }
+  if (timeSlots.length >= 8) {
+    result.day8 = selectedDay
+    result.st8 = timeSlots[7]
   }
   
   return result

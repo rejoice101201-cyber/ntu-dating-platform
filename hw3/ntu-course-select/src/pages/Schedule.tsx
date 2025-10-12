@@ -19,6 +19,7 @@ import {
   Alert
 } from '@mui/material'
 import { ArrowBack, List } from '@mui/icons-material'
+import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
 
 interface Course {
   ser_no: string
@@ -35,23 +36,16 @@ interface Course {
   pre_course: string
 }
 
-// 台大課表時間對應
+// 台大課表時間對應 (匹配simpleTimeAssigner的1-8節課)
 const TIME_SLOTS = [
-  { period: '0', time: '07:10-08:00' },
   { period: '1', time: '08:10-09:00' },
   { period: '2', time: '09:10-10:00' },
   { period: '3', time: '10:20-11:10' },
   { period: '4', time: '11:20-12:10' },
-  { period: '5', time: '13:20-14:10' },
-  { period: '6', time: '14:20-15:10' },
-  { period: '7', time: '15:30-16:20' },
-  { period: '8', time: '16:30-17:20' },
-  { period: '9', time: '17:30-18:20' },
-  { period: '10', time: '18:25-19:15' },
-  { period: 'A', time: '19:20-20:10' },
-  { period: 'B', time: '20:15-21:05' },
-  { period: 'C', time: '21:10-22:00' },
-  { period: 'D', time: '22:05-22:55' }
+  { period: '5', time: '12:20-13:10' },
+  { period: '6', time: '13:20-14:10' },
+  { period: '7', time: '14:20-15:10' },
+  { period: '8', time: '15:30-16:20' }
 ]
 
 const DAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -69,8 +63,8 @@ export default function Schedule() {
     }
   }, [location.state, navigate])
 
-  // 模擬課程時間安排（實際應該從數據中獲取）
-  const getMockSchedule = () => {
+  // 使用真實時間數據安排課程
+  const getRealSchedule = () => {
     const schedule: { [key: string]: { [key: string]: Course } } = {}
     
     // 初始化空課表
@@ -78,22 +72,101 @@ export default function Schedule() {
       schedule[day] = {}
     })
 
-    // 為每門課程分配隨機時間（模擬）
-    courses.forEach((course, index) => {
-      const dayIndex = index % 5 // 週一到週五
-      const timeIndex = Math.floor(index / 5) * 2 + 1 // 每兩節課一組
+    // 為每門課程分配真實時間
+    courses.forEach((course) => {
+      // 使用時間分配器為課程分配時間
+      const courseWithTime = assignRandomTimeSlots(course)
       
-      if (timeIndex < TIME_SLOTS.length) {
+      console.log(`📅 處理課程: ${course.cou_cname}, 學分: ${course.credit}`)
+      console.log(`📅 分配時間:`, {
+        day1: courseWithTime.day1, st1: courseWithTime.st1,
+        day2: courseWithTime.day2, st2: courseWithTime.st2,
+        day3: courseWithTime.day3, st3: courseWithTime.st3,
+        day4: courseWithTime.day4, st4: courseWithTime.st4,
+        day5: courseWithTime.day5, st5: courseWithTime.st5,
+        day6: courseWithTime.day6, st6: courseWithTime.st6,
+        day7: courseWithTime.day7, st7: courseWithTime.st7,
+        day8: courseWithTime.day8, st8: courseWithTime.st8
+      })
+      
+      // 將課程放置到對應的時間段
+      if (courseWithTime.day1 && courseWithTime.st1) {
+        const dayIndex = parseInt(courseWithTime.day1) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        const timeSlot = TIME_SLOTS[timeIndex]
-        schedule[day][timeSlot.period] = course
+        if (day) {
+          schedule[day][courseWithTime.st1] = course
+          console.log(`✅ 放置時段1: ${day} ${courseWithTime.st1} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day2 && courseWithTime.st2) {
+        const dayIndex = parseInt(courseWithTime.day2) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st2] = course
+          console.log(`✅ 放置時段2: ${day} ${courseWithTime.st2} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day3 && courseWithTime.st3) {
+        const dayIndex = parseInt(courseWithTime.day3) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st3] = course
+          console.log(`✅ 放置時段3: ${day} ${courseWithTime.st3} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day4 && courseWithTime.st4) {
+        const dayIndex = parseInt(courseWithTime.day4) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st4] = course
+          console.log(`✅ 放置時段4: ${day} ${courseWithTime.st4} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day5 && courseWithTime.st5) {
+        const dayIndex = parseInt(courseWithTime.day5) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st5] = course
+          console.log(`✅ 放置時段5: ${day} ${courseWithTime.st5} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day6 && courseWithTime.st6) {
+        const dayIndex = parseInt(courseWithTime.day6) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st6] = course
+          console.log(`✅ 放置時段6: ${day} ${courseWithTime.st6} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day7 && courseWithTime.st7) {
+        const dayIndex = parseInt(courseWithTime.day7) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st7] = course
+          console.log(`✅ 放置時段7: ${day} ${courseWithTime.st7} = ${course.cou_cname}`)
+        }
+      }
+      
+      if (courseWithTime.day8 && courseWithTime.st8) {
+        const dayIndex = parseInt(courseWithTime.day8) - 1 // 轉換為0-based索引
+        const day = DAYS[dayIndex]
+        if (day) {
+          schedule[day][courseWithTime.st8] = course
+          console.log(`✅ 放置時段8: ${day} ${courseWithTime.st8} = ${course.cou_cname}`)
+        }
       }
     })
 
     return schedule
   }
 
-  const schedule = getMockSchedule()
+  const schedule = getRealSchedule()
   const totalCredits = courses.reduce((sum, course) => sum + parseInt(course.credit || '0'), 0)
 
   return (
