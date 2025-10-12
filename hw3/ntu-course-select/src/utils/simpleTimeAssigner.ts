@@ -141,6 +141,21 @@ export function generateTimeString(course: any): string {
   if (course.day3 && course.st3) {
     times.push(getTimeDisplay(course.day3, course.st3))
   }
+  if (course.day4 && course.st4) {
+    times.push(getTimeDisplay(course.day4, course.st4))
+  }
+  if (course.day5 && course.st5) {
+    times.push(getTimeDisplay(course.day5, course.st5))
+  }
+  if (course.day6 && course.st6) {
+    times.push(getTimeDisplay(course.day6, course.st6))
+  }
+  if (course.day7 && course.st7) {
+    times.push(getTimeDisplay(course.day7, course.st7))
+  }
+  if (course.day8 && course.st8) {
+    times.push(getTimeDisplay(course.day8, course.st8))
+  }
   
   return times.join(', ')
 }
