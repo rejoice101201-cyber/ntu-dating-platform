@@ -116,19 +116,29 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateCoursePriority = (courseId: string, newPriority: number) => {
+    console.log(`🔄 開始調整志願序: 課程ID=${courseId}, 新志願序=${newPriority}`)
+    
     setFavoriteCourses(prev => {
       // 找到要修改的課程
       const targetCourse = prev.find(c => c.ser_no === courseId)
-      if (!targetCourse) return prev
+      if (!targetCourse) {
+        console.log(`❌ 找不到課程: ${courseId}`)
+        return prev
+      }
       
       const oldPriority = targetCourse.priority || 1
+      console.log(`📝 課程 "${targetCourse.cou_cname}" 志願序: ${oldPriority} -> ${newPriority}`)
       
       // 如果新志願序和舊志願序相同，不需要調整
-      if (oldPriority === newPriority) return prev
+      if (oldPriority === newPriority) {
+        console.log(`⚠️ 志願序相同，無需調整`)
+        return prev
+      }
       
-      return prev.map(course => {
+      const updatedCourses = prev.map(course => {
         if (course.ser_no === courseId) {
           // 更新目標課程的志願序
+          console.log(`✅ 更新目標課程志願序: ${course.cou_cname} -> ${newPriority}`)
           return { ...course, priority: newPriority }
         } else {
           const currentPriority = course.priority || 1
@@ -138,12 +148,14 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
             // 志願序往後移 (1 -> 8)
             // 原志願序在 (oldPriority, newPriority] 範圍內的課程往前移
             if (currentPriority > oldPriority && currentPriority <= newPriority) {
+              console.log(`⬆️ 課程 "${course.cou_cname}" 志願序: ${currentPriority} -> ${currentPriority - 1}`)
               return { ...course, priority: currentPriority - 1 }
             }
           } else {
             // 志願序往前移 (8 -> 1)
             // 原志願序在 [newPriority, oldPriority) 範圍內的課程往後移
             if (currentPriority >= newPriority && currentPriority < oldPriority) {
+              console.log(`⬇️ 課程 "${course.cou_cname}" 志願序: ${currentPriority} -> ${currentPriority + 1}`)
               return { ...course, priority: currentPriority + 1 }
             }
           }
@@ -151,6 +163,16 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
           return course
         }
       })
+      
+      // 顯示調整後的志願序
+      console.log(`📊 調整後的志願序:`)
+      updatedCourses
+        .sort((a, b) => (a.priority || 1) - (b.priority || 1))
+        .forEach((course, index) => {
+          console.log(`  ${course.priority || 1}. ${course.cou_cname}`)
+        })
+      
+      return updatedCourses
     })
   }
 
