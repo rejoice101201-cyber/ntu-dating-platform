@@ -48,6 +48,8 @@ export default function CourseResults() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchKeyword, setSearchKeyword] = useState(keyword)
+  const [currentPage, setCurrentPage] = useState(1)
+  const coursesPerPage = 50
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -166,18 +168,31 @@ export default function CourseResults() {
   }, [])
 
   const filteredCourses = useMemo(() => {
-    if (!searchKeyword.trim()) return courses.slice(0, 50)
+    let filtered = courses
     
-    const searchTerm = searchKeyword.toLowerCase()
-    return courses.filter(course => 
-      course.cou_cname.toLowerCase().includes(searchTerm) ||
-      course.cou_ename.toLowerCase().includes(searchTerm) ||
-      course.tea_cname.toLowerCase().includes(searchTerm) ||
-      course.cou_code.toLowerCase().includes(searchTerm)
-    ).slice(0, 50)
+    if (searchKeyword.trim()) {
+      const searchTerm = searchKeyword.toLowerCase()
+      filtered = courses.filter(course => 
+        course.cou_cname.toLowerCase().includes(searchTerm) ||
+        course.cou_ename.toLowerCase().includes(searchTerm) ||
+        course.tea_cname.toLowerCase().includes(searchTerm) ||
+        course.cou_code.toLowerCase().includes(searchTerm)
+      )
+    }
+    
+    return filtered
   }, [courses, searchKeyword])
 
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * coursesPerPage
+    const endIndex = startIndex + coursesPerPage
+    return filteredCourses.slice(startIndex, endIndex)
+  }, [filteredCourses, currentPage, coursesPerPage])
+
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage)
+
   const handleSearch = () => {
+    setCurrentPage(1) // 重置到第一頁
     if (searchKeyword.trim()) {
       navigate(`/results?keyword=${encodeURIComponent(searchKeyword.trim())}`)
     }
@@ -340,11 +355,14 @@ export default function CourseResults() {
         {/* Results Summary */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600 }}>
-            搜尋結果
+            {searchKeyword ? '搜尋結果' : '所有課程'}
           </Typography>
           <Typography variant="body2" sx={{ color: '#757575' }}>
-            找到 {filteredCourses.length} 門課程
-            {searchKeyword && ` (關鍵字: "${searchKeyword}")`}
+            {searchKeyword 
+              ? `找到 ${filteredCourses.length} 門課程 (關鍵字: "${searchKeyword}")`
+              : `共 ${filteredCourses.length} 門課程可供選擇`
+            }
+            {totalPages > 1 && ` - 第 ${currentPage} 頁，共 ${totalPages} 頁`}
           </Typography>
         </Box>
 
@@ -360,7 +378,9 @@ export default function CourseResults() {
               </Typography>
             </Paper>
           ) : (
-            filteredCourses.map((course, index) => (
+            paginatedCourses.map((course, index) => {
+              const globalIndex = (currentPage - 1) * coursesPerPage + index
+              return (
               <Card key={getCourseUniqueId(course, index)} elevation={1} sx={{ borderRadius: 2 }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -377,22 +397,48 @@ export default function CourseResults() {
                     </Box>
                     
                     <IconButton
-                      onClick={() => toggleFavorite(course, index)}
+                      onClick={() => toggleFavorite(course, globalIndex)}
                       sx={{ 
-                        color: favorites.has(getCourseUniqueId(course, index)) ? '#f44336' : '#757575',
+                        color: favorites.has(getCourseUniqueId(course, globalIndex)) ? '#f44336' : '#757575',
                         '&:hover': {
-                          backgroundColor: favorites.has(getCourseUniqueId(course, index)) ? '#ffebee' : '#f5f5f5'
+                          backgroundColor: favorites.has(getCourseUniqueId(course, globalIndex)) ? '#ffebee' : '#f5f5f5'
                         }
                       }}
                     >
-                      {favorites.has(getCourseUniqueId(course, index)) ? <Favorite /> : <FavoriteBorder />}
+                      {favorites.has(getCourseUniqueId(course, globalIndex)) ? <Favorite /> : <FavoriteBorder />}
                     </IconButton>
                   </Box>
             </CardContent>
           </Card>
-            ))
+              )
+            })
           )}
         </Box>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              sx={{ borderColor: '#1976d2', color: '#1976d2' }}
+            >
+              上一頁
+            </Button>
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
+              {currentPage} / {totalPages}
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              sx={{ borderColor: '#1976d2', color: '#1976d2' }}
+            >
+              下一頁
+            </Button>
+          </Box>
+        )}
       </Container>
     </Box>
   )
