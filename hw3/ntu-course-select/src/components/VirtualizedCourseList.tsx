@@ -1,5 +1,4 @@
-import React, { memo } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import React, { memo, useState, useEffect, useRef } from 'react'
 import { 
   Card, 
   CardContent, 
@@ -148,23 +147,78 @@ const VirtualizedCourseList: React.FC<VirtualizedCourseListProps> = ({
   getCourseUniqueId,
   height = 600
 }) => {
-  const itemData = {
-    courses,
-    favorites,
-    onToggleFavorite,
-    getCourseUniqueId
-  }
-  
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 20 })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const itemHeight = 140
+  const overscan = 5
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current) return
+      
+      const scrollTop = containerRef.current.scrollTop
+      const containerHeight = containerRef.current.clientHeight
+      
+      const start = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
+      const end = Math.min(
+        courses.length - 1,
+        Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
+      )
+      
+      setVisibleRange({ start, end })
+    }
+
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('scroll', handleScroll)
+      handleScroll() // 初始計算
+      
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [courses.length, itemHeight, overscan])
+
+  const visibleCourses = courses.slice(visibleRange.start, visibleRange.end + 1)
+  const totalHeight = courses.length * itemHeight
+  const offsetY = visibleRange.start * itemHeight
+
   return (
-    <List
-      height={height}
-      itemCount={courses.length}
-      itemSize={140} // 每個課程卡片的高度
-      itemData={itemData}
-      overscanCount={5} // 預渲染額外的項目
+    <div
+      ref={containerRef}
+      style={{
+        height: height,
+        overflow: 'auto',
+        position: 'relative'
+      }}
     >
-      {CourseItem}
-    </List>
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div
+          style={{
+            transform: `translateY(${offsetY}px)`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0
+          }}
+        >
+          {visibleCourses.map((course, index) => {
+            const globalIndex = visibleRange.start + index
+            return (
+              <CourseItem
+                key={getCourseUniqueId(course, globalIndex)}
+                index={globalIndex}
+                style={{ height: itemHeight }}
+                data={{
+                  courses: [course],
+                  favorites,
+                  onToggleFavorite,
+                  getCourseUniqueId
+                }}
+              />
+            )
+          })}
+        </div>
+      </div>
+    </div>
   )
 }
 
