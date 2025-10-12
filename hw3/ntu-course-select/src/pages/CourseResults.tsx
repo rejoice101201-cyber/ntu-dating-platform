@@ -120,6 +120,8 @@ export default function CourseResults() {
           const headers = lines[0].split(',')
           const endIndex = Math.min(startIndex + batchSize, lines.length)
           
+          console.log(`📊 批次信息: 總行數=${lines.length}, 處理範圍=${startIndex}-${endIndex}, 剩餘=${lines.length - endIndex}`)
+          
           const batchCourses: FullCourse[] = []
           
           for (let i = startIndex; i < endIndex; i++) {
@@ -162,6 +164,11 @@ export default function CourseResults() {
               probability: generateNormalDistribution() / 100,
               classroom: values[18]?.trim() || ''
             }
+            
+            // 調試：記錄前幾個課程的原始數據
+            if (i <= startIndex + 3) {
+              console.log(`🔍 原始數據 ${i}: 課程名稱="${values[12]}", 教師="${values[16]}", 系所="${values[50]}", 學分="${values[7]}"`)
+            }
 
             // 為課程分配隨機的連續時間
             const courseWithTime = assignRandomTimeSlots(baseCourse)
@@ -171,9 +178,13 @@ export default function CourseResults() {
               time: generateTimeString(courseWithTime)
             }
             
-            // 只包含有課程名稱和教師的課程
-            if (course.cou_cname && course.tea_cname) {
+            // 放寬條件，包含更多課程
+            if (course.cou_cname && course.cou_cname.trim()) {
               batchCourses.push(course)
+              // 調試：記錄前幾個課程的詳細信息
+              if (batchCourses.length <= 3) {
+                console.log(`📝 課程 ${batchCourses.length}: ${course.cou_cname} | 教師: ${course.tea_cname} | 系所: ${course.dpt_abbr} | 學分: ${course.credit}`)
+              }
             }
           }
           
@@ -203,7 +214,7 @@ export default function CourseResults() {
               processNextBatch(csvText, endIndex)
             }, 50) // 50ms 間隔，保持流暢
           } else {
-            console.log('🎉 所有課程處理完成！')
+            console.log(`🎉 所有課程處理完成！總共處理了 ${lines.length} 行數據`)
             setParsingProgress(100)
           }
         }
