@@ -177,10 +177,14 @@ export default function CourseResults() {
             }
           }
           
-          // 更新課程列表，去除重複
+          // 更新課程列表，使用更寬鬆的去重邏輯
           setCourses(prev => {
-            const existingSerNos = new Set(prev.map(c => c.ser_no))
-            const uniqueBatchCourses = batchCourses.filter(course => !existingSerNos.has(course.ser_no))
+            // 使用更強的唯一標識符來避免重複
+            const existingKeys = new Set(prev.map(c => `${c.cou_code}-${c.tea_cname}-${c.cou_cname}`))
+            const uniqueBatchCourses = batchCourses.filter(course => {
+              const key = `${course.cou_code}-${course.tea_cname}-${course.cou_cname}`
+              return !existingKeys.has(key)
+            })
             const newCourses = [...prev, ...uniqueBatchCourses]
             console.log(`✅ 批次完成，新增 ${uniqueBatchCourses.length} 門課程（去重後），累計 ${newCourses.length} 門`)
             return newCourses
@@ -561,7 +565,7 @@ export default function CourseResults() {
             </Typography>
             {courses.length > 0 && (
               <Typography variant="body2">
-                📝 前3門課程: {courses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分)`).join(', ')}
+                📝 前3門課程: {courses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分,${c.dpt_abbr})`).join(', ')}
               </Typography>
             )}
             {courses.length > 0 && (
@@ -571,9 +575,17 @@ export default function CourseResults() {
             )}
             {courses.length > 0 && (
               <Typography variant="body2">
-                🏫 系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr))).slice(0, 10).join(', ')}
+                🏫 系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
               </Typography>
             )}
+            {filteredCourses.length > 0 && (
+              <Typography variant="body2">
+                🎯 篩選後系所分布: {Array.from(new Set(filteredCourses.slice(0, 50).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
+              </Typography>
+            )}
+            <Typography variant="body2">
+              🔧 技術信息: 批次大小={batchSize} | 當前索引={currentIndex} | 處理狀態={isProcessing ? '處理中' : '完成'}
+            </Typography>
           </Box>
           
           {filteredCourses.length === 0 ? (
