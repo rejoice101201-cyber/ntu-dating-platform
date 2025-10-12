@@ -579,19 +579,29 @@ export default function CourseResults() {
                 📝 前3門課程: {courses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分,${c.dpt_abbr})`).join(', ')}
               </Typography>
             )}
-            {courses.length > 0 && (
+            {filteredCourses.length > 0 && (
               <Typography variant="body2">
-                🎓 學分分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.credit))).slice(0, 10).join(', ')}
+                🎯 篩選後前3門課程: {filteredCourses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分,${c.dpt_abbr})`).join(', ')}
               </Typography>
             )}
             {courses.length > 0 && (
               <Typography variant="body2">
-                🏫 系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
+                🎓 總課程學分分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.credit))).slice(0, 10).join(', ')}
               </Typography>
             )}
             {filteredCourses.length > 0 && (
               <Typography variant="body2">
-                🎯 篩選後系所分布: {Array.from(new Set(filteredCourses.slice(0, 50).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
+                🎯 篩選後學分分布: {Array.from(new Set(filteredCourses.map(c => c.credit))).slice(0, 10).join(', ')}
+              </Typography>
+            )}
+            {courses.length > 0 && (
+              <Typography variant="body2">
+                🏫 總課程系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
+              </Typography>
+            )}
+            {filteredCourses.length > 0 && (
+              <Typography variant="body2">
+                🎯 篩選後系所分布: {Array.from(new Set(filteredCourses.map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
               </Typography>
             )}
             <Typography variant="body2">
