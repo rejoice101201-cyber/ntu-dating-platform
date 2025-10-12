@@ -38,7 +38,22 @@ export default function Home() {
       {/* Header */}
       <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
-          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+          <Typography 
+            variant="h4" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1, 
+              color: '#424242', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': {
+                color: '#1976d2',
+                textDecoration: 'underline'
+              }
+            }}
+            onClick={() => navigate('/')}
+          >
             臺大課程網
           </Typography>
           <Box sx={{ display: 'flex', gap: 3 }}>

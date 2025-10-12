@@ -181,7 +181,20 @@ export default function Schedule() {
           >
             <ArrowBack />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': {
+                color: '#1976d2',
+                textDecoration: 'underline'
+              }
+            }}
+            onClick={() => navigate('/')}
+          >
             臺大課程網
           </Typography>
           <Button

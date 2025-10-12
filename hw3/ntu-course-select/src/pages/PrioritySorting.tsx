@@ -19,7 +19,7 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { ArrowBack, Save, Delete, Edit, DragIndicator } from '@mui/icons-material'
+import { ArrowBack, Save, Delete, Edit } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 
 export default function PrioritySorting() {
@@ -71,7 +71,22 @@ export default function PrioritySorting() {
           <IconButton edge="start" color="inherit" aria-label="back" onClick={() => navigate('/favorites')} sx={{ color: '#424242' }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+          <Typography 
+            variant="h4" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1, 
+              color: '#424242', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': {
+                color: '#1976d2',
+                textDecoration: 'underline'
+              }
+            }}
+            onClick={() => navigate('/')}
+          >
             臺大課程網
           </Typography>
           <Box sx={{ display: 'flex', gap: 3 }}>

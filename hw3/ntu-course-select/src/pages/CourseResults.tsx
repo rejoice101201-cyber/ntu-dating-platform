@@ -16,7 +16,7 @@ import {
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder, ArrowBack } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
-import { parseNtuTime } from '../utils/timeParser'
+// import { parseNtuTime } from '../utils/timeParser' // 暫時未使用
 import { assignRandomTimeSlots, generateTimeString } from '../utils/simpleTimeAssigner'
 
 interface FullCourse {
@@ -256,7 +256,22 @@ export default function CourseResults() {
           <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
             <ArrowBack />
           </IconButton>
-          <Typography variant="h4" component="div" sx={{ flexGrow: 1, color: '#424242', fontWeight: 600 }}>
+          <Typography 
+            variant="h4" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1, 
+              color: '#424242', 
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'color 0.2s ease',
+              '&:hover': {
+                color: '#1976d2',
+                textDecoration: 'underline'
+              }
+            }}
+            onClick={() => navigate('/')}
+          >
             臺大課程網
           </Typography>
           <Box sx={{ display: 'flex', gap: 3 }}>
