@@ -68,10 +68,15 @@ export default function CourseResults() {
   const keyword = searchParams.get('keyword') || ''
   const { favorites, addToFavorites, removeFromFavorites, lastLotteryResults } = useCourseContext()
   
-  const [courses, setCourses] = useState<FullCourse[]>([])
+  const [allCourses, setAllCourses] = useState<FullCourse[]>([])
+  const [displayedCourses, setDisplayedCourses] = useState<FullCourse[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [parsingProgress, setParsingProgress] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const coursesPerPage = 50 // 每頁只顯示50個課程
   const [searchKeyword, setSearchKeyword] = useState(keyword)
   // 移除分頁邏輯，使用虛擬化列表
   const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
@@ -84,7 +89,7 @@ export default function CourseResults() {
         setError(null)
         setParsingProgress(0)
         
-        console.log('開始載入所有課程數據...')
+        console.log('開始載入課程數據...')
         
         const response = await fetch('/data/hw3-ntucourse-data-1002.csv')
         if (!response.ok) {
@@ -94,121 +99,97 @@ export default function CourseResults() {
         const csvText = await response.text()
         console.log('CSV 載入成功，長度:', csvText.length)
         
-        // 直接使用同步解析避免 CSP 問題
-        console.log('🔄 使用同步解析模式...')
+        // 使用分頁解析，先載入第一頁
+        console.log('🔄 使用分頁解析模式...')
         
-        // 使用 setTimeout 來避免阻塞 UI，同時避免 CSP 問題
+        // 使用 setTimeout 來避免阻塞 UI
         setTimeout(() => {
-          parseCSVSync(csvText)
+          parseCSVWithPagination(csvText, 1)
         }, 0)
         
-        // 同步解析函數 - 使用分批處理避免阻塞
-        function parseCSVSync(csvText: string) {
-          console.log('🔄 使用同步解析模式...')
+        // 分頁解析函數 - 只載入需要的課程
+        function parseCSVWithPagination(csvText: string, page: number) {
+          console.log(`🔄 載入第 ${page} 頁課程...`)
           
           const lines = csvText.split('\n')
           const headers = lines[0].split(',')
-          const parsedCourses: FullCourse[] = []
-          const batchSize = 100 // 每批處理100行
-          let currentIndex = 1
+          const startIndex = (page - 1) * coursesPerPage + 1
+          const endIndex = Math.min(startIndex + coursesPerPage, lines.length)
           
-          function processBatch() {
-            const endIndex = Math.min(currentIndex + batchSize, lines.length)
+          const pageCourses: FullCourse[] = []
+          
+          for (let i = startIndex; i < endIndex; i++) {
+            const line = lines[i].trim()
+            if (!line) continue
             
-            for (let i = currentIndex; i < endIndex; i++) {
-              const line = lines[i].trim()
-              if (!line) continue
-              
-              // 解析 CSV 行
-              const values: string[] = []
-              let current = ''
-              let inQuotes = false
-              
-              for (let j = 0; j < line.length; j++) {
-                const char = line[j]
-                if (char === '"') {
-                  inQuotes = !inQuotes
-                } else if (char === ',' && !inQuotes) {
-                  values.push(current.trim())
-                  current = ''
-                } else {
-                  current += char
-                }
-              }
-              values.push(current.trim())
-              
-              if (values.length < headers.length) continue
-              
-              const baseCourse = {
-                ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
-                cou_cname: values[12]?.trim() || '',
-                cou_ename: values[13]?.trim() || '',
-                tea_cname: values[16]?.trim() || '',
-                cou_code: values[5]?.trim() || '',
-                credit: values[7]?.trim() || '',
-                dpt_code: values[3]?.trim() || '',
-                dpt_abbr: values[50]?.trim() || '',
-                co_tp: values[8]?.trim() || '',
-                mark: values[9]?.trim() || '',
-                co_rep: values[10]?.trim() || '',
-                pre_course: values[11]?.trim() || '',
-                probability: generateNormalDistribution() / 100,
-                classroom: values[18]?.trim() || ''
-              }
-
-              // 為課程分配隨機的連續時間
-              const courseWithTime = assignRandomTimeSlots(baseCourse)
-              
-              const course: FullCourse = {
-                ...courseWithTime,
-                time: generateTimeString(courseWithTime)
-              }
-              
-              // 只包含有課程名稱和教師的課程
-              if (course.cou_cname && course.tea_cname) {
-                parsedCourses.push(course)
+            // 解析 CSV 行
+            const values: string[] = []
+            let current = ''
+            let inQuotes = false
+            
+            for (let j = 0; j < line.length; j++) {
+              const char = line[j]
+              if (char === '"') {
+                inQuotes = !inQuotes
+              } else if (char === ',' && !inQuotes) {
+                values.push(current.trim())
+                current = ''
+              } else {
+                current += char
               }
             }
+            values.push(current.trim())
             
-            // 更新進度
-            const progress = Math.round((endIndex / lines.length) * 100)
-            setParsingProgress(progress)
+            if (values.length < headers.length) continue
             
-            currentIndex = endIndex
+            const baseCourse = {
+              ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
+              cou_cname: values[12]?.trim() || '',
+              cou_ename: values[13]?.trim() || '',
+              tea_cname: values[16]?.trim() || '',
+              cou_code: values[5]?.trim() || '',
+              credit: values[7]?.trim() || '',
+              dpt_code: values[3]?.trim() || '',
+              dpt_abbr: values[50]?.trim() || '',
+              co_tp: values[8]?.trim() || '',
+              mark: values[9]?.trim() || '',
+              co_rep: values[10]?.trim() || '',
+              pre_course: values[11]?.trim() || '',
+              probability: generateNormalDistribution() / 100,
+              classroom: values[18]?.trim() || ''
+            }
+
+            // 為課程分配隨機的連續時間
+            const courseWithTime = assignRandomTimeSlots(baseCourse)
             
-            if (currentIndex < lines.length) {
-              // 繼續處理下一批
-              setTimeout(processBatch, 0)
-            } else {
-              // 處理完成
-              processFinalResults()
+            const course: FullCourse = {
+              ...courseWithTime,
+              time: generateTimeString(courseWithTime)
+            }
+            
+            // 只包含有課程名稱和教師的課程
+            if (course.cou_cname && course.tea_cname) {
+              pageCourses.push(course)
             }
           }
           
-          function processFinalResults() {
-            // 確保 ser_no 唯一性
-            const serNoSet = new Set<string>()
-            const finalCourses = parsedCourses.map((course, index) => {
-              let uniqueSerNo = course.ser_no
-              let counter = 1
-              
-              while (serNoSet.has(uniqueSerNo)) {
-                uniqueSerNo = `${course.ser_no}-${counter}`
-                counter++
-              }
-              
-              serNoSet.add(uniqueSerNo)
-              return { ...course, ser_no: uniqueSerNo }
-            })
-            
-            console.log(`✅ 同步解析完成，共 ${finalCourses.length} 門課程`)
-            setCourses(finalCourses)
+          // 更新狀態
+          if (page === 1) {
+            setAllCourses(pageCourses)
+            setDisplayedCourses(pageCourses)
+            setCurrentPage(1)
+            setHasMore(endIndex < lines.length)
             setIsLoading(false)
             setParsingProgress(100)
+            console.log(`✅ 第 ${page} 頁載入完成，共 ${pageCourses.length} 門課程`)
+          } else {
+            setAllCourses(prev => [...prev, ...pageCourses])
+            setDisplayedCourses(prev => [...prev, ...pageCourses])
+            setCurrentPage(page)
+            setHasMore(endIndex < lines.length)
+            setIsLoadingMore(false)
+            console.log(`✅ 第 ${page} 頁載入完成，累計 ${allCourses.length + pageCourses.length} 門課程`)
           }
-          
-          // 開始處理
-          processBatch()
         }
         
       } catch (err) {
@@ -222,7 +203,7 @@ export default function CourseResults() {
   }, [])
 
   const filteredCourses = useMemo(() => {
-    let filtered = courses
+    let filtered = displayedCourses
 
     // 關鍵字搜尋
     if (searchKeyword.trim()) {
@@ -272,7 +253,7 @@ export default function CourseResults() {
     }
     
     return filtered
-  }, [courses, searchKeyword, searchParams])
+  }, [displayedCourses, searchKeyword, searchParams])
 
   // 移除分頁相關邏輯，虛擬化列表會處理所有數據
 
@@ -301,6 +282,112 @@ export default function CourseResults() {
   const getCourseUniqueId = useCallback((course: FullCourse, index: number) => {
     return `${course.ser_no}-${course.cou_code}-${course.tea_cname}-${index}`
   }, [])
+
+  // 載入更多課程
+  const loadMoreCourses = useCallback(() => {
+    if (isLoadingMore || !hasMore) return
+    
+    setIsLoadingMore(true)
+    console.log(`載入第 ${currentPage + 1} 頁...`)
+    
+    // 重新獲取 CSV 數據並解析下一頁
+    fetch('/data/hw3-ntucourse-data-1002.csv')
+      .then(response => response.text())
+      .then(csvText => {
+        setTimeout(() => {
+          parseCSVWithPagination(csvText, currentPage + 1)
+        }, 0)
+      })
+      .catch(error => {
+        console.error('載入更多課程失敗:', error)
+        setIsLoadingMore(false)
+      })
+  }, [currentPage, isLoadingMore, hasMore])
+
+  // 分頁解析函數（需要在組件外部定義）
+  const parseCSVWithPagination = useCallback((csvText: string, page: number) => {
+    console.log(`🔄 載入第 ${page} 頁課程...`)
+    
+    const lines = csvText.split('\n')
+    const headers = lines[0].split(',')
+    const startIndex = (page - 1) * coursesPerPage + 1
+    const endIndex = Math.min(startIndex + coursesPerPage, lines.length)
+    
+    const pageCourses: FullCourse[] = []
+    
+    for (let i = startIndex; i < endIndex; i++) {
+      const line = lines[i].trim()
+      if (!line) continue
+      
+      // 解析 CSV 行
+      const values: string[] = []
+      let current = ''
+      let inQuotes = false
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j]
+        if (char === '"') {
+          inQuotes = !inQuotes
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      values.push(current.trim())
+      
+      if (values.length < headers.length) continue
+      
+      const baseCourse = {
+        ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
+        cou_cname: values[12]?.trim() || '',
+        cou_ename: values[13]?.trim() || '',
+        tea_cname: values[16]?.trim() || '',
+        cou_code: values[5]?.trim() || '',
+        credit: values[7]?.trim() || '',
+        dpt_code: values[3]?.trim() || '',
+        dpt_abbr: values[50]?.trim() || '',
+        co_tp: values[8]?.trim() || '',
+        mark: values[9]?.trim() || '',
+        co_rep: values[10]?.trim() || '',
+        pre_course: values[11]?.trim() || '',
+        probability: generateNormalDistribution() / 100,
+        classroom: values[18]?.trim() || ''
+      }
+
+      // 為課程分配隨機的連續時間
+      const courseWithTime = assignRandomTimeSlots(baseCourse)
+      
+      const course: FullCourse = {
+        ...courseWithTime,
+        time: generateTimeString(courseWithTime)
+      }
+      
+      // 只包含有課程名稱和教師的課程
+      if (course.cou_cname && course.tea_cname) {
+        pageCourses.push(course)
+      }
+    }
+    
+    // 更新狀態
+    if (page === 1) {
+      setAllCourses(pageCourses)
+      setDisplayedCourses(pageCourses)
+      setCurrentPage(1)
+      setHasMore(endIndex < lines.length)
+      setIsLoading(false)
+      setParsingProgress(100)
+      console.log(`✅ 第 ${page} 頁載入完成，共 ${pageCourses.length} 門課程`)
+    } else {
+      setAllCourses(prev => [...prev, ...pageCourses])
+      setDisplayedCourses(prev => [...prev, ...pageCourses])
+      setCurrentPage(page)
+      setHasMore(endIndex < lines.length)
+      setIsLoadingMore(false)
+      console.log(`✅ 第 ${page} 頁載入完成，累計 ${allCourses.length + pageCourses.length} 門課程`)
+    }
+  }, [coursesPerPage, allCourses.length])
 
   const toggleFavorite = useCallback((course: FullCourse, index: number) => {
     const uniqueId = getCourseUniqueId(course, index)
@@ -505,12 +592,13 @@ export default function CourseResults() {
               }
               
               if (filters.length > 0) {
-                return `找到 ${filteredCourses.length} 門課程 (${filters.join(', ')})`
+                return `顯示 ${filteredCourses.length} 門課程 (${filters.join(', ')})`
               } else {
-                return `共 ${filteredCourses.length} 門課程可供選擇`
+                return `顯示 ${filteredCourses.length} 門課程`
               }
             })()}
-            {` - 使用虛擬化列表顯示所有結果`}
+            {displayedCourses.length > filteredCourses.length && ` (已載入 ${displayedCourses.length} 門)`}
+            {hasMore && ` - 還有更多課程可載入`}
           </Typography>
         </Box>
 
@@ -533,6 +621,47 @@ export default function CourseResults() {
               getCourseUniqueId={getCourseUniqueId}
               height={600}
             />
+          )}
+
+          {/* 載入更多按鈕 */}
+          {hasMore && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 3 }}>
+              <Button
+                variant="outlined"
+                onClick={loadMoreCourses}
+                disabled={isLoadingMore}
+                sx={{
+                  minWidth: 200,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  borderColor: '#1976d2',
+                  color: '#1976d2',
+                  '&:hover': {
+                    borderColor: '#1565c0',
+                    backgroundColor: '#f3f8ff'
+                  }
+                }}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    載入中...
+                  </>
+                ) : (
+                  `載入更多課程 (第 ${currentPage + 1} 頁)`
+                )}
+              </Button>
+            </Box>
+          )}
+
+          {/* 載入完成提示 */}
+          {!hasMore && displayedCourses.length > 0 && (
+            <Box sx={{ textAlign: 'center', mt: 3, mb: 3 }}>
+              <Typography variant="body2" sx={{ color: '#757575' }}>
+                🎉 已載入所有課程，共 {displayedCourses.length} 門課程
+              </Typography>
+            </Box>
           )}
         </Box>
 
