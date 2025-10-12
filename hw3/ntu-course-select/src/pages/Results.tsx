@@ -69,7 +69,7 @@ export default function Results() {
             <ArrowBack />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            選課結果
+            選課面主頁
           </Typography>
         </Toolbar>
       </AppBar>
@@ -87,7 +87,7 @@ export default function Results() {
         {/* 標題和統計 */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600, mb: 2 }}>
-            🎉 選課結果
+            🎉 選課面主頁
           </Typography>
           <Typography variant="body1" sx={{ color: '#757575' }}>
             恭喜！您成功選中了 {selectedCourses.length} 門課程，共 {totalCredits} 學分
