@@ -16,11 +16,16 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material'
-import { ArrowBack, List } from '@mui/icons-material'
+import { List } from '@mui/icons-material'
 import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
 import { useCourseContext } from '../context/CourseContext'
+import CourseInfoMenu from '../components/CourseInfoMenu'
 
 interface Course {
   ser_no: string
@@ -56,6 +61,8 @@ export default function Schedule() {
   const location = useLocation()
   const { lastLotteryResults } = useCourseContext()
   const [courses, setCourses] = useState<Course[]>([])
+  const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
+  const [noResultsDialogOpen, setNoResultsDialogOpen] = useState(false)
 
   useEffect(() => {
     // 優先使用傳遞的課程，否則使用上次的選課結果
@@ -174,23 +181,26 @@ export default function Schedule() {
   const schedule = getRealSchedule()
   const totalCredits = courses.reduce((sum, course) => sum + parseInt(course.credit || '0'), 0)
 
+  const handleScheduleClick = () => {
+    if (lastLotteryResults.length === 0) {
+      setNoResultsDialogOpen(true)
+    } else {
+      navigate('/schedule')
+    }
+  }
+
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* 頂部導航欄 */}
-      <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
+      <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
-          <IconButton
-            color="inherit"
-            onClick={() => navigate('/results')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBack />
-          </IconButton>
           <Typography 
-            variant="h6" 
+            variant="h4" 
             component="div" 
             sx={{ 
-              flexGrow: 1,
+              flexGrow: 1, 
+              color: '#424242', 
+              fontWeight: 600,
               cursor: 'pointer',
               transition: 'color 0.2s ease',
               '&:hover': {
@@ -202,13 +212,42 @@ export default function Schedule() {
           >
             臺大課程網
           </Typography>
-          <Button
-            color="inherit"
-            startIcon={<List />}
-            onClick={() => navigate('/results')}
-          >
-            列表
-          </Button>
+          <Box sx={{ display: 'flex', gap: 3, position: 'relative' }}>
+            <Box 
+              sx={{ 
+                position: 'relative',
+                // 擴展懸停區域，讓滑鼠移動更容易
+                padding: '4px 8px',
+                margin: '-4px -8px'
+              }}
+              onMouseEnter={() => setCourseInfoMenuOpen(true)}
+            >
+              <Typography 
+                variant="body1" 
+                sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              >
+                課程資訊
+              </Typography>
+              <CourseInfoMenu 
+                open={courseInfoMenuOpen} 
+                onClose={() => setCourseInfoMenuOpen(false)} 
+              />
+            </Box>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={handleScheduleClick}
+            >
+              選課結果
+            </Typography>
+            <Typography 
+              variant="body1" 
+              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              onClick={() => navigate('/favorites')}
+            >
+              我的收藏
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -327,6 +366,45 @@ export default function Schedule() {
           </Typography>
         </Alert>
       </Container>
+
+      {/* 無選課結果提示對話框 */}
+      <Dialog 
+        open={noResultsDialogOpen} 
+        onClose={() => setNoResultsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#1976d2', fontWeight: 600 }}>
+          尚未完成選課
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+          <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
+            您還沒有進行選課，請先完成選課流程。
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575' }}>
+            您可以點擊下方的選課流程卡片開始選課，或前往「我的收藏」查看已收藏的課程。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => setNoResultsDialogOpen(false)}
+            variant="outlined"
+            sx={{ mr: 2, borderColor: '#1976d2', color: '#1976d2' }}
+          >
+            取消
+          </Button>
+          <Button 
+            onClick={() => {
+              setNoResultsDialogOpen(false)
+              navigate('/results')
+            }}
+            variant="contained"
+            sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
+          >
+            開始選課
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

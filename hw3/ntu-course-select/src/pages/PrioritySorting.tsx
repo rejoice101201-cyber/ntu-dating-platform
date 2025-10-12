@@ -19,13 +19,16 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material'
-import { ArrowBack, Save, Delete, Edit } from '@mui/icons-material'
+import { Save, Delete, Edit } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
+import CourseInfoMenu from '../components/CourseInfoMenu'
 
 export default function PrioritySorting() {
   const navigate = useNavigate()
-  const { favoriteCourses, removeFromFavorites, updateCoursePriority } = useCourseContext()
+  const { favoriteCourses, removeFromFavorites, updateCoursePriority, lastLotteryResults } = useCourseContext()
   const [sortedCourses, setSortedCourses] = useState(favoriteCourses)
+  const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
+  const [noResultsDialogOpen, setNoResultsDialogOpen] = useState(false)
   const [editDialog, setEditDialog] = useState<{ open: boolean; courseId: string; priority: number }>({
     open: false,
     courseId: '',
@@ -63,14 +66,19 @@ export default function PrioritySorting() {
     navigate('/selection')
   }
 
+  const handleScheduleClick = () => {
+    if (lastLotteryResults.length === 0) {
+      setNoResultsDialogOpen(true)
+    } else {
+      navigate('/schedule')
+    }
+  }
+
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
       {/* 頂部導航欄 */}
       <AppBar position="static" elevation={0} sx={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e0e0e0' }}>
         <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="back" onClick={() => navigate('/favorites')} sx={{ color: '#424242' }}>
-            <ArrowBack />
-          </IconButton>
           <Typography 
             variant="h4" 
             component="div" 
@@ -89,18 +97,31 @@ export default function PrioritySorting() {
           >
             臺大課程網
           </Typography>
-          <Box sx={{ display: 'flex', gap: 3 }}>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
+          <Box sx={{ display: 'flex', gap: 3, position: 'relative' }}>
+            <Box 
+              sx={{ 
+                position: 'relative',
+                // 擴展懸停區域，讓滑鼠移動更容易
+                padding: '4px 8px',
+                margin: '-4px -8px'
+              }}
+              onMouseEnter={() => setCourseInfoMenuOpen(true)}
             >
-              課程資訊
-            </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              >
+                課程資訊
+              </Typography>
+              <CourseInfoMenu 
+                open={courseInfoMenuOpen} 
+                onClose={() => setCourseInfoMenuOpen(false)} 
+              />
+            </Box>
             <Typography 
               variant="body1" 
               sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/results')}
+              onClick={handleScheduleClick}
             >
               選課結果
             </Typography>
@@ -279,6 +300,45 @@ export default function PrioritySorting() {
           </Button>
           <Button onClick={handleSavePriority} variant="contained">
             保存
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 無選課結果提示對話框 */}
+      <Dialog 
+        open={noResultsDialogOpen} 
+        onClose={() => setNoResultsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#1976d2', fontWeight: 600 }}>
+          尚未完成選課
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+          <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
+            您還沒有進行選課，請先完成選課流程。
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575' }}>
+            您可以點擊下方的選課流程卡片開始選課，或前往「我的收藏」查看已收藏的課程。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => setNoResultsDialogOpen(false)}
+            variant="outlined"
+            sx={{ mr: 2, borderColor: '#1976d2', color: '#1976d2' }}
+          >
+            取消
+          </Button>
+          <Button 
+            onClick={() => {
+              setNoResultsDialogOpen(false)
+              navigate('/results')
+            }}
+            variant="contained"
+            sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
+          >
+            開始選課
           </Button>
         </DialogActions>
       </Dialog>
