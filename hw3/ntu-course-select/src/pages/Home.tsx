@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useCourseContext } from '../context/CourseContext'
 import {
   AppBar,
   Toolbar,
@@ -12,14 +13,20 @@ import {
   Box,
   Paper,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material'
 import { Search } from '@mui/icons-material'
 import CourseInfoMenu from '../components/CourseInfoMenu'
 
 export default function Home() {
   const navigate = useNavigate()
+  const { lastLotteryResults } = useCourseContext()
   const [keyword, setKeyword] = useState('')
   const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
+  const [noResultsDialogOpen, setNoResultsDialogOpen] = useState(false)
 
   const handleSearch = () => {
     const searchParams = new URLSearchParams()
@@ -32,6 +39,14 @@ export default function Home() {
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
       handleSearch()
+    }
+  }
+
+  const handleScheduleClick = () => {
+    if (lastLotteryResults.length === 0) {
+      setNoResultsDialogOpen(true)
+    } else {
+      navigate('/schedule')
     }
   }
 
@@ -59,11 +74,14 @@ export default function Home() {
             臺大課程網
           </Typography>
           <Box sx={{ display: 'flex', gap: 3, position: 'relative' }}>
-            <Box sx={{ position: 'relative' }}>
+            <Box 
+              sx={{ position: 'relative' }}
+              onMouseEnter={() => setCourseInfoMenuOpen(true)}
+              onMouseLeave={() => setCourseInfoMenuOpen(false)}
+            >
               <Typography 
                 variant="body1" 
                 sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                onClick={() => setCourseInfoMenuOpen(!courseInfoMenuOpen)}
               >
                 課程資訊
               </Typography>
@@ -75,7 +93,7 @@ export default function Home() {
             <Typography 
               variant="body1" 
               sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/schedule')}
+              onClick={handleScheduleClick}
             >
               選課結果
             </Typography>
@@ -365,6 +383,45 @@ export default function Home() {
           </Card>
         </Box>
       </Container>
+
+      {/* 無選課結果提示對話框 */}
+      <Dialog 
+        open={noResultsDialogOpen} 
+        onClose={() => setNoResultsDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#1976d2', fontWeight: 600 }}>
+          尚未完成選課
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+          <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
+            您還沒有進行選課，請先完成選課流程。
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#757575' }}>
+            您可以點擊下方的選課流程卡片開始選課，或前往「我的收藏」查看已收藏的課程。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => setNoResultsDialogOpen(false)}
+            variant="outlined"
+            sx={{ mr: 2, borderColor: '#1976d2', color: '#1976d2' }}
+          >
+            取消
+          </Button>
+          <Button 
+            onClick={() => {
+              setNoResultsDialogOpen(false)
+              navigate('/results')
+            }}
+            variant="contained"
+            sx={{ backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
+          >
+            開始選課
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }

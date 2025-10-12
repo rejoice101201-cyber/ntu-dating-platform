@@ -89,7 +89,11 @@ export default function CourseInfoMenu({ open, onClose }: CourseInfoMenuProps) {
   if (!open) return null;
 
   return (
-    <Box sx={{ position: 'absolute', top: '100%', right: 0, zIndex: 1000, mt: 1 }}>
+    <Box 
+      sx={{ position: 'absolute', top: '100%', right: 0, zIndex: 1000, mt: 1 }}
+      onMouseEnter={() => {}} // 保持開啟狀態
+      onMouseLeave={onClose} // 離開時關閉
+    >
       <ThemeProvider
         theme={createTheme({
           components: {
