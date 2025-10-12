@@ -14,10 +14,8 @@ export default defineConfig({
     port: 5173,
     strictPort: true, // Error if 5173 in use, no auto-change
     host: true, // Allow external connections
+    headers: {
+      'Content-Security-Policy': "script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:;"
+    }
   },
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/setupTests.ts'],
-    globals: true,
-  }
 })
