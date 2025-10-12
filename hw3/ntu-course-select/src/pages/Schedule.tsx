@@ -101,76 +101,92 @@ export default function Schedule() {
         day8: courseWithTime.day8, st8: courseWithTime.st8
       })
       
-      // 將課程放置到對應的時間段
+      // 將課程放置到對應的時間段，檢查時間衝突
       if (courseWithTime.day1 && courseWithTime.st1) {
         const dayIndex = parseInt(courseWithTime.day1) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st1]) {
           schedule[day][courseWithTime.st1] = course
           console.log(`✅ 放置時段1: ${day} ${courseWithTime.st1} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st1]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st1} 已被 ${schedule[day][courseWithTime.st1].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day2 && courseWithTime.st2) {
         const dayIndex = parseInt(courseWithTime.day2) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st2]) {
           schedule[day][courseWithTime.st2] = course
           console.log(`✅ 放置時段2: ${day} ${courseWithTime.st2} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st2]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st2} 已被 ${schedule[day][courseWithTime.st2].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day3 && courseWithTime.st3) {
         const dayIndex = parseInt(courseWithTime.day3) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st3]) {
           schedule[day][courseWithTime.st3] = course
           console.log(`✅ 放置時段3: ${day} ${courseWithTime.st3} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st3]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st3} 已被 ${schedule[day][courseWithTime.st3].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day4 && courseWithTime.st4) {
         const dayIndex = parseInt(courseWithTime.day4) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st4]) {
           schedule[day][courseWithTime.st4] = course
           console.log(`✅ 放置時段4: ${day} ${courseWithTime.st4} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st4]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st4} 已被 ${schedule[day][courseWithTime.st4].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day5 && courseWithTime.st5) {
         const dayIndex = parseInt(courseWithTime.day5) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st5]) {
           schedule[day][courseWithTime.st5] = course
           console.log(`✅ 放置時段5: ${day} ${courseWithTime.st5} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st5]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st5} 已被 ${schedule[day][courseWithTime.st5].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day6 && courseWithTime.st6) {
         const dayIndex = parseInt(courseWithTime.day6) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st6]) {
           schedule[day][courseWithTime.st6] = course
           console.log(`✅ 放置時段6: ${day} ${courseWithTime.st6} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st6]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st6} 已被 ${schedule[day][courseWithTime.st6].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day7 && courseWithTime.st7) {
         const dayIndex = parseInt(courseWithTime.day7) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st7]) {
           schedule[day][courseWithTime.st7] = course
           console.log(`✅ 放置時段7: ${day} ${courseWithTime.st7} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st7]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st7} 已被 ${schedule[day][courseWithTime.st7].cou_cname} 佔用`)
         }
       }
       
       if (courseWithTime.day8 && courseWithTime.st8) {
         const dayIndex = parseInt(courseWithTime.day8) - 1 // 轉換為0-based索引
         const day = DAYS[dayIndex]
-        if (day) {
+        if (day && !schedule[day][courseWithTime.st8]) {
           schedule[day][courseWithTime.st8] = course
           console.log(`✅ 放置時段8: ${day} ${courseWithTime.st8} = ${course.cou_cname}`)
+        } else if (day && schedule[day][courseWithTime.st8]) {
+          console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st8} 已被 ${schedule[day][courseWithTime.st8].cou_cname} 佔用`)
         }
       }
     })
