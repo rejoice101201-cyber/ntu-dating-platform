@@ -177,18 +177,37 @@ export default function CourseResults() {
   const filteredCourses = useMemo(() => {
     let filtered = courses
     
+    // 關鍵字搜尋
     if (searchKeyword.trim()) {
       const searchTerm = searchKeyword.toLowerCase()
-      filtered = courses.filter(course => 
+      filtered = filtered.filter(course => 
         course.cou_cname.toLowerCase().includes(searchTerm) ||
         course.cou_ename.toLowerCase().includes(searchTerm) ||
         course.tea_cname.toLowerCase().includes(searchTerm) ||
         course.cou_code.toLowerCase().includes(searchTerm)
       )
     }
+
+    // 學分數篩選
+    const creditFilter = searchParams.get('credit')
+    if (creditFilter) {
+      filtered = filtered.filter(course => course.credit === creditFilter)
+    }
+
+    // 系所篩選
+    const departmentFilter = searchParams.get('department')
+    if (departmentFilter) {
+      filtered = filtered.filter(course => course.dpt_abbr === departmentFilter)
+    }
+
+    // 課程類型篩選
+    const typeFilter = searchParams.get('type')
+    if (typeFilter) {
+      filtered = filtered.filter(course => course.co_tp === typeFilter)
+    }
     
     return filtered
-  }, [courses, searchKeyword])
+  }, [courses, searchKeyword, searchParams])
 
   const paginatedCourses = useMemo(() => {
     const startIndex = (currentPage - 1) * coursesPerPage
@@ -380,13 +399,34 @@ export default function CourseResults() {
         {/* Results Summary */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600 }}>
-            {searchKeyword ? '搜尋結果' : '所有課程'}
+            {searchKeyword || searchParams.get('credit') || searchParams.get('department') || searchParams.get('type') ? '篩選結果' : '所有課程'}
           </Typography>
           <Typography variant="body2" sx={{ color: '#757575' }}>
-            {searchKeyword 
-              ? `找到 ${filteredCourses.length} 門課程 (關鍵字: "${searchKeyword}")`
-              : `共 ${filteredCourses.length} 門課程可供選擇`
-            }
+            {(() => {
+              const filters = []
+              if (searchKeyword) filters.push(`關鍵字: "${searchKeyword}"`)
+              if (searchParams.get('credit')) filters.push(`${searchParams.get('credit')}學分`)
+              if (searchParams.get('department')) {
+                const deptNames: { [key: string]: string } = {
+                  'FL': '外文系', 'CHIN': '中文系', 'EE': '電機系', 'Chem': '化學系',
+                  'LAW': '法律系', 'ME': '機械系', 'Agron': '農藝系', 'MATH': '數學系',
+                  'CSIE': '資工系', 'ChemE': '化工系'
+                }
+                filters.push(deptNames[searchParams.get('department')!] || searchParams.get('department'))
+              }
+              if (searchParams.get('type')) {
+                const typeNames: { [key: string]: string } = {
+                  '0': '選修課程', '1': '必修課程', '2': '通識課程'
+                }
+                filters.push(typeNames[searchParams.get('type')!] || searchParams.get('type'))
+              }
+              
+              if (filters.length > 0) {
+                return `找到 ${filteredCourses.length} 門課程 (${filters.join(', ')})`
+              } else {
+                return `共 ${filteredCourses.length} 門課程可供選擇`
+              }
+            })()}
             {totalPages > 1 && ` - 第 ${currentPage} 頁，共 ${totalPages} 頁`}
           </Typography>
         </Box>

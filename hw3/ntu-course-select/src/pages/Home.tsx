@@ -116,7 +116,7 @@ export default function Home() {
         {/* Search Section */}
         <Paper elevation={0} sx={{ p: 3, mb: 4, border: '1px solid #e0e0e0' }}>
           {/* Search Bar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
             <Typography variant="body2" sx={{ color: '#757575', minWidth: '60px' }}>
               關鍵字
             </Typography>
@@ -147,6 +147,207 @@ export default function Home() {
             >
               搜尋
             </Button>
+          </Box>
+
+          {/* Course Classifier */}
+          <Box sx={{ borderTop: '1px solid #e0e0e0', pt: 3 }}>
+            <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2 }}>
+              🎯 課程分類器
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* 學分數篩選 */}
+              <Box>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 1, fontWeight: 500 }}>
+                  學分數
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[0, 1, 2, 3, 4].map((credit) => (
+                    <Chip
+                      key={credit}
+                      label={`${credit}學分`}
+                      variant="outlined"
+                      clickable
+                      sx={{
+                        borderColor: '#1976d2',
+                        color: '#1976d2',
+                        '&:hover': {
+                          backgroundColor: '#e3f2fd',
+                        },
+                        '&.MuiChip-clickable:hover': {
+                          backgroundColor: '#e3f2fd',
+                        },
+                      }}
+                      onClick={() => {
+                        const searchParams = new URLSearchParams()
+                        if (keyword.trim()) {
+                          searchParams.set('keyword', keyword.trim())
+                        }
+                        searchParams.set('credit', credit.toString())
+                        navigate(`/results?${searchParams.toString()}`)
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* 系所篩選 */}
+              <Box>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 1, fontWeight: 500 }}>
+                  主要系所
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[
+                    { code: 'FL', name: '外文系' },
+                    { code: 'CHIN', name: '中文系' },
+                    { code: 'EE', name: '電機系' },
+                    { code: 'Chem', name: '化學系' },
+                    { code: 'LAW', name: '法律系' },
+                    { code: 'ME', name: '機械系' },
+                    { code: 'Agron', name: '農藝系' },
+                    { code: 'MATH', name: '數學系' },
+                    { code: 'CSIE', name: '資工系' },
+                    { code: 'ChemE', name: '化工系' }
+                  ].map((dept) => (
+                    <Chip
+                      key={dept.code}
+                      label={dept.name}
+                      variant="outlined"
+                      clickable
+                      sx={{
+                        borderColor: '#2e7d32',
+                        color: '#2e7d32',
+                        '&:hover': {
+                          backgroundColor: '#e8f5e8',
+                        },
+                        '&.MuiChip-clickable:hover': {
+                          backgroundColor: '#e8f5e8',
+                        },
+                      }}
+                      onClick={() => {
+                        const searchParams = new URLSearchParams()
+                        if (keyword.trim()) {
+                          searchParams.set('keyword', keyword.trim())
+                        }
+                        searchParams.set('department', dept.code)
+                        navigate(`/results?${searchParams.toString()}`)
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* 課程類型篩選 */}
+              <Box>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 1, fontWeight: 500 }}>
+                  課程類型
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[
+                    { type: '0', name: '選修課程', color: '#ff9800' },
+                    { type: '1', name: '必修課程', color: '#f44336' },
+                    { type: '2', name: '通識課程', color: '#4caf50' }
+                  ].map((courseType) => (
+                    <Chip
+                      key={courseType.type}
+                      label={courseType.name}
+                      variant="outlined"
+                      clickable
+                      sx={{
+                        borderColor: courseType.color,
+                        color: courseType.color,
+                        '&:hover': {
+                          backgroundColor: courseType.color === '#ff9800' ? '#fff3e0' : 
+                                         courseType.color === '#f44336' ? '#ffebee' : '#e8f5e8',
+                        },
+                        '&.MuiChip-clickable:hover': {
+                          backgroundColor: courseType.color === '#ff9800' ? '#fff3e0' : 
+                                         courseType.color === '#f44336' ? '#ffebee' : '#e8f5e8',
+                        },
+                      }}
+                      onClick={() => {
+                        const searchParams = new URLSearchParams()
+                        if (keyword.trim()) {
+                          searchParams.set('keyword', keyword.trim())
+                        }
+                        searchParams.set('type', courseType.type)
+                        navigate(`/results?${searchParams.toString()}`)
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* 快速篩選組合 */}
+              <Box>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 1, fontWeight: 500 }}>
+                  快速篩選
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip
+                    label="3學分選修課程"
+                    variant="filled"
+                    clickable
+                    sx={{
+                      backgroundColor: '#1976d2',
+                      color: '#ffffff',
+                      '&:hover': {
+                        backgroundColor: '#1565c0',
+                      },
+                    }}
+                    onClick={() => {
+                      const searchParams = new URLSearchParams()
+                      if (keyword.trim()) {
+                        searchParams.set('keyword', keyword.trim())
+                      }
+                      searchParams.set('credit', '3')
+                      searchParams.set('type', '0')
+                      navigate(`/results?${searchParams.toString()}`)
+                    }}
+                  />
+                  <Chip
+                    label="通識課程"
+                    variant="filled"
+                    clickable
+                    sx={{
+                      backgroundColor: '#4caf50',
+                      color: '#ffffff',
+                      '&:hover': {
+                        backgroundColor: '#388e3c',
+                      },
+                    }}
+                    onClick={() => {
+                      const searchParams = new URLSearchParams()
+                      if (keyword.trim()) {
+                        searchParams.set('keyword', keyword.trim())
+                      }
+                      searchParams.set('type', '2')
+                      navigate(`/results?${searchParams.toString()}`)
+                    }}
+                  />
+                  <Chip
+                    label="1學分課程"
+                    variant="filled"
+                    clickable
+                    sx={{
+                      backgroundColor: '#ff9800',
+                      color: '#ffffff',
+                      '&:hover': {
+                        backgroundColor: '#f57c00',
+                      },
+                    }}
+                    onClick={() => {
+                      const searchParams = new URLSearchParams()
+                      if (keyword.trim()) {
+                        searchParams.set('keyword', keyword.trim())
+                      }
+                      searchParams.set('credit', '1')
+                      navigate(`/results?${searchParams.toString()}`)
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
           </Box>
         </Paper>
 
