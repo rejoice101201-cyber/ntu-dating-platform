@@ -90,7 +90,23 @@ export default function CourseInfoMenu({ open, onClose }: CourseInfoMenuProps) {
 
   return (
     <Box 
-      sx={{ position: 'absolute', top: '100%', right: 0, zIndex: 1000, mt: 1 }}
+      sx={{ 
+        position: 'absolute', 
+        top: '100%', 
+        right: 0, 
+        zIndex: 1000, 
+        mt: 1,
+        // 添加一個小的間隙，讓滑鼠可以從按鈕移動到選單而不觸發關閉
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: '-8px',
+          left: 0,
+          right: 0,
+          height: '8px',
+          backgroundColor: 'transparent'
+        }
+      }}
       onMouseEnter={() => {}} // 保持開啟狀態
       onMouseLeave={onClose} // 離開時關閉
     >

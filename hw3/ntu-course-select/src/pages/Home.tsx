@@ -75,9 +75,13 @@ export default function Home() {
           </Typography>
           <Box sx={{ display: 'flex', gap: 3, position: 'relative' }}>
             <Box 
-              sx={{ position: 'relative' }}
+              sx={{ 
+                position: 'relative',
+                // 擴展懸停區域，讓滑鼠移動更容易
+                padding: '4px 8px',
+                margin: '-4px -8px'
+              }}
               onMouseEnter={() => setCourseInfoMenuOpen(true)}
-              onMouseLeave={() => setCourseInfoMenuOpen(false)}
             >
               <Typography 
                 variant="body1" 

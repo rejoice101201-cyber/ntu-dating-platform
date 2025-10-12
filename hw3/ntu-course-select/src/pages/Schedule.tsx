@@ -21,7 +21,6 @@ import {
 import { ArrowBack, List } from '@mui/icons-material'
 import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
 import { useCourseContext } from '../context/CourseContext'
-import BreadcrumbNav from '../components/BreadcrumbNav'
 
 interface Course {
   ser_no: string
@@ -214,15 +213,6 @@ export default function Schedule() {
       </AppBar>
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* 麵包屑導航 */}
-        <BreadcrumbNav 
-          items={[
-            { label: '首頁', path: '/' },
-            { label: '選課結果', path: '/schedule' },
-            { label: '最終結果', path: '/schedule' },
-            { label: '課表', path: '/schedule', clickable: false }
-          ]} 
-        />
 
         {/* 頁面標題 */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
