@@ -348,7 +348,7 @@ export default function Home() {
                 backgroundColor: '#fdf7ff'
               }
             }}
-            onClick={() => navigate('/schedule')}
+            onClick={handleScheduleClick}
           >
             <CardContent sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <Box>
