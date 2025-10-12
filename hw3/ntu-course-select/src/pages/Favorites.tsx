@@ -144,13 +144,13 @@ export default function Favorites() {
             <Typography variant="body2" sx={{ color: '#999', mb: 3 }}>
               前往課程搜尋頁面，將感興趣的課程加入最愛
             </Typography>
-            <Button
+              <Button
               variant="contained"
               onClick={() => navigate('/')}
               sx={{ borderRadius: 2 }}
             >
               開始搜尋課程
-            </Button>
+              </Button>
           </Paper>
         ) : (
           <>

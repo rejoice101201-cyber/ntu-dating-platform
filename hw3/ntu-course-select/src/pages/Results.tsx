@@ -15,6 +15,7 @@ import {
   Alert
 } from '@mui/material'
 import { ArrowBack, CalendarToday, Refresh } from '@mui/icons-material'
+import BreadcrumbNav from '../components/BreadcrumbNav'
 
 interface Course {
   ser_no: string
@@ -74,6 +75,15 @@ export default function Results() {
       </AppBar>
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* 麵包屑導航 */}
+        <BreadcrumbNav 
+          items={[
+            { label: '首頁', path: '/' },
+            { label: '選課結果', path: '/schedule' },
+            { label: '最終結果', path: '/final-results', clickable: false }
+          ]} 
+        />
+
         {/* 標題和統計 */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ color: '#424242', fontWeight: 600, mb: 2 }}>

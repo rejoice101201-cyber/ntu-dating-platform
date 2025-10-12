@@ -168,8 +168,8 @@ export default function Home() {
                   公布一階結果: 8.22(五) 15:00
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
 
           {/* 初選二階 */}
           <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
@@ -199,8 +199,8 @@ export default function Home() {
                   公布一階結果: 8.28(五) 15:00
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
 
           {/* 網路加退選 */}
           <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
@@ -227,8 +227,8 @@ export default function Home() {
                   第二週加退選: 9.8(一) → 9.15(一)
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
           {/* 選課結果確認 */}
           <Card sx={{ height: '100%', border: '1px solid #e0e0e0' }}>
@@ -255,8 +255,8 @@ export default function Home() {
                   停修: 9.17(三) → 12.5(五)
                 </Typography>
               </Box>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </Box>
       </Container>
     </Box>

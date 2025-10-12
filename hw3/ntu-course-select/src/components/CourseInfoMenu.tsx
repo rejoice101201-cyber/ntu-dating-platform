@@ -106,7 +106,12 @@ export default function CourseInfoMenu({ open, onClose }: CourseInfoMenuProps) {
           },
         })}
       >
-        <Paper elevation={8} sx={{ maxWidth: 320, border: '1px solid #e0e0e0' }}>
+        <Paper elevation={8} sx={{ 
+          width: 400, 
+          minWidth: 400, 
+          maxWidth: 400,
+          border: '1px solid #e0e0e0' 
+        }}>
           <FireNav component="nav" disablePadding>
             <ListItemButton component="div" sx={{ height: 48, backgroundColor: '#f5f5f5' }}>
               <ListItemIcon sx={{ fontSize: 20 }}>📚</ListItemIcon>
