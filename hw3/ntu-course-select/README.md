@@ -43,8 +43,9 @@
 
 1. **克隆專案**
    ```bash
-   git clone <repository-url>
-   cd ntu-course-select
+   git clone git@github.com:rejoice101201-cyber/wp1141.git
+   cd wp1141/hw3/ntu-course-select
+   git checkout hw3-spa-implementation
    ```
 
 2. **安裝依賴**
