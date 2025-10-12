@@ -135,44 +135,41 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         return prev
       }
       
-      const updatedCourses = prev.map(course => {
-        if (course.ser_no === courseId) {
-          // 更新目標課程的志願序
-          console.log(`✅ 更新目標課程志願序: ${course.cou_cname} -> ${newPriority}`)
-          return { ...course, priority: newPriority }
-        } else {
-          const currentPriority = course.priority || 1
-          
-          // 處理志願序衝突
-          if (oldPriority < newPriority) {
-            // 志願序往後移 (1 -> 8)
-            // 原志願序在 (oldPriority, newPriority] 範圍內的課程往前移
-            if (currentPriority > oldPriority && currentPriority <= newPriority) {
-              console.log(`⬆️ 課程 "${course.cou_cname}" 志願序: ${currentPriority} -> ${currentPriority - 1}`)
-              return { ...course, priority: currentPriority - 1 }
-            }
-          } else {
-            // 志願序往前移 (8 -> 1)
-            // 原志願序在 [newPriority, oldPriority) 範圍內的課程往後移
-            if (currentPriority >= newPriority && currentPriority < oldPriority) {
-              console.log(`⬇️ 課程 "${course.cou_cname}" 志願序: ${currentPriority} -> ${currentPriority + 1}`)
-              return { ...course, priority: currentPriority + 1 }
-            }
+      // 先更新目標課程的志願序
+      let updatedCourses = prev.map(course => 
+        course.ser_no === courseId 
+          ? { ...course, priority: newPriority }
+          : course
+      )
+      
+      // 重新分配所有課程的志願序，確保沒有重複
+      const sortedCourses = updatedCourses
+        .sort((a, b) => {
+          // 先按原志願序排序，再按課程名稱排序（確保穩定性）
+          const priorityA = a.priority || 1
+          const priorityB = b.priority || 1
+          if (priorityA !== priorityB) {
+            return priorityA - priorityB
           }
-          
-          return course
+          return a.cou_cname.localeCompare(b.cou_cname)
+        })
+      
+      // 重新分配連續的志願序
+      const finalCourses = sortedCourses.map((course, index) => {
+        const newPriority = index + 1
+        if (course.priority !== newPriority) {
+          console.log(`🔄 重新分配志願序: "${course.cou_cname}" ${course.priority || 1} -> ${newPriority}`)
         }
+        return { ...course, priority: newPriority }
       })
       
       // 顯示調整後的志願序
       console.log(`📊 調整後的志願序:`)
-      updatedCourses
-        .sort((a, b) => (a.priority || 1) - (b.priority || 1))
-        .forEach((course, index) => {
-          console.log(`  ${course.priority || 1}. ${course.cou_cname}`)
-        })
+      finalCourses.forEach((course) => {
+        console.log(`  ${course.priority}. ${course.cou_cname}`)
+      })
       
-      return updatedCourses
+      return finalCourses
     })
   }
 
