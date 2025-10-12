@@ -90,15 +90,12 @@ export default function CourseResults() {
         setCourses([])
         setCurrentIndex(1)
         
-        console.log('開始載入課程數據...')
-        
         const response = await fetch('/data/hw3-ntucourse-data-1002.csv')
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         
         const csvText = await response.text()
-        console.log('CSV 載入成功，長度:', csvText.length)
         
         // 保存 CSV 數據並開始自動化懶加載
         setCsvData(csvText)
@@ -114,13 +111,10 @@ export default function CourseResults() {
           if (isProcessing) return
           
           setIsProcessing(true)
-          console.log(`🔄 處理批次 ${startIndex}-${startIndex + batchSize - 1}...`)
           
           const lines = csvText.split('\n')
           const headers = lines[0].split(',')
           const endIndex = Math.min(startIndex + batchSize, lines.length)
-          
-          console.log(`📊 批次信息: 總行數=${lines.length}, 處理範圍=${startIndex}-${endIndex}, 剩餘=${lines.length - endIndex}`)
           
           const batchCourses: FullCourse[] = []
           
@@ -165,10 +159,6 @@ export default function CourseResults() {
               classroom: values[18]?.trim() || ''
             }
             
-            // 調試：記錄前幾個課程的原始數據
-            if (i <= startIndex + 3) {
-              console.log(`🔍 原始數據 ${i}: 課程名稱="${values[12]}", 教師="${values[16]}", 系所="${values[50]}", 學分="${values[7]}"`)
-            }
 
             // 為課程分配隨機的連續時間
             const courseWithTime = assignRandomTimeSlots(baseCourse)
@@ -181,10 +171,6 @@ export default function CourseResults() {
             // 放寬條件，包含更多課程
             if (course.cou_cname && course.cou_cname.trim()) {
               batchCourses.push(course)
-              // 調試：記錄前幾個課程的詳細信息
-              if (batchCourses.length <= 3) {
-                console.log(`📝 課程 ${batchCourses.length}: ${course.cou_cname} | 教師: ${course.tea_cname} | 系所: ${course.dpt_abbr} | 學分: ${course.credit}`)
-              }
             }
           }
           
@@ -197,7 +183,6 @@ export default function CourseResults() {
               return !existingKeys.has(key)
             })
             const newCourses = [...prev, ...uniqueBatchCourses]
-            console.log(`✅ 批次完成，新增 ${uniqueBatchCourses.length} 門課程（去重後），累計 ${newCourses.length} 門`)
             return newCourses
           })
           setCurrentIndex(endIndex)
@@ -214,7 +199,6 @@ export default function CourseResults() {
               processNextBatch(csvText, endIndex)
             }, 50) // 50ms 間隔，保持流暢
           } else {
-            console.log(`🎉 所有課程處理完成！總共處理了 ${lines.length} 行數據`)
             setParsingProgress(100)
           }
         }
@@ -231,65 +215,43 @@ export default function CourseResults() {
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
-    
-    // 只在課程數量變化較大時記錄日誌，避免過多日誌
-    if (courses.length % 1000 === 0 || courses.length < 1000) {
-      console.log(`🔍 開始篩選，原始課程數: ${courses.length}`)
-    }
 
     // 關鍵字搜尋
     if (searchKeyword.trim()) {
       const searchTerm = searchKeyword.toLowerCase()
-      const beforeCount = filtered.length
       filtered = filtered.filter(course => 
         course.cou_cname.toLowerCase().includes(searchTerm) ||
         course.cou_ename.toLowerCase().includes(searchTerm) ||
         course.tea_cname.toLowerCase().includes(searchTerm) ||
         course.cou_code.toLowerCase().includes(searchTerm)
       )
-      if (beforeCount !== filtered.length) {
-        console.log(`📝 關鍵字篩選 "${searchKeyword}": ${beforeCount} -> ${filtered.length}`)
-      }
     }
 
     // 學分數篩選
     const creditFilter = searchParams.get('credit')
     if (creditFilter) {
-      const beforeCount = filtered.length
       filtered = filtered.filter(course => {
         const courseCredit = String(course.credit).trim()
         const filterCredit = String(creditFilter).trim()
         return courseCredit === filterCredit
       })
-      if (beforeCount !== filtered.length) {
-        console.log(`🎓 學分篩選 "${creditFilter}": ${beforeCount} -> ${filtered.length}`)
-      }
     }
 
     // 系所篩選
     const departmentFilter = searchParams.get('department')
     if (departmentFilter) {
-      const beforeCount = filtered.length
       filtered = filtered.filter(course => course.dpt_abbr === departmentFilter)
-      if (beforeCount !== filtered.length) {
-        console.log(`🏫 系所篩選 "${departmentFilter}": ${beforeCount} -> ${filtered.length}`)
-      }
     }
 
     // 課程類型篩選
     const typeFilter = searchParams.get('type')
     if (typeFilter) {
-      const beforeCount = filtered.length
       filtered = filtered.filter(course => course.co_tp === typeFilter)
-      if (beforeCount !== filtered.length) {
-        console.log(`📚 類型篩選 "${typeFilter}": ${beforeCount} -> ${filtered.length}`)
-      }
     }
 
     // 中籤率篩選
     const probabilityFilter = searchParams.get('probability')
     if (probabilityFilter) {
-      const beforeCount = filtered.length
       filtered = filtered.filter(course => {
         const probability = (course.probability || 0.5) * 100
         switch (probabilityFilter) {
@@ -303,19 +265,10 @@ export default function CourseResults() {
             return true
         }
       })
-      if (beforeCount !== filtered.length) {
-        console.log(`🎯 中籤率篩選 "${probabilityFilter}": ${beforeCount} -> ${filtered.length}`)
-      }
-    }
-    
-    // 只在最終結果變化時記錄
-    if (filtered.length !== courses.length) {
-      console.log(`✅ 篩選完成，最終結果: ${filtered.length} 門課程`)
     }
     
     // 臨時修復：如果篩選結果太少，顯示更多課程
     if (filtered.length < 10 && courses.length > 0) {
-      console.log(`⚠️ 篩選結果太少 (${filtered.length})，顯示前100門課程`)
       return courses.slice(0, 100)
     }
     
@@ -566,48 +519,6 @@ export default function CourseResults() {
 
         {/* Course List */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* 調試信息 */}
-          <Box sx={{ p: 2, backgroundColor: '#f0f0f0', borderRadius: 1, fontSize: '0.8rem' }}>
-            <Typography variant="body2">
-              🔍 調試信息: 總課程數: {courses.length} | 篩選後: {filteredCourses.length} | 進度: {parsingProgress}%
-            </Typography>
-            <Typography variant="body2">
-              📊 篩選條件: 關鍵字="{searchKeyword}" | 學分="{searchParams.get('credit')}" | 系所="{searchParams.get('department')}" | 類型="{searchParams.get('type')}" | 中籤率="{searchParams.get('probability')}"
-            </Typography>
-            {courses.length > 0 && (
-              <Typography variant="body2">
-                📝 前3門課程: {courses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分,${c.dpt_abbr})`).join(', ')}
-              </Typography>
-            )}
-            {filteredCourses.length > 0 && (
-              <Typography variant="body2">
-                🎯 篩選後前3門課程: {filteredCourses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分,${c.dpt_abbr})`).join(', ')}
-              </Typography>
-            )}
-            {courses.length > 0 && (
-              <Typography variant="body2">
-                🎓 總課程學分分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.credit))).slice(0, 10).join(', ')}
-              </Typography>
-            )}
-            {filteredCourses.length > 0 && (
-              <Typography variant="body2">
-                🎯 篩選後學分分布: {Array.from(new Set(filteredCourses.map(c => c.credit))).slice(0, 10).join(', ')}
-              </Typography>
-            )}
-            {courses.length > 0 && (
-              <Typography variant="body2">
-                🏫 總課程系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
-              </Typography>
-            )}
-            {filteredCourses.length > 0 && (
-              <Typography variant="body2">
-                🎯 篩選後系所分布: {Array.from(new Set(filteredCourses.map(c => c.dpt_abbr).filter(dpt => dpt && dpt.trim()))).slice(0, 10).join(', ')}
-              </Typography>
-            )}
-            <Typography variant="body2">
-              🔧 技術信息: 批次大小={batchSize} | 當前索引={currentIndex} | 處理狀態={isProcessing ? '處理中' : '完成'}
-            </Typography>
-          </Box>
           
           {filteredCourses.length === 0 ? (
             <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
