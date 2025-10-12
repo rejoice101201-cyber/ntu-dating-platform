@@ -177,10 +177,12 @@ export default function CourseResults() {
             }
           }
           
-          // 更新課程列表
+          // 更新課程列表，去除重複
           setCourses(prev => {
-            const newCourses = [...prev, ...batchCourses]
-            console.log(`✅ 批次完成，新增 ${batchCourses.length} 門課程，累計 ${newCourses.length} 門`)
+            const existingSerNos = new Set(prev.map(c => c.ser_no))
+            const uniqueBatchCourses = batchCourses.filter(course => !existingSerNos.has(course.ser_no))
+            const newCourses = [...prev, ...uniqueBatchCourses]
+            console.log(`✅ 批次完成，新增 ${uniqueBatchCourses.length} 門課程（去重後），累計 ${newCourses.length} 門`)
             return newCourses
           })
           setCurrentIndex(endIndex)
@@ -214,7 +216,11 @@ export default function CourseResults() {
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
-    console.log(`🔍 開始篩選，原始課程數: ${courses.length}`)
+    
+    // 只在課程數量變化較大時記錄日誌，避免過多日誌
+    if (courses.length % 1000 === 0 || courses.length < 1000) {
+      console.log(`🔍 開始篩選，原始課程數: ${courses.length}`)
+    }
 
     // 關鍵字搜尋
     if (searchKeyword.trim()) {
@@ -226,7 +232,9 @@ export default function CourseResults() {
         course.tea_cname.toLowerCase().includes(searchTerm) ||
         course.cou_code.toLowerCase().includes(searchTerm)
       )
-      console.log(`📝 關鍵字篩選 "${searchKeyword}": ${beforeCount} -> ${filtered.length}`)
+      if (beforeCount !== filtered.length) {
+        console.log(`📝 關鍵字篩選 "${searchKeyword}": ${beforeCount} -> ${filtered.length}`)
+      }
     }
 
     // 學分數篩選
@@ -236,13 +244,11 @@ export default function CourseResults() {
       filtered = filtered.filter(course => {
         const courseCredit = String(course.credit).trim()
         const filterCredit = String(creditFilter).trim()
-        const match = courseCredit === filterCredit
-        if (!match && beforeCount > 0 && filtered.length < 10) {
-          console.log(`🔍 學分不匹配: 課程="${courseCredit}" vs 篩選="${filterCredit}"`)
-        }
-        return match
+        return courseCredit === filterCredit
       })
-      console.log(`🎓 學分篩選 "${creditFilter}": ${beforeCount} -> ${filtered.length}`)
+      if (beforeCount !== filtered.length) {
+        console.log(`🎓 學分篩選 "${creditFilter}": ${beforeCount} -> ${filtered.length}`)
+      }
     }
 
     // 系所篩選
@@ -250,7 +256,9 @@ export default function CourseResults() {
     if (departmentFilter) {
       const beforeCount = filtered.length
       filtered = filtered.filter(course => course.dpt_abbr === departmentFilter)
-      console.log(`🏫 系所篩選 "${departmentFilter}": ${beforeCount} -> ${filtered.length}`)
+      if (beforeCount !== filtered.length) {
+        console.log(`🏫 系所篩選 "${departmentFilter}": ${beforeCount} -> ${filtered.length}`)
+      }
     }
 
     // 課程類型篩選
@@ -258,7 +266,9 @@ export default function CourseResults() {
     if (typeFilter) {
       const beforeCount = filtered.length
       filtered = filtered.filter(course => course.co_tp === typeFilter)
-      console.log(`📚 類型篩選 "${typeFilter}": ${beforeCount} -> ${filtered.length}`)
+      if (beforeCount !== filtered.length) {
+        console.log(`📚 類型篩選 "${typeFilter}": ${beforeCount} -> ${filtered.length}`)
+      }
     }
 
     // 中籤率篩選
@@ -278,10 +288,15 @@ export default function CourseResults() {
             return true
         }
       })
-      console.log(`🎯 中籤率篩選 "${probabilityFilter}": ${beforeCount} -> ${filtered.length}`)
+      if (beforeCount !== filtered.length) {
+        console.log(`🎯 中籤率篩選 "${probabilityFilter}": ${beforeCount} -> ${filtered.length}`)
+      }
     }
     
-    console.log(`✅ 篩選完成，最終結果: ${filtered.length} 門課程`)
+    // 只在最終結果變化時記錄
+    if (filtered.length !== courses.length) {
+      console.log(`✅ 篩選完成，最終結果: ${filtered.length} 門課程`)
+    }
     
     // 臨時修復：如果篩選結果太少，顯示更多課程
     if (filtered.length < 10 && courses.length > 0) {
@@ -546,12 +561,17 @@ export default function CourseResults() {
             </Typography>
             {courses.length > 0 && (
               <Typography variant="body2">
-                📝 前3門課程: {courses.slice(0, 3).map(c => `${c.cou_cname}(${c.credit}學分,類型:${typeof c.credit})`).join(', ')}
+                📝 前3門課程: {courses.slice(0, 3).map((c, i) => `${i+1}.${c.cou_cname}(${c.credit}學分)`).join(', ')}
               </Typography>
             )}
             {courses.length > 0 && (
               <Typography variant="body2">
                 🎓 學分分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.credit))).slice(0, 10).join(', ')}
+              </Typography>
+            )}
+            {courses.length > 0 && (
+              <Typography variant="body2">
+                🏫 系所分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.dpt_abbr))).slice(0, 10).join(', ')}
               </Typography>
             )}
           </Box>
