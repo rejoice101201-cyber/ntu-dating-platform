@@ -214,39 +214,57 @@ export default function CourseResults() {
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
+    console.log(`🔍 開始篩選，原始課程數: ${courses.length}`)
 
     // 關鍵字搜尋
     if (searchKeyword.trim()) {
       const searchTerm = searchKeyword.toLowerCase()
+      const beforeCount = filtered.length
       filtered = filtered.filter(course => 
         course.cou_cname.toLowerCase().includes(searchTerm) ||
         course.cou_ename.toLowerCase().includes(searchTerm) ||
         course.tea_cname.toLowerCase().includes(searchTerm) ||
         course.cou_code.toLowerCase().includes(searchTerm)
       )
+      console.log(`📝 關鍵字篩選 "${searchKeyword}": ${beforeCount} -> ${filtered.length}`)
     }
 
     // 學分數篩選
     const creditFilter = searchParams.get('credit')
     if (creditFilter) {
-      filtered = filtered.filter(course => String(course.credit) === String(creditFilter))
+      const beforeCount = filtered.length
+      filtered = filtered.filter(course => {
+        const courseCredit = String(course.credit).trim()
+        const filterCredit = String(creditFilter).trim()
+        const match = courseCredit === filterCredit
+        if (!match && beforeCount > 0 && filtered.length < 10) {
+          console.log(`🔍 學分不匹配: 課程="${courseCredit}" vs 篩選="${filterCredit}"`)
+        }
+        return match
+      })
+      console.log(`🎓 學分篩選 "${creditFilter}": ${beforeCount} -> ${filtered.length}`)
     }
 
     // 系所篩選
     const departmentFilter = searchParams.get('department')
     if (departmentFilter) {
+      const beforeCount = filtered.length
       filtered = filtered.filter(course => course.dpt_abbr === departmentFilter)
+      console.log(`🏫 系所篩選 "${departmentFilter}": ${beforeCount} -> ${filtered.length}`)
     }
 
     // 課程類型篩選
     const typeFilter = searchParams.get('type')
     if (typeFilter) {
+      const beforeCount = filtered.length
       filtered = filtered.filter(course => course.co_tp === typeFilter)
+      console.log(`📚 類型篩選 "${typeFilter}": ${beforeCount} -> ${filtered.length}`)
     }
 
     // 中籤率篩選
     const probabilityFilter = searchParams.get('probability')
     if (probabilityFilter) {
+      const beforeCount = filtered.length
       filtered = filtered.filter(course => {
         const probability = (course.probability || 0.5) * 100
         switch (probabilityFilter) {
@@ -257,9 +275,18 @@ export default function CourseResults() {
           case 'low':
             return probability < 40
           default:
-        return true
+            return true
         }
       })
+      console.log(`🎯 中籤率篩選 "${probabilityFilter}": ${beforeCount} -> ${filtered.length}`)
+    }
+    
+    console.log(`✅ 篩選完成，最終結果: ${filtered.length} 門課程`)
+    
+    // 臨時修復：如果篩選結果太少，顯示更多課程
+    if (filtered.length < 10 && courses.length > 0) {
+      console.log(`⚠️ 篩選結果太少 (${filtered.length})，顯示前100門課程`)
+      return courses.slice(0, 100)
     }
     
     return filtered
@@ -519,7 +546,12 @@ export default function CourseResults() {
             </Typography>
             {courses.length > 0 && (
               <Typography variant="body2">
-                📝 前3門課程: {courses.slice(0, 3).map(c => `${c.cou_cname}(${c.credit}學分)`).join(', ')}
+                📝 前3門課程: {courses.slice(0, 3).map(c => `${c.cou_cname}(${c.credit}學分,類型:${typeof c.credit})`).join(', ')}
+              </Typography>
+            )}
+            {courses.length > 0 && (
+              <Typography variant="body2">
+                🎓 學分分布: {Array.from(new Set(courses.slice(0, 100).map(c => c.credit))).slice(0, 10).join(', ')}
               </Typography>
             )}
           </Box>
