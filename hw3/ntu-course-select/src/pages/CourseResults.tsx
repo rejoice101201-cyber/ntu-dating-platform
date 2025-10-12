@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Container, 
@@ -18,10 +18,12 @@ import {
   DialogContent,
   DialogActions,
   Chip,
+  LinearProgress,
 } from '@mui/material'
 import { Search, Favorite, FavoriteBorder } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
 import CourseInfoMenu from '../components/CourseInfoMenu'
+import VirtualizedCourseList from '../components/VirtualizedCourseList'
 // import { parseNtuTime } from '../utils/timeParser' // 暫時未使用
 import { assignRandomTimeSlots, generateTimeString } from '../utils/simpleTimeAssigner'
 
@@ -69,9 +71,9 @@ export default function CourseResults() {
   const [courses, setCourses] = useState<FullCourse[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [parsingProgress, setParsingProgress] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState(keyword)
-  const [currentPage, setCurrentPage] = useState(1)
-  const coursesPerPage = 50
+  // 移除分頁邏輯，使用虛擬化列表
   const [courseInfoMenuOpen, setCourseInfoMenuOpen] = useState(false)
   const [noResultsDialogOpen, setNoResultsDialogOpen] = useState(false)
 
@@ -80,6 +82,7 @@ export default function CourseResults() {
       try {
         setIsLoading(true)
         setError(null)
+        setParsingProgress(0)
         
         console.log('開始載入所有課程數據...')
         
@@ -91,105 +94,50 @@ export default function CourseResults() {
         const csvText = await response.text()
         console.log('CSV 載入成功，長度:', csvText.length)
         
-        const lines = csvText.split('\n')
-        const headers = lines[0].split(',')
-        console.log('CSV 標題:', headers.slice(0, 10))
+        // 使用 Web Worker 進行非阻塞解析
+        const worker = new Worker(new URL('../workers/csvParser.worker.ts', import.meta.url))
         
-        const parsedCourses: FullCourse[] = []
-        
-        // 解析所有數據（100% 覆蓋率）
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i]
-          if (!line.trim()) continue
-          
-          // 改善的 CSV 解析
-          const values: string[] = []
-          let current = ''
-          let inQuotes = false
-          
-          for (let j = 0; j < line.length; j++) {
-            const char = line[j]
-            if (char === '"') {
-              inQuotes = !inQuotes
-            } else if (char === ',' && !inQuotes) {
-              values.push(current.trim())
-              current = ''
-            } else {
-              current += char
-            }
-          }
-          values.push(current.trim())
-          
-          if (values.length < headers.length) continue
-          
-          const baseCourse = {
-            ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
-            cou_cname: values[12]?.trim() || '',
-            cou_ename: values[13]?.trim() || '',
-            tea_cname: values[16]?.trim() || '', // 修正：tea_cname 在第17欄（索引16）
-            cou_code: values[5]?.trim() || '',
-            credit: values[7]?.trim() || '',
-            dpt_code: values[3]?.trim() || '',
-            dpt_abbr: values[50]?.trim() || '', // 修正：dpt_abbr 在第51欄（索引50）
-            co_tp: values[8]?.trim() || '',
-            mark: values[9]?.trim() || '',
-            co_rep: values[10]?.trim() || '',
-            pre_course: values[11]?.trim() || '',
-            // 模擬機率：使用常態分佈 (0-100%)
-            probability: generateNormalDistribution() / 100, // 0-100% 常態分佈
-            classroom: values[18]?.trim() || '' // clsrom_1(19)
-          }
-
-          // 為課程分配隨機的連續3節課
-          const courseWithTime = assignRandomTimeSlots(baseCourse)
-          
-          const course: FullCourse = {
-            ...courseWithTime,
-            time: generateTimeString(courseWithTime)
-          }
-          
-          // 只包含有課程名稱和教師的課程
-          if (course.cou_cname && course.tea_cname) {
-            parsedCourses.push(course)
-          }
-        }
-        
-        console.log('解析完成，課程數量:', parsedCourses.length)
-        
-        // 檢查前幾個課程的數據
-        if (parsedCourses.length > 0) {
-          console.log('前3個課程數據:', parsedCourses.slice(0, 3).map(course => ({
-            ser_no: course.ser_no,
-            cou_cname: course.cou_cname,
-            tea_cname: course.tea_cname,
-            cou_code: course.cou_code
-          })))
-        }
-        
-        // 確保 ser_no 唯一性
-        const serNoSet = new Set<string>()
-        const finalCourses = parsedCourses.map((course, index) => {
-          let uniqueSerNo = course.ser_no
-          let counter = 1
-          
-          // 如果 ser_no 重複，添加後綴確保唯一性
-          while (serNoSet.has(uniqueSerNo)) {
-            uniqueSerNo = `${course.ser_no}-${counter}`
-            counter++
-          }
-          
-          serNoSet.add(uniqueSerNo)
-          return { ...course, ser_no: uniqueSerNo }
+        worker.postMessage({ 
+          csvData: csvText, 
+          chunkSize: 500 // 每500個課程更新一次進度
         })
         
-        console.log(`✅ 課程數據處理完成，共 ${finalCourses.length} 門課程，所有 ser_no 已確保唯一性`)
+        worker.onmessage = (e) => {
+          const { type, processed, total, percentage, courses, error } = e.data
+          
+          switch (type) {
+            case 'progress':
+              setParsingProgress(percentage)
+              console.log(`📊 解析進度: ${percentage}% (${processed}/${total})`)
+              break
+              
+            case 'complete':
+              console.log(`✅ 課程數據處理完成，共 ${courses.length} 門課程`)
+              setCourses(courses)
+              setIsLoading(false)
+              setParsingProgress(100)
+              worker.terminate()
+              break
+              
+            case 'error':
+              console.error('CSV 解析失敗:', error)
+              setError('載入課程數據失敗，請稍後再試')
+              setIsLoading(false)
+              worker.terminate()
+              break
+          }
+        }
         
-        setCourses(finalCourses)
+        worker.onerror = (error) => {
+          console.error('Web Worker 錯誤:', error)
+          setError('載入課程數據失敗，請稍後再試')
+          setIsLoading(false)
+          worker.terminate()
+        }
         
       } catch (err) {
         console.error('載入課程數據失敗:', err)
         setError('載入課程數據失敗，請稍後再試')
-      } finally {
         setIsLoading(false)
       }
     }
@@ -199,7 +147,7 @@ export default function CourseResults() {
 
   const filteredCourses = useMemo(() => {
     let filtered = courses
-    
+
     // 關鍵字搜尋
     if (searchKeyword.trim()) {
       const searchTerm = searchKeyword.toLowerCase()
@@ -242,7 +190,7 @@ export default function CourseResults() {
           case 'low':
             return probability < 40
           default:
-            return true
+        return true
         }
       })
     }
@@ -250,13 +198,7 @@ export default function CourseResults() {
     return filtered
   }, [courses, searchKeyword, searchParams])
 
-  const paginatedCourses = useMemo(() => {
-    const startIndex = (currentPage - 1) * coursesPerPage
-    const endIndex = startIndex + coursesPerPage
-    return filteredCourses.slice(startIndex, endIndex)
-  }, [filteredCourses, currentPage, coursesPerPage])
-
-  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage)
+  // 移除分頁相關邏輯，虛擬化列表會處理所有數據
 
   const handleSearch = () => {
     setCurrentPage(1) // 重置到第一頁
@@ -280,27 +222,16 @@ export default function CourseResults() {
   }
 
   // 創建唯一的課程識別符 - 使用更強的組合
-  const getCourseUniqueId = (course: FullCourse, index: number) => {
+  const getCourseUniqueId = useCallback((course: FullCourse, index: number) => {
     return `${course.ser_no}-${course.cou_code}-${course.tea_cname}-${index}`
-  }
+  }, [])
 
-  const toggleFavorite = (course: FullCourse, index: number) => {
+  const toggleFavorite = useCallback((course: FullCourse, index: number) => {
     const uniqueId = getCourseUniqueId(course, index)
-    console.log('=== 點擊愛心 ===')
-    console.log('課程信息:', {
-      ser_no: course.ser_no,
-      cou_cname: course.cou_cname,
-      cou_code: course.cou_code,
-      uniqueId: uniqueId
-    })
-    console.log('當前最愛 Set:', Array.from(favorites))
-    console.log('是否已存在:', favorites.has(uniqueId))
     
     if (favorites.has(uniqueId)) {
-      console.log('移除最愛:', uniqueId)
       removeFromFavorites(uniqueId)
     } else {
-      console.log('加入最愛:', uniqueId)
       // 轉換 FullCourse 到 Course 格式，使用唯一ID
       const courseForContext = {
         ser_no: uniqueId, // 使用唯一ID作為ser_no
@@ -318,12 +249,41 @@ export default function CourseResults() {
       }
       addToFavorites(courseForContext)
     }
-  }
+  }, [favorites, getCourseUniqueId, addToFavorites, removeFromFavorites])
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', px: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <CircularProgress size={40} />
+          <Typography variant="h6" sx={{ ml: 2, color: '#757575' }}>
+            載入課程數據中...
+          </Typography>
+        </Box>
+        {parsingProgress > 0 && (
+          <Box sx={{ width: '100%', maxWidth: 400 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: '#757575' }}>
+                解析進度
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#757575' }}>
+                {parsingProgress}%
+              </Typography>
+            </Box>
+            <LinearProgress 
+              variant="determinate" 
+              value={parsingProgress} 
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                backgroundColor: '#e0e0e0',
+                '& .MuiLinearProgress-bar': {
+                  backgroundColor: '#1976d2'
+                }
+              }} 
+            />
+          </Box>
+        )}
       </Box>
     )
   }
@@ -474,7 +434,7 @@ export default function CourseResults() {
                 return `共 ${filteredCourses.length} 門課程可供選擇`
               }
             })()}
-            {totalPages > 1 && ` - 第 ${currentPage} 頁，共 ${totalPages} 頁`}
+            {` - 使用虛擬化列表顯示所有結果`}
           </Typography>
         </Box>
 
@@ -490,87 +450,17 @@ export default function CourseResults() {
               </Typography>
             </Paper>
           ) : (
-            paginatedCourses.map((course, index) => {
-              const globalIndex = (currentPage - 1) * coursesPerPage + index
-              return (
-              <Card key={getCourseUniqueId(course, index)} elevation={1} sx={{ borderRadius: 2 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 1 }}>
-                        {course.cou_cname}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
-                        {course.cou_ename}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
-                        教師: {course.tea_cname} | 課程代碼: {course.cou_code} | 學分: {course.credit}
-                      </Typography>
-                      
-                      {/* 中籤率顯示 */}
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Chip
-                          label={`中籤率: ${((course.probability || 0.5) * 100).toFixed(1)}%`}
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                          sx={{
-                            fontSize: '0.75rem',
-                            height: '24px',
-                            backgroundColor: course.probability && course.probability > 0.7 ? '#e8f5e8' : 
-                                           course.probability && course.probability > 0.4 ? '#fff3e0' : '#ffebee',
-                            borderColor: course.probability && course.probability > 0.7 ? '#4caf50' : 
-                                       course.probability && course.probability > 0.4 ? '#ff9800' : '#f44336',
-                            color: course.probability && course.probability > 0.7 ? '#2e7d32' : 
-                                   course.probability && course.probability > 0.4 ? '#f57c00' : '#d32f2f'
-                          }}
-                        />
-                      </Box>
-                    </Box>
-                    
-                    <IconButton
-                      onClick={() => toggleFavorite(course, globalIndex)}
-                      sx={{ 
-                        color: favorites.has(getCourseUniqueId(course, globalIndex)) ? '#f44336' : '#757575',
-                        '&:hover': {
-                          backgroundColor: favorites.has(getCourseUniqueId(course, globalIndex)) ? '#ffebee' : '#f5f5f5'
-                        }
-                      }}
-                    >
-                      {favorites.has(getCourseUniqueId(course, globalIndex)) ? <Favorite /> : <FavoriteBorder />}
-                    </IconButton>
-                  </Box>
-            </CardContent>
-          </Card>
-              )
-            })
+            <VirtualizedCourseList
+              courses={filteredCourses}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+              getCourseUniqueId={getCourseUniqueId}
+              height={600}
+            />
           )}
         </Box>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, gap: 1 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              sx={{ borderColor: '#1976d2', color: '#1976d2' }}
-            >
-              上一頁
-            </Button>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', px: 2 }}>
-              {currentPage} / {totalPages}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              sx={{ borderColor: '#1976d2', color: '#1976d2' }}
-            >
-              下一頁
-            </Button>
-          </Box>
-        )}
+        {/* 虛擬化列表不需要分頁 */}
       </Container>
 
       {/* 無選課結果提示對話框 */}
