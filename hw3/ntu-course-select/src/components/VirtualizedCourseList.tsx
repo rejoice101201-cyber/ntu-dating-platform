@@ -208,7 +208,7 @@ const VirtualizedCourseList: React.FC<VirtualizedCourseListProps> = ({
                 index={globalIndex}
                 style={{ height: itemHeight }}
                 data={{
-                  courses: [course],
+                  courses,
                   favorites,
                   onToggleFavorite,
                   getCourseUniqueId
