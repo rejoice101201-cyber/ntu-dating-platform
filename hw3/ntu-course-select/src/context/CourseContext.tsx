@@ -115,14 +115,43 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     setFavoriteCourses(prev => prev.filter(c => c.ser_no !== courseId))
   }
 
-  const updateCoursePriority = (courseId: string, priority: number) => {
-    setFavoriteCourses(prev => 
-      prev.map(course => 
-        course.ser_no === courseId 
-          ? { ...course, priority }
-          : course
-      )
-    )
+  const updateCoursePriority = (courseId: string, newPriority: number) => {
+    setFavoriteCourses(prev => {
+      // 找到要修改的課程
+      const targetCourse = prev.find(c => c.ser_no === courseId)
+      if (!targetCourse) return prev
+      
+      const oldPriority = targetCourse.priority || 1
+      
+      // 如果新志願序和舊志願序相同，不需要調整
+      if (oldPriority === newPriority) return prev
+      
+      return prev.map(course => {
+        if (course.ser_no === courseId) {
+          // 更新目標課程的志願序
+          return { ...course, priority: newPriority }
+        } else {
+          const currentPriority = course.priority || 1
+          
+          // 處理志願序衝突
+          if (oldPriority < newPriority) {
+            // 志願序往後移 (1 -> 8)
+            // 原志願序在 (oldPriority, newPriority] 範圍內的課程往前移
+            if (currentPriority > oldPriority && currentPriority <= newPriority) {
+              return { ...course, priority: currentPriority - 1 }
+            }
+          } else {
+            // 志願序往前移 (8 -> 1)
+            // 原志願序在 [newPriority, oldPriority) 範圍內的課程往後移
+            if (currentPriority >= newPriority && currentPriority < oldPriority) {
+              return { ...course, priority: currentPriority + 1 }
+            }
+          }
+          
+          return course
+        }
+      })
+    })
   }
 
   const runLottery = (courses: Course[]): Course[] => {
