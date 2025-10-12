@@ -12,7 +12,12 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Chip
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
 } from '@mui/material'
 import { ArrowBack, PlayArrow, Delete, Info } from '@mui/icons-material'
 import { useCourseContext } from '../context/CourseContext'
@@ -22,6 +27,7 @@ export default function Selection() {
   const { favoriteCourses, runLottery, setLastLotteryResults, clearLastLotteryResults } = useCourseContext()
   const [selectedCourses, setSelectedCourses] = useState(favoriteCourses)
   const [isSelecting, setIsSelecting] = useState(false)
+  const [noCoursesDialogOpen, setNoCoursesDialogOpen] = useState(false)
 
   useEffect(() => {
     setSelectedCourses(favoriteCourses)
@@ -32,6 +38,12 @@ export default function Selection() {
   }
 
   const handleLottery = async () => {
+    // 檢查是否有選中的課程
+    if (selectedCourses.length === 0) {
+      setNoCoursesDialogOpen(true)
+      return
+    }
+    
     setIsSelecting(true)
     
     // 清除上次的選課結果
@@ -271,6 +283,57 @@ export default function Selection() {
           </Box>
         </Paper>
       </Container>
+
+      {/* 無課程提示對話框 */}
+      <Dialog 
+        open={noCoursesDialogOpen} 
+        onClose={() => setNoCoursesDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ textAlign: 'center', color: '#f44336', fontWeight: 600 }}>
+          沒有選中任何課程
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="body1" sx={{ color: '#424242', mb: 2 }}>
+              您還沒有選擇任何課程進行選課。
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#757575' }}>
+              請先從「我的收藏」中匯入課程，或回到主畫面重新選擇課程。
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+          <Button 
+            onClick={() => setNoCoursesDialogOpen(false)}
+            variant="outlined"
+            sx={{ mr: 2, borderColor: '#1976d2', color: '#1976d2' }}
+          >
+            取消
+          </Button>
+          <Button 
+            onClick={() => {
+              setNoCoursesDialogOpen(false)
+              navigate('/favorites')
+            }}
+            variant="contained"
+            sx={{ mr: 2, backgroundColor: '#1976d2', '&:hover': { backgroundColor: '#1565c0' } }}
+          >
+            前往我的收藏
+          </Button>
+          <Button 
+            onClick={() => {
+              setNoCoursesDialogOpen(false)
+              navigate('/')
+            }}
+            variant="contained"
+            sx={{ backgroundColor: '#ff6b35', '&:hover': { backgroundColor: '#e55a2b' } }}
+          >
+            回到主畫面
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
