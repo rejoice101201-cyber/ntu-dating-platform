@@ -24,6 +24,22 @@ import CourseInfoMenu from '../components/CourseInfoMenu'
 // import { parseNtuTime } from '../utils/timeParser' // 暫時未使用
 import { assignRandomTimeSlots, generateTimeString } from '../utils/simpleTimeAssigner'
 
+// 生成常態分佈的中籤率 (0-100%)
+function generateNormalDistribution(): number {
+  // Box-Muller 變換生成常態分佈
+  const u1 = Math.random()
+  const u2 = Math.random()
+  const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+  
+  // 轉換為均值50，標準差15的常態分佈
+  const mean = 50
+  const stdDev = 15
+  const value = z0 * stdDev + mean
+  
+  // 限制在0-100範圍內
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
 interface FullCourse {
   ser_no: string
   cou_cname: string
@@ -118,8 +134,8 @@ export default function CourseResults() {
             mark: values[9]?.trim() || '',
             co_rep: values[10]?.trim() || '',
             pre_course: values[11]?.trim() || '',
-            // 模擬機率：根據課程類型設定不同機率
-            probability: Math.random() * 0.8 + 0.1, // 10%-90% 隨機機率
+            // 模擬機率：使用常態分佈 (0-100%)
+            probability: generateNormalDistribution() / 100, // 0-100% 常態分佈
             classroom: values[18]?.trim() || '' // clsrom_1(19)
           }
 
@@ -204,6 +220,24 @@ export default function CourseResults() {
     const typeFilter = searchParams.get('type')
     if (typeFilter) {
       filtered = filtered.filter(course => course.co_tp === typeFilter)
+    }
+
+    // 中籤率篩選
+    const probabilityFilter = searchParams.get('probability')
+    if (probabilityFilter) {
+      filtered = filtered.filter(course => {
+        const probability = (course.probability || 0.5) * 100
+        switch (probabilityFilter) {
+          case 'high':
+            return probability >= 70
+          case 'medium':
+            return probability >= 40 && probability < 70
+          case 'low':
+            return probability < 40
+          default:
+            return true
+        }
+      })
     }
     
     return filtered
@@ -420,6 +454,12 @@ export default function CourseResults() {
                 }
                 filters.push(typeNames[searchParams.get('type')!] || searchParams.get('type'))
               }
+              if (searchParams.get('probability')) {
+                const probNames: { [key: string]: string } = {
+                  'high': '高機率 (70%+)', 'medium': '中機率 (40-70%)', 'low': '低機率 (<40%)'
+                }
+                filters.push(probNames[searchParams.get('probability')!] || searchParams.get('probability'))
+              }
               
               if (filters.length > 0) {
                 return `找到 ${filteredCourses.length} 門課程 (${filters.join(', ')})`
@@ -456,9 +496,29 @@ export default function CourseResults() {
                       <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
                         {course.cou_ename}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#757575' }}>
+                      <Typography variant="body2" sx={{ color: '#757575', mb: 1 }}>
                         教師: {course.tea_cname} | 課程代碼: {course.cou_code} | 學分: {course.credit}
                       </Typography>
+                      
+                      {/* 中籤率顯示 */}
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Chip
+                          label={`中籤率: ${((course.probability || 0.5) * 100).toFixed(1)}%`}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{
+                            fontSize: '0.75rem',
+                            height: '24px',
+                            backgroundColor: course.probability && course.probability > 0.7 ? '#e8f5e8' : 
+                                           course.probability && course.probability > 0.4 ? '#fff3e0' : '#ffebee',
+                            borderColor: course.probability && course.probability > 0.7 ? '#4caf50' : 
+                                       course.probability && course.probability > 0.4 ? '#ff9800' : '#f44336',
+                            color: course.probability && course.probability > 0.7 ? '#2e7d32' : 
+                                   course.probability && course.probability > 0.4 ? '#f57c00' : '#d32f2f'
+                          }}
+                        />
+                      </Box>
                     </Box>
                     
                     <IconButton

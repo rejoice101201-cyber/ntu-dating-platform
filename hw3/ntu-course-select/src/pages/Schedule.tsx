@@ -365,6 +365,75 @@ export default function Schedule() {
             已選上課程因暫無上課時間而未能顯示於課表，請留意並避免衝堂。
           </Typography>
         </Alert>
+
+        {/* 未排課課程列表 */}
+        {(() => {
+          const placedCourses = new Set()
+          const schedule = getRealSchedule()
+          
+          // 收集已排課的課程
+          DAYS.forEach(day => {
+            TIME_SLOTS.forEach(slot => {
+              if (schedule[day] && schedule[day][slot.period]) {
+                placedCourses.add(schedule[day][slot.period].ser_no)
+              }
+            })
+          })
+          
+          // 找出未排課的課程
+          const unplacedCourses = courses.filter(course => !placedCourses.has(course.ser_no))
+          
+          if (unplacedCourses.length > 0) {
+            return (
+              <Paper elevation={1} sx={{ p: 3, mt: 3, backgroundColor: '#fff3e0' }}>
+                <Typography variant="h6" sx={{ color: '#f57c00', fontWeight: 600, mb: 2 }}>
+                  ⚠️ 已抽中但未排課的課程 ({unplacedCourses.length}門)
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 2 }}>
+                  以下課程已成功抽中，但因時間安排問題未能顯示在課表中：
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  {unplacedCourses.map((course, index) => (
+                    <Box 
+                      key={course.ser_no} 
+                      sx={{ 
+                        p: 2, 
+                        border: '1px solid #ffcc02', 
+                        borderRadius: 1, 
+                        backgroundColor: '#fffbf0',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#424242' }}>
+                          {course.cou_cname}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#757575' }}>
+                          教師: {course.tea_cname} | 課程代碼: {course.cou_code} | 學分: {course.credit}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`中籤率: ${((course.probability || 0.5) * 100).toFixed(1)}%`}
+                        size="small"
+                        sx={{
+                          backgroundColor: course.probability && course.probability > 0.7 ? '#e8f5e8' : 
+                                         course.probability && course.probability > 0.4 ? '#fff3e0' : '#ffebee',
+                          borderColor: course.probability && course.probability > 0.7 ? '#4caf50' : 
+                                     course.probability && course.probability > 0.4 ? '#ff9800' : '#f44336',
+                          color: course.probability && course.probability > 0.7 ? '#2e7d32' : 
+                                 course.probability && course.probability > 0.4 ? '#f57c00' : '#d32f2f'
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </Paper>
+            )
+          }
+          return null
+        })()}
       </Container>
 
       {/* 無選課結果提示對話框 */}

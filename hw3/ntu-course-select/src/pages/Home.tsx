@@ -151,9 +151,6 @@ export default function Home() {
 
           {/* Course Classifier */}
           <Box sx={{ borderTop: '1px solid #e0e0e0', pt: 3 }}>
-            <Typography variant="h6" sx={{ color: '#424242', fontWeight: 600, mb: 2 }}>
-              🎯 課程分類器
-            </Typography>
             
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {/* 學分數篩選 */}
@@ -271,6 +268,47 @@ export default function Home() {
                           searchParams.set('keyword', keyword.trim())
                         }
                         searchParams.set('type', courseType.type)
+                        navigate(`/results?${searchParams.toString()}`)
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* 中籤率篩選 */}
+              <Box>
+                <Typography variant="body2" sx={{ color: '#757575', mb: 1, fontWeight: 500 }}>
+                  中籤率範圍
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {[
+                    { range: 'high', label: '高機率 (70%+)', color: '#4caf50' },
+                    { range: 'medium', label: '中機率 (40-70%)', color: '#ff9800' },
+                    { range: 'low', label: '低機率 (<40%)', color: '#f44336' }
+                  ].map((probRange) => (
+                    <Chip
+                      key={probRange.range}
+                      label={probRange.label}
+                      variant="outlined"
+                      clickable
+                      sx={{
+                        borderColor: probRange.color,
+                        color: probRange.color,
+                        '&:hover': {
+                          backgroundColor: probRange.color === '#4caf50' ? '#e8f5e8' : 
+                                         probRange.color === '#ff9800' ? '#fff3e0' : '#ffebee',
+                        },
+                        '&.MuiChip-clickable:hover': {
+                          backgroundColor: probRange.color === '#4caf50' ? '#e8f5e8' : 
+                                         probRange.color === '#ff9800' ? '#fff3e0' : '#ffebee',
+                        },
+                      }}
+                      onClick={() => {
+                        const searchParams = new URLSearchParams()
+                        if (keyword.trim()) {
+                          searchParams.set('keyword', keyword.trim())
+                        }
+                        searchParams.set('probability', probRange.range)
                         navigate(`/results?${searchParams.toString()}`)
                       }}
                     />
