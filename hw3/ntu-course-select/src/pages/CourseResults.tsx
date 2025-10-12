@@ -178,14 +178,16 @@ export default function CourseResults() {
           }
           
           // 更新課程列表
-          setCourses(prev => [...prev, ...batchCourses])
+          setCourses(prev => {
+            const newCourses = [...prev, ...batchCourses]
+            console.log(`✅ 批次完成，新增 ${batchCourses.length} 門課程，累計 ${newCourses.length} 門`)
+            return newCourses
+          })
           setCurrentIndex(endIndex)
           
           // 更新進度
           const progress = Math.round((endIndex / lines.length) * 100)
           setParsingProgress(progress)
-          
-          console.log(`✅ 批次完成，新增 ${batchCourses.length} 門課程，累計 ${courses.length + batchCourses.length} 門`)
           
           setIsProcessing(false)
           
@@ -227,7 +229,7 @@ export default function CourseResults() {
     // 學分數篩選
     const creditFilter = searchParams.get('credit')
     if (creditFilter) {
-      filtered = filtered.filter(course => course.credit === creditFilter)
+      filtered = filtered.filter(course => String(course.credit) === String(creditFilter))
     }
 
     // 系所篩選
@@ -507,6 +509,21 @@ export default function CourseResults() {
 
         {/* Course List */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* 調試信息 */}
+          <Box sx={{ p: 2, backgroundColor: '#f0f0f0', borderRadius: 1, fontSize: '0.8rem' }}>
+            <Typography variant="body2">
+              🔍 調試信息: 總課程數: {courses.length} | 篩選後: {filteredCourses.length} | 進度: {parsingProgress}%
+            </Typography>
+            <Typography variant="body2">
+              📊 篩選條件: 關鍵字="{searchKeyword}" | 學分="{searchParams.get('credit')}" | 系所="{searchParams.get('department')}" | 類型="{searchParams.get('type')}" | 中籤率="{searchParams.get('probability')}"
+            </Typography>
+            {courses.length > 0 && (
+              <Typography variant="body2">
+                📝 前3門課程: {courses.slice(0, 3).map(c => `${c.cou_cname}(${c.credit}學分)`).join(', ')}
+              </Typography>
+            )}
+          </Box>
+          
           {filteredCourses.length === 0 ? (
             <Paper elevation={1} sx={{ p: 4, textAlign: 'center' }}>
               <Typography variant="h6" sx={{ color: '#757575' }}>
