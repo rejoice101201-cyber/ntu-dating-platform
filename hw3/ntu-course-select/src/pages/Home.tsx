@@ -18,7 +18,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material'
-import { Search } from '@mui/icons-material'
+import { Search, Info, Assignment, Favorite } from '@mui/icons-material'
 import CourseInfoMenu from '../components/CourseInfoMenu'
 
 export default function Home() {
@@ -83,31 +83,38 @@ export default function Home() {
               }}
               onMouseEnter={() => setCourseInfoMenuOpen(true)}
             >
-              <Typography 
-                variant="body1" 
-                sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              >
-                課程資訊
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Info sx={{ fontSize: '1.2rem', color: '#1976d2' }} />
+                <Typography 
+                  variant="body1" 
+                  sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  課程資訊
+                </Typography>
+              </Box>
               <CourseInfoMenu 
                 open={courseInfoMenuOpen} 
                 onClose={() => setCourseInfoMenuOpen(false)} 
               />
             </Box>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={handleScheduleClick}
-            >
-              選課結果
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ color: '#1976d2', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-              onClick={() => navigate('/favorites')}
-            >
-              我的收藏
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={handleScheduleClick}>
+              <Assignment sx={{ fontSize: '1.2rem', color: '#1976d2' }} />
+              <Typography 
+                variant="body1" 
+                sx={{ color: '#1976d2', '&:hover': { textDecoration: 'underline' } }}
+              >
+                選課結果
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => navigate('/favorites')}>
+              <Favorite sx={{ fontSize: '1.2rem', color: '#1976d2' }} />
+              <Typography 
+                variant="body1" 
+                sx={{ color: '#1976d2', '&:hover': { textDecoration: 'underline' } }}
+              >
+                我的收藏
+              </Typography>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>
