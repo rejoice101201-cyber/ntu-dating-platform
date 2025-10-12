@@ -135,32 +135,20 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         return prev
       }
       
-      // 先更新目標課程的志願序
-      let updatedCourses = prev.map(course => 
-        course.ser_no === courseId 
-          ? { ...course, priority: newPriority }
-          : course
-      )
+      // 創建一個新的課程列表，先移除目標課程
+      const otherCourses = prev.filter(course => course.ser_no !== courseId)
       
-      // 重新分配所有課程的志願序，確保沒有重複
-      const sortedCourses = updatedCourses
-        .sort((a, b) => {
-          // 先按原志願序排序，再按課程名稱排序（確保穩定性）
-          const priorityA = a.priority || 1
-          const priorityB = b.priority || 1
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB
-          }
-          return a.cou_cname.localeCompare(b.cou_cname)
-        })
+      // 將目標課程插入到新位置
+      const updatedCourses = [...otherCourses]
+      updatedCourses.splice(newPriority - 1, 0, { ...targetCourse, priority: newPriority })
       
-      // 重新分配連續的志願序
-      const finalCourses = sortedCourses.map((course, index) => {
-        const newPriority = index + 1
-        if (course.priority !== newPriority) {
-          console.log(`🔄 重新分配志願序: "${course.cou_cname}" ${course.priority || 1} -> ${newPriority}`)
+      // 重新分配所有課程的志願序，確保連續且唯一
+      const finalCourses = updatedCourses.map((course, index) => {
+        const correctPriority = index + 1
+        if (course.priority !== correctPriority) {
+          console.log(`🔄 重新分配志願序: "${course.cou_cname}" ${course.priority || 1} -> ${correctPriority}`)
         }
-        return { ...course, priority: newPriority }
+        return { ...course, priority: correctPriority }
       })
       
       // 顯示調整後的志願序
