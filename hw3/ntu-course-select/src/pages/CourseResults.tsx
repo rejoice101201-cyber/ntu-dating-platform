@@ -94,45 +94,142 @@ export default function CourseResults() {
         const csvText = await response.text()
         console.log('CSV 載入成功，長度:', csvText.length)
         
-        // 使用 Web Worker 進行非阻塞解析
-        const worker = new Worker(new URL('../workers/csvParser.worker.ts', import.meta.url))
-        
-        worker.postMessage({ 
-          csvData: csvText, 
-          chunkSize: 500 // 每500個課程更新一次進度
-        })
-        
-        worker.onmessage = (e) => {
-          const { type, processed, total, percentage, courses, error } = e.data
+        // 嘗試使用 Web Worker，如果失敗則回退到同步解析
+        try {
+          const worker = new Worker(new URL('../workers/csvParser.worker.ts', import.meta.url))
           
-          switch (type) {
-            case 'progress':
-              setParsingProgress(percentage)
-              console.log(`📊 解析進度: ${percentage}% (${processed}/${total})`)
-              break
-              
-            case 'complete':
-              console.log(`✅ 課程數據處理完成，共 ${courses.length} 門課程`)
-              setCourses(courses)
-              setIsLoading(false)
-              setParsingProgress(100)
-              worker.terminate()
-              break
-              
-            case 'error':
-              console.error('CSV 解析失敗:', error)
-              setError('載入課程數據失敗，請稍後再試')
-              setIsLoading(false)
-              worker.terminate()
-              break
+          worker.postMessage({ 
+            csvData: csvText, 
+            chunkSize: 500 // 每500個課程更新一次進度
+          })
+          
+          worker.onmessage = (e) => {
+            const { type, processed, total, percentage, courses, error } = e.data
+            
+            switch (type) {
+              case 'progress':
+                setParsingProgress(percentage)
+                console.log(`📊 解析進度: ${percentage}% (${processed}/${total})`)
+                break
+                
+              case 'complete':
+                console.log(`✅ 課程數據處理完成，共 ${courses.length} 門課程`)
+                setCourses(courses)
+                setIsLoading(false)
+                setParsingProgress(100)
+                worker.terminate()
+                break
+                
+              case 'error':
+                console.error('CSV 解析失敗:', error)
+                setError('載入課程數據失敗，請稍後再試')
+                setIsLoading(false)
+                worker.terminate()
+                break
+            }
           }
+          
+          worker.onerror = (error) => {
+            console.error('Web Worker 錯誤，回退到同步解析:', error)
+            worker.terminate()
+            // 回退到同步解析
+            parseCSVSync(csvText)
+          }
+          
+        } catch (workerError) {
+          console.error('Web Worker 創建失敗，使用同步解析:', workerError)
+          // 回退到同步解析
+          parseCSVSync(csvText)
         }
         
-        worker.onerror = (error) => {
-          console.error('Web Worker 錯誤:', error)
-          setError('載入課程數據失敗，請稍後再試')
+        // 同步解析函數作為 fallback
+        function parseCSVSync(csvText: string) {
+          console.log('🔄 使用同步解析模式...')
+          
+          const lines = csvText.split('\n')
+          const headers = lines[0].split(',')
+          const parsedCourses: FullCourse[] = []
+          
+          for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim()
+            if (!line) continue
+            
+            // 解析 CSV 行
+            const values: string[] = []
+            let current = ''
+            let inQuotes = false
+            
+            for (let j = 0; j < line.length; j++) {
+              const char = line[j]
+              if (char === '"') {
+                inQuotes = !inQuotes
+              } else if (char === ',' && !inQuotes) {
+                values.push(current.trim())
+                current = ''
+              } else {
+                current += char
+              }
+            }
+            values.push(current.trim())
+            
+            if (values.length < headers.length) continue
+            
+            const baseCourse = {
+              ser_no: values[0]?.trim() || `course-${i}-${Math.random().toString(36).substr(2, 9)}`,
+              cou_cname: values[12]?.trim() || '',
+              cou_ename: values[13]?.trim() || '',
+              tea_cname: values[16]?.trim() || '',
+              cou_code: values[5]?.trim() || '',
+              credit: values[7]?.trim() || '',
+              dpt_code: values[3]?.trim() || '',
+              dpt_abbr: values[50]?.trim() || '',
+              co_tp: values[8]?.trim() || '',
+              mark: values[9]?.trim() || '',
+              co_rep: values[10]?.trim() || '',
+              pre_course: values[11]?.trim() || '',
+              probability: generateNormalDistribution() / 100,
+              classroom: values[18]?.trim() || ''
+            }
+
+            // 為課程分配隨機的連續時間
+            const courseWithTime = assignRandomTimeSlots(baseCourse)
+            
+            const course: FullCourse = {
+              ...courseWithTime,
+              time: generateTimeString(courseWithTime)
+            }
+            
+            // 只包含有課程名稱和教師的課程
+            if (course.cou_cname && course.tea_cname) {
+              parsedCourses.push(course)
+            }
+            
+            // 更新進度
+            if (i % 500 === 0) {
+              const progress = Math.round((i / lines.length) * 100)
+              setParsingProgress(progress)
+            }
+          }
+          
+          // 確保 ser_no 唯一性
+          const serNoSet = new Set<string>()
+          const finalCourses = parsedCourses.map((course, index) => {
+            let uniqueSerNo = course.ser_no
+            let counter = 1
+            
+            while (serNoSet.has(uniqueSerNo)) {
+              uniqueSerNo = `${course.ser_no}-${counter}`
+              counter++
+            }
+            
+            serNoSet.add(uniqueSerNo)
+            return { ...course, ser_no: uniqueSerNo }
+          })
+          
+          console.log(`✅ 同步解析完成，共 ${finalCourses.length} 門課程`)
+          setCourses(finalCourses)
           setIsLoading(false)
-          worker.terminate()
+          setParsingProgress(100)
         }
         
       } catch (err) {

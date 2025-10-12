@@ -10,9 +10,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  optimizeDeps: {
-    include: ['react-window']
-  },
   server: {
     port: 5173,
     strictPort: true, // Error if 5173 in use, no auto-change

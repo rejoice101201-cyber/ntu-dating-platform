@@ -1,5 +1,5 @@
 // CSV 解析 Web Worker
-import { assignRandomTimeSlots } from '../utils/simpleTimeAssigner'
+// 內聯 assignRandomTimeSlots 函數以避免 import 問題
 
 // 生成常態分佈的中籤率 (0-100%)
 function generateNormalDistribution(): number {
@@ -10,6 +10,29 @@ function generateNormalDistribution(): number {
   const stdDev = 15
   const value = z0 * stdDev + mean
   return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+// 內聯 assignRandomTimeSlots 函數
+function assignRandomTimeSlots(course: any) {
+  const credit = parseInt(String(course.credit)) || 1
+  const timeSlotCount = Math.max(1, Math.min(credit, 8))
+  
+  // 生成隨機的連續時間段
+  const day = Math.floor(Math.random() * 5) + 1 // 1-5 (週一到週五)
+  const startTime = Math.floor(Math.random() * (10 - timeSlotCount + 1)) + 1 // 1-10
+  
+  const result: any = { ...course }
+  
+  // 分配連續的時間段
+  for (let i = 0; i < timeSlotCount; i++) {
+    const timeSlot = startTime + i
+    if (timeSlot <= 10) {
+      result[`day${i + 1}`] = day.toString()
+      result[`st${i + 1}`] = timeSlot.toString()
+    }
+  }
+  
+  return result
 }
 
 interface Course {
