@@ -75,7 +75,7 @@ export default function Schedule() {
     }
   }, [location.state, lastLotteryResults, navigate])
 
-  // 使用真實時間數據安排課程
+  // 使用真實時間數據安排課程，按志願序優先處理
   const getRealSchedule = () => {
     const schedule: { [key: string]: { [key: string]: Course } } = {}
     
@@ -84,12 +84,21 @@ export default function Schedule() {
       schedule[day] = {}
     })
 
-    // 為每門課程分配真實時間
-    courses.forEach((course) => {
+    // 按志願序排序課程，優先處理志願序高的課程
+    const sortedCourses = [...courses].sort((a, b) => {
+      const priorityA = a.priority || 999
+      const priorityB = b.priority || 999
+      return priorityA - priorityB
+    })
+
+    console.log(`📊 按志願序排序的課程:`, sortedCourses.map(c => `${c.priority || 999}. ${c.cou_cname}`))
+
+    // 為每門課程分配真實時間，按志願序優先處理
+    sortedCourses.forEach((course) => {
       // 使用時間分配器為課程分配時間
       const courseWithTime = assignRandomTimeSlots(course)
       
-      console.log(`📅 處理課程: ${course.cou_cname}, 學分: ${course.credit}`)
+      console.log(`📅 處理課程: ${course.cou_cname}, 學分: ${course.credit}, 志願序: ${course.priority || '未設定'}`)
       console.log(`📅 分配時間:`, {
         day1: courseWithTime.day1, st1: courseWithTime.st1,
         day2: courseWithTime.day2, st2: courseWithTime.st2,
@@ -101,34 +110,43 @@ export default function Schedule() {
         day8: courseWithTime.day8, st8: courseWithTime.st8
       })
       
-      // 將課程放置到對應的時間段，檢查時間衝突
+      // 嘗試放置課程的所有時段
+      let placedSlots = 0
+      const requiredSlots = parseInt(course.credit) || 3
+      
+      // 嘗試放置時段1
       if (courseWithTime.day1 && courseWithTime.st1) {
-        const dayIndex = parseInt(courseWithTime.day1) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day1) - 1
         const day = DAYS[dayIndex]
         if (day && !schedule[day][courseWithTime.st1]) {
           schedule[day][courseWithTime.st1] = course
+          placedSlots++
           console.log(`✅ 放置時段1: ${day} ${courseWithTime.st1} = ${course.cou_cname}`)
         } else if (day && schedule[day][courseWithTime.st1]) {
           console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st1} 已被 ${schedule[day][courseWithTime.st1].cou_cname} 佔用`)
         }
       }
       
+      // 嘗試放置時段2
       if (courseWithTime.day2 && courseWithTime.st2) {
-        const dayIndex = parseInt(courseWithTime.day2) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day2) - 1
         const day = DAYS[dayIndex]
         if (day && !schedule[day][courseWithTime.st2]) {
           schedule[day][courseWithTime.st2] = course
+          placedSlots++
           console.log(`✅ 放置時段2: ${day} ${courseWithTime.st2} = ${course.cou_cname}`)
         } else if (day && schedule[day][courseWithTime.st2]) {
           console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st2} 已被 ${schedule[day][courseWithTime.st2].cou_cname} 佔用`)
         }
       }
       
+      // 嘗試放置時段3
       if (courseWithTime.day3 && courseWithTime.st3) {
-        const dayIndex = parseInt(courseWithTime.day3) - 1 // 轉換為0-based索引
+        const dayIndex = parseInt(courseWithTime.day3) - 1
         const day = DAYS[dayIndex]
         if (day && !schedule[day][courseWithTime.st3]) {
           schedule[day][courseWithTime.st3] = course
+          placedSlots++
           console.log(`✅ 放置時段3: ${day} ${courseWithTime.st3} = ${course.cou_cname}`)
         } else if (day && schedule[day][courseWithTime.st3]) {
           console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st3} 已被 ${schedule[day][courseWithTime.st3].cou_cname} 佔用`)
@@ -188,6 +206,15 @@ export default function Schedule() {
         } else if (day && schedule[day][courseWithTime.st8]) {
           console.log(`⚠️ 時段衝突: ${day} ${courseWithTime.st8} 已被 ${schedule[day][courseWithTime.st8].cou_cname} 佔用`)
         }
+      }
+      
+      // 記錄課程放置結果
+      if (placedSlots === requiredSlots) {
+        console.log(`🎉 課程 "${course.cou_cname}" 成功放置所有 ${placedSlots}/${requiredSlots} 個時段`)
+      } else if (placedSlots > 0) {
+        console.log(`⚠️ 課程 "${course.cou_cname}" 部分放置 ${placedSlots}/${requiredSlots} 個時段`)
+      } else {
+        console.log(`❌ 課程 "${course.cou_cname}" 無法放置任何時段`)
       }
     })
 
