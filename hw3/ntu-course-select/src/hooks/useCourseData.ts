@@ -9,16 +9,23 @@ function coerceNumber(value: unknown): number | undefined {
 }
 
 function calculateSelectionProbability(row: Record<string, unknown>): number {
+  // First, try to get the lottery rate from CSV if it exists
+  const lotteryRate = coerceNumber(row['lottery_rate']) || coerceNumber(row['中簽率'])
+  
+  if (lotteryRate !== undefined && lotteryRate >= 0 && lotteryRate <= 100) {
+    return lotteryRate
+  }
+  
+  // Fallback: calculate based on limit and co_select data
   const limit = coerceNumber(row['limit'])
   const coSelect = coerceNumber(row['co_select'])
   
-  // If we have both limit and co_select data, calculate based on ratio
   if (limit && coSelect && limit > 0) {
     const ratio = coSelect / limit
     return Math.min(100, Math.max(0, Math.round(ratio * 100)))
   }
   
-  // Otherwise, generate random probability between 20-80%
+  // Final fallback: generate random probability between 20-80%
   return Math.floor(Math.random() * 61) + 20 // 20-80%
 }
 
@@ -28,11 +35,15 @@ function mapRowToCourse(row: Record<string, unknown>): Course | null {
   const ser_no = String(row['ser_no'] ?? '').trim()
   const cou_cname = String(row['cou_cname'] ?? '').trim()
   const cou_ename = String(row['cou_ename'] ?? '').trim()
+  const cou_code = String(row['cou_code'] ?? '').trim()
   
-  if (!ser_no || (!cou_cname && !cou_ename)) return null
+  // Generate ser_no if it's empty, using cou_code as fallback
+  const finalSerNo = ser_no || cou_code || `course-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  
+  if (!finalSerNo || (!cou_cname && !cou_ename)) return null
 
   const course: Course = {
-    ser_no,
+    ser_no: finalSerNo,
     cou_code: String(row['cou_code'] ?? '').trim(),
     cou_cname,
     cou_ename,
@@ -79,17 +90,43 @@ function mapRowToCourse(row: Record<string, unknown>): Course | null {
     selectionProbability: calculateSelectionProbability(row),
   }
 
-  // Parse time slots
+  // Parse time slots - handle both compressed format (567) and separate format (st1, day1)
   const timeSlots: Array<{day: number, start: number, classroom?: string}> = []
+  
+  // First, try to parse compressed time format (e.g., "567" = Friday periods 6,7)
   for (let i = 1; i <= 6; i++) {
-    const start = course[`st${i}` as keyof Course] as number | undefined
-    const day = course[`day${i}` as keyof Course] as number | undefined
+    const compressedTime = course[`st${i}` as keyof Course] as number | undefined
     const classroom = course[`clsrom_${i}` as keyof Course] as string | undefined
     
-    if (start && day) {
-      timeSlots.push({ day, start, classroom })
+    if (compressedTime && compressedTime > 0) {
+      // Parse compressed format: first digit is day, remaining digits are periods
+      const timeStr = compressedTime.toString()
+      const day = parseInt(timeStr[0])
+      const periods = timeStr.slice(1).split('').map(p => parseInt(p))
+      
+      if (day >= 1 && day <= 7) {
+        periods.forEach(period => {
+          if (period >= 1 && period <= 14) {
+            timeSlots.push({ day, start: period, classroom })
+          }
+        })
+      }
     }
   }
+  
+  // Fallback: try separate format (st1, day1, etc.)
+  if (timeSlots.length === 0) {
+    for (let i = 1; i <= 6; i++) {
+      const start = course[`st${i}` as keyof Course] as number | undefined
+      const day = course[`day${i}` as keyof Course] as number | undefined
+      const classroom = course[`clsrom_${i}` as keyof Course] as string | undefined
+      
+      if (start && day && start >= 1 && start <= 14 && day >= 1 && day <= 7) {
+        timeSlots.push({ day, start, classroom })
+      }
+    }
+  }
+  
   course.timeSlots = timeSlots
 
   return course

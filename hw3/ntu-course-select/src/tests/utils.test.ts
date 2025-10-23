@@ -1,11 +1,13 @@
-import { describe, it, expect } from '@jest/globals'
+import { describe, it, expect } from 'vitest'
 import { 
   getSlots, 
   detectConflicts, 
   hasTimeConflict, 
   getReadableTimeSlots,
   formatConflictMessage,
-  getConflictSeverity
+  getConflictSeverity,
+  calculateSelectionProbability,
+  getCoursePriority
 } from '../utils/timeUtils'
 import type { Course } from '../types/course'
 
@@ -24,10 +26,10 @@ const createMockCourse = (overrides: Partial<Course> = {}): Course => ({
   tea_ename: 'Prof. Chang',
   st1: 1,
   day1: 1,
-  st2: 2,
-  day2: 1,
+  st2: 0,
+  day2: 0,
   clsrom_1: 'EC101',
-  clsrom_2: 'EC102',
+  clsrom_2: '',
   limit: 50,
   pre_course: '',
   co_rep: '',
@@ -189,7 +191,7 @@ describe('detectConflicts', () => {
     expect(result.conflicts[0].type).toBe('time')
   })
 
-  it('should detect classroom distance conflicts', () => {
+  it('should not detect classroom distance conflicts (feature disabled)', () => {
     const newCourse = createMockCourse({
       ser_no: '1',
       st1: 1,
@@ -211,8 +213,10 @@ describe('detectConflicts', () => {
       maxClassroomDistance: 1
     })
     
-    expect(result.hasConflict).toBe(true)
-    expect(result.conflicts.some(c => c.type === 'classroom')).toBe(true)
+    // There will be a time conflict (same time slot), but no classroom distance conflict
+    expect(result.hasConflict).toBe(true) // Time conflict exists
+    expect(result.conflicts.some(c => c.type === 'classroom')).toBe(false) // No classroom conflict
+    expect(result.conflicts.some(c => c.type === 'time')).toBe(true) // Time conflict exists
   })
 
   it('should detect priority conflicts', () => {
@@ -359,5 +363,76 @@ describe('getConflictSeverity', () => {
     ]
 
     expect(getConflictSeverity(conflicts)).toBe('low')
+  })
+})
+
+describe('calculateSelectionProbability', () => {
+  it('should calculate probability based on course data', () => {
+    const course = createMockCourse({
+      limit: 100,
+      co_tp: '1', // Required course
+      dpt_abbr: 'CS'
+    })
+
+    const probability = calculateSelectionProbability(course)
+    expect(probability).toBeGreaterThan(50)
+    expect(probability).toBeLessThanOrEqual(90)
+  })
+
+  it('should handle courses with no limit', () => {
+    const course = createMockCourse({
+      limit: undefined,
+      co_tp: '0'
+    })
+
+    const probability = calculateSelectionProbability(course)
+    expect(probability).toBeGreaterThanOrEqual(20)
+    expect(probability).toBeLessThanOrEqual(90)
+  })
+
+  it('should adjust for small class sizes', () => {
+    const course = createMockCourse({
+      limit: 5,
+      co_tp: '0'
+    })
+
+    const probability = calculateSelectionProbability(course)
+    expect(probability).toBeLessThan(50)
+  })
+})
+
+describe('getCoursePriority', () => {
+  it('should return highest priority for required courses', () => {
+    const course = createMockCourse({
+      co_tp: '1',
+      mark: '1'
+    })
+
+    expect(getCoursePriority(course)).toBe(3)
+  })
+
+  it('should return medium priority for semi-required courses', () => {
+    const course = createMockCourse({
+      co_tp: '2'
+    })
+
+    expect(getCoursePriority(course)).toBe(2)
+  })
+
+  it('should return low priority for elective courses', () => {
+    const course = createMockCourse({
+      co_tp: '0',
+      mark: '0'
+    })
+
+    expect(getCoursePriority(course)).toBe(1)
+  })
+
+  it('should return 0 for unknown course types', () => {
+    const course = createMockCourse({
+      co_tp: 'unknown'
+    })
+
+    expect(getCoursePriority(course)).toBe(0)
   })
 })

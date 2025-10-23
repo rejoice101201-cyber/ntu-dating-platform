@@ -1,70 +1,5 @@
 import type { Course } from '../types/course'
 
-export interface ConflictDetail {
-  type: 'time' | 'priority' | 'distance'
-  message: string
-  slot: { day: number; period: number }
-  conflictingCourse: Course
-}
-
-export interface ConflictResult {
-  hasConflict: boolean
-  conflicts: ConflictDetail[]
-}
-
-export interface DetectOptions {
-  checkClassroomDistance?: boolean
-  maxClassroomDistance?: number
-  allowOverride?: boolean
-}
-
-// Basic slot extraction to period granularity
-export function getSlots(course: Course): Array<{ day: number; period: number; classroom?: string }> {
-  const slots: Array<{ day: number; period: number; classroom?: string }> = []
-  const timeSlots = course.timeSlots || []
-  for (const ts of timeSlots) {
-    if (typeof ts.day === 'number' && typeof ts.start === 'number') {
-      slots.push({ day: ts.day, period: ts.start, classroom: ts.classroom })
-    }
-  }
-  return slots
-}
-
-export function detectConflicts(course: Course, selected: Course[]): ConflictResult {
-  const aSlots = getSlots(course)
-  const details: ConflictDetail[] = []
-  const occupied = new Map<number, Set<number>>()
-  for (const c of selected) {
-    for (const s of getSlots(c)) {
-      if (!occupied.has(s.day)) occupied.set(s.day, new Set())
-      occupied.get(s.day)!.add(s.period)
-    }
-  }
-  for (const s of aSlots) {
-    const set = occupied.get(s.day)
-    if (set && set.has(s.period)) {
-      const conflictingCourse = selected.find(x => getSlots(x).some(ss => ss.day === s.day && ss.period === s.period))!
-      details.push({ type: 'time', message: `與 ${conflictingCourse.cou_cname || conflictingCourse.cou_ename} 時段衝突`, slot: { day: s.day, period: s.period }, conflictingCourse })
-    }
-  }
-  return { hasConflict: details.length > 0, conflicts: details }
-}
-
-// Generate simple alternatives: return subset of candidates that do not conflict with baseSelected.
-export function suggestAlternatives(candidates: Course[], baseSelected: Course[], limit = 10): Course[] {
-  const result: Course[] = []
-  for (const c of candidates) {
-    const { hasConflict } = detectConflicts(c, baseSelected)
-    if (!hasConflict) {
-      result.push(c)
-      if (result.length >= limit) break
-    }
-  }
-  return result
-}
-
-import type { Course } from '../types/course'
-
 export interface Slot {
   day: number
   period: number
@@ -84,17 +19,43 @@ export interface ConflictResult {
   canOverride: boolean
 }
 
-// Mock classroom coordinates for distance calculation
-const CLASSROOM_COORDS: Record<string, { x: number; y: number }> = {
-  'EC101': { x: 0, y: 0 },
-  'EC102': { x: 0, y: 1 },
-  'EC201': { x: 1, y: 0 },
-  'EC202': { x: 1, y: 1 },
-  '博雅101': { x: 2, y: 0 },
-  '博雅102': { x: 2, y: 1 },
-  '共104': { x: 3, y: 0 },
-  '共105': { x: 3, y: 1 },
-  // Add more as needed
+export interface DetectOptions {
+  checkClassroomDistance?: boolean
+  maxClassroomDistance?: number
+  allowOverride?: boolean
+}
+
+// Enhanced classroom coordinates for distance calculation
+const CLASSROOM_COORDS: Record<string, { x: number; y: number; building: string }> = {
+  // Engineering College
+  'EC101': { x: 0, y: 0, building: 'EC' },
+  'EC102': { x: 0, y: 1, building: 'EC' },
+  'EC201': { x: 3, y: 0, building: 'EC' },
+  'EC202': { x: 3, y: 1, building: 'EC' },
+  'EC301': { x: 0, y: 2, building: 'EC' },
+  'EC302': { x: 0, y: 3, building: 'EC' },
+  
+  // Liberal Arts Building
+  '博雅101': { x: 2, y: 0, building: '博雅' },
+  '博雅102': { x: 2, y: 1, building: '博雅' },
+  '博雅201': { x: 2, y: 2, building: '博雅' },
+  '博雅202': { x: 2, y: 3, building: '博雅' },
+  
+  // Common Building
+  '共104': { x: 3, y: 0, building: '共' },
+  '共105': { x: 3, y: 1, building: '共' },
+  '共204': { x: 3, y: 2, building: '共' },
+  '共205': { x: 3, y: 3, building: '共' },
+  
+  // Science Building
+  '理101': { x: 1, y: 0, building: '理' },
+  '理102': { x: 1, y: 1, building: '理' },
+  '理201': { x: 1, y: 2, building: '理' },
+  '理202': { x: 1, y: 3, building: '理' },
+  
+  // Online courses
+  '線上': { x: -1, y: -1, building: '線上' },
+  'Online': { x: -1, y: -1, building: '線上' },
 }
 
 const DAY_NAMES = ['', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
@@ -156,7 +117,7 @@ export const getSlots = (course: Course): Slot[] => {
 }
 
 /**
- * Calculate distance between two classrooms (mock implementation)
+ * Calculate distance between two classrooms (enhanced implementation)
  */
 const getClassroomDistance = (classroom1?: string, classroom2?: string): number => {
   if (!classroom1 || !classroom2) return Infinity
@@ -166,17 +127,38 @@ const getClassroomDistance = (classroom1?: string, classroom2?: string): number 
   
   if (!coord1 || !coord2) return Infinity
   
+  // Online courses have no distance constraint
+  if (coord1.building === '線上' || coord2.building === '線上') return 0
+  
+  // Same building = very close
+  if (coord1.building === coord2.building) {
+    return Math.sqrt(Math.pow(coord1.x - coord2.x, 2) + Math.pow(coord1.y - coord2.y, 2)) * 0.5
+  }
+  
+  // Different buildings = farther
   return Math.sqrt(Math.pow(coord1.x - coord2.x, 2) + Math.pow(coord1.y - coord2.y, 2))
 }
 
 /**
- * Check if a course is required/priority
+ * Check if a course is required/priority (enhanced)
  */
 const isRequiredCourse = (course: Course): boolean => {
   return (course.co_tp === '1') || // Required course type
          (course.mark === '1') ||   // Required mark
          (course.co_rep?.toLowerCase().includes('必修') ?? false) ||
-         (course.co_rep?.toLowerCase().includes('必帶') ?? false)
+         (course.co_rep?.toLowerCase().includes('必帶') ?? false) ||
+         (course.co_rep?.toLowerCase().includes('required') ?? false) ||
+         (course.co_rep?.toLowerCase().includes('mandatory') ?? false)
+}
+
+/**
+ * Get course priority level (0-3, higher = more important)
+ */
+const getCoursePriority = (course: Course): number => {
+  if (isRequiredCourse(course)) return 3 // Highest priority
+  if (course.co_tp === '2') return 2 // Semi-required
+  if (course.co_tp === '0' && course.mark === '0') return 1 // Elective
+  return 0 // Unknown
 }
 
 /**
@@ -192,7 +174,7 @@ export const detectConflicts = (
   } = {}
 ): ConflictResult => {
   const {
-    checkClassroomDistance = true,
+    checkClassroomDistance = false, // Disabled by default
     maxClassroomDistance = 2,
     allowOverride = true
   } = options
@@ -229,25 +211,7 @@ export const detectConflicts = (
         slot: newSlot
       })
 
-      // Classroom distance conflict (if enabled)
-      if (checkClassroomDistance && newSlot.classroom && conflictingCourse) {
-        const conflictingSlots = getSlots(conflictingCourse)
-        const conflictingSlot = conflictingSlots.find(s => 
-          s.day === newSlot.day && s.period === newSlot.period
-        )
-        
-        if (conflictingSlot?.classroom) {
-          const distance = getClassroomDistance(newSlot.classroom, conflictingSlot.classroom)
-          if (distance > maxClassroomDistance) {
-            conflicts.push({
-              type: 'classroom',
-              message: `教室距離過遠：${newSlot.classroom} 與 ${conflictingSlot.classroom} 距離 ${distance.toFixed(1)} 單位`,
-              conflictingCourse,
-              slot: newSlot
-            })
-          }
-        }
-      }
+      // Classroom distance conflict removed as requested
 
       // Priority conflict (required vs elective)
       if (isRequiredCourse(conflictingCourse) && !isRequiredCourse(newCourse)) {
@@ -310,3 +274,37 @@ export const getReadableTimeSlots = (course: Course): string[] => {
     `${DAY_NAMES[slot.day]}第${PERIOD_NAMES[slot.period]}節${slot.classroom ? `@${slot.classroom}` : ''}`
   )
 }
+
+/**
+ * Calculate selection probability based on course data
+ */
+export const calculateSelectionProbability = (course: Course): number => {
+  let probability = 50 // Base probability
+  
+  // Adjust based on limit
+  if (course.limit) {
+    if (course.limit > 100) probability += 20
+    else if (course.limit > 50) probability += 10
+    else if (course.limit < 20) probability -= 20
+    else if (course.limit < 10) probability -= 30
+  }
+  
+  // Adjust based on course type
+  const priority = getCoursePriority(course)
+  if (priority === 3) probability += 15 // Required courses
+  else if (priority === 2) probability += 5 // Semi-required
+  
+  // Adjust based on department popularity (mock)
+  const popularDepts = ['CS', 'EE', 'ME', 'CE']
+  if (course.dpt_abbr && popularDepts.includes(course.dpt_abbr)) {
+    probability -= 10 // More competitive
+  }
+  
+  // Ensure probability is within reasonable bounds
+  return Math.max(20, Math.min(90, probability))
+}
+
+/**
+ * Get course priority level (exported for use in components)
+ */
+export { getCoursePriority }
