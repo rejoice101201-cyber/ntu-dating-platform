@@ -19,6 +19,12 @@ export interface ConflictResult {
   canOverride: boolean
 }
 
+export interface DetectOptions {
+  checkClassroomDistance?: boolean
+  maxClassroomDistance?: number
+  allowOverride?: boolean
+}
+
 // Enhanced classroom coordinates for distance calculation
 const CLASSROOM_COORDS: Record<string, { x: number; y: number; building: string }> = {
   // Engineering College
