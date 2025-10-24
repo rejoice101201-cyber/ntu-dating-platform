@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Map } from './pages/Map';
 import { List } from './pages/List';
+import PerformanceDashboard from './components/PerformanceDashboard';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -39,6 +40,7 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<Navigate to="/map" replace />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Routes>
+      <PerformanceDashboard />
     </Router>
   );
 };

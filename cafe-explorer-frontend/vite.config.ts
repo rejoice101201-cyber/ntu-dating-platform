@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5194,  // Fixed port to prevent CORS issues
+    port: 5173,  // Standard Vite port
     strictPort: true,  // 重要：如果端口占用，直接報錯而不自動試下一個
     host: true   // Allow external access
   },
