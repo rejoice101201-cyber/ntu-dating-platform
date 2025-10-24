@@ -58,7 +58,7 @@ export interface AuthResponse {
 }
 
 export interface Location {
-  id: number;
+  id: string;
   name: string;
   lat: number;
   lng: number;
@@ -153,8 +153,10 @@ export const locationsAPI = {
     return response.data;
   },
 
-  toggleFavorite: async (id: number): Promise<Location> => {
+  toggleFavorite: async (id: string): Promise<Location> => {
+    console.log('🌐 API 調用: PATCH /api/locations/' + id + '/favorite');
     const response: AxiosResponse<Location> = await api.patch(`/api/locations/${id}/favorite`);
+    console.log('✅ API 響應:', response.data);
     return response.data;
   },
 };

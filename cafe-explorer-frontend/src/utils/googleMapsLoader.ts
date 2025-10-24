@@ -62,5 +62,5 @@ export const loadGoogleMaps = (): Promise<void> => {
 };
 
 export const isGoogleMapsLoaded = (): boolean => {
-  return isLoaded && window.google && window.google.maps;
+  return isLoaded && !!(window.google && window.google.maps);
 };

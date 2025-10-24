@@ -64,7 +64,7 @@ export const logDiagnostic = () => {
 // 檢查 API Key 格式
 export const validateApiKey = (key: string): boolean => {
   // Google Maps API Key 通常是 39 個字符的字符串
-  return key && key.length === 39 && /^[A-Za-z0-9_-]+$/.test(key);
+  return !!(key && key.length === 39 && /^[A-Za-z0-9_-]+$/.test(key));
 };
 
 // 檢查當前 URL 是否在允許清單中
@@ -72,7 +72,6 @@ export const checkReferrer = (): boolean => {
   if (typeof window === 'undefined') return false;
   
   const hostname = window.location.hostname;
-  const port = window.location.port;
   
   // 檢查是否為 localhost 或 127.0.0.1
   return hostname === 'localhost' || hostname === '127.0.0.1';

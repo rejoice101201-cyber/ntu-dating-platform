@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { Cafe } from '../types/Cafe';
 import { locationsAPI } from '../services/api';
 import type { Location, CreateLocationRequest, UpdateLocationRequest } from '../services/api';
@@ -31,7 +31,7 @@ interface CafeProviderProps {
 
 // Convert backend Location to frontend Cafe format
 const locationToCafe = (location: Location): Cafe => ({
-  id: location.id.toString(),
+  id: location.id,
   name: location.name,
   address: location.address || '',
   lat: location.lat,
@@ -103,6 +103,7 @@ export const CafeProvider: React.FC<CafeProviderProps> = ({ children }) => {
     
     try {
       const createRequest = cafeToCreateRequest(newCafe);
+      console.log('🔍 Creating cafe with data:', createRequest);
       const location = await locationsAPI.create(createRequest);
       const cafe = locationToCafe(location);
       setCafes(prev => [...prev, cafe]);
@@ -159,16 +160,19 @@ export const CafeProvider: React.FC<CafeProviderProps> = ({ children }) => {
   const toggleFavorite = async (id: string): Promise<boolean> => {
     if (!isLoggedIn) return false;
     
+    console.log('🔄 切換收藏狀態，咖啡廳 ID:', id);
     setLoading(true);
     setError(null);
     
     try {
-      const location = await locationsAPI.toggleFavorite(parseInt(id));
+      const location = await locationsAPI.toggleFavorite(id);
+      console.log('✅ 收藏切換成功:', location);
       const cafe = locationToCafe(location);
       setCafes(prev => prev.map(c => c.id === id ? cafe : c));
       return true;
     } catch (err: any) {
-      console.error('Failed to toggle favorite:', err);
+      console.error('❌ 收藏切換失敗:', err);
+      console.error('錯誤詳情:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to toggle favorite');
       return false;
     } finally {

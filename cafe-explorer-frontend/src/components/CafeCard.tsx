@@ -7,7 +7,7 @@ interface CafeCardProps {
   onEdit?: (cafe: Cafe) => void;
 }
 
-export const CafeCard: React.FC<CafeCardProps> = ({ cafe, onEdit }) => {
+export const CafeCard: React.FC<CafeCardProps> = ({ cafe }) => {
   const { updateCafe, deleteCafe, toggleFavorite } = useCafes();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({

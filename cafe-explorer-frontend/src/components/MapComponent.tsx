@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Cafe } from '../types/Cafe';
-import { loadGoogleMaps, isGoogleMapsLoaded } from '../utils/googleMapsLoader';
+import { loadGoogleMaps } from '../utils/googleMapsLoader';
 import { logDiagnostic } from '../utils/mapsDiagnostic';
 import { autoFixReferrerError } from '../utils/fixReferrerError';
+
 
 interface MapComponentProps {
   cafes: Cafe[];
@@ -97,7 +98,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       cafes.forEach(cafe => {
         const marker = new google.maps.Marker({
           position: { lat: cafe.lat, lng: cafe.lng },
-          map: mapInstanceRef.current,
+          map: mapInstanceRef.current!,
           title: cafe.name,
           icon: {
             url: cafe.isFavorite ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
@@ -136,7 +137,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       });
 
         marker.addListener('click', () => {
-          infoWindow.open(mapInstanceRef.current, marker);
+          infoWindow.open(mapInstanceRef.current!, marker);
         });
 
         markersRef.current.push(marker);

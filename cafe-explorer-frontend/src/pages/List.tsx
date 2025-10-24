@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useCafes } from '../context/CafeContext';
 import { CafeCard } from '../components/CafeCard';
 import { Navigation } from '../components/Navigation';
-import type { Cafe } from '../types/Cafe';
 
 export const List: React.FC = () => {
   const { cafes } = useCafes();

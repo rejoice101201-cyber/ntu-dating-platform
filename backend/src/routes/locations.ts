@@ -15,7 +15,7 @@ const createLocationSchema = z.object({
   lat: z.number().min(-90).max(90, 'Latitude must be between -90 and 90'),
   lng: z.number().min(-180).max(180, 'Longitude must be between -180 and 180'),
   address: z.string().optional(),
-  rating: z.number().int().min(1).max(5).optional(),
+  rating: z.number().min(1).max(5).optional(),
   notes: z.string().optional()
 });
 
@@ -24,7 +24,7 @@ const updateLocationSchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
   address: z.string().optional(),
-  rating: z.number().int().min(1).max(5).optional(),
+  rating: z.number().min(1).max(5).optional(),
   notes: z.string().optional(),
   is_favorite: z.boolean().optional()
 });
@@ -48,7 +48,9 @@ router.get('/', async (req, res) => {
 // POST /api/locations - Create new location
 router.post('/', async (req, res) => {
   try {
+    console.log('📝 Creating location with data:', JSON.stringify(req.body, null, 2));
     const data = createLocationSchema.parse(req.body);
+    console.log('✅ Validation passed for location data');
     const db = getDb();
     
     const result = await db.run(
@@ -74,6 +76,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(location);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('❌ Validation error:', error.issues);
       return res.status(422).json({
         message: 'Validation error',
         errors: error.issues

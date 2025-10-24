@@ -27,7 +27,12 @@ router.get('/places', async (req, res) => {
       radius: req.query.radius ? parseInt(req.query.radius as string) : undefined
     });
 
+    // Log API key status for debugging
+    console.log('🔑 Google Server API Key status:', process.env.GOOGLE_SERVER_KEY ? 'Configured' : 'Not configured');
+    console.log('🔑 API Key preview:', process.env.GOOGLE_SERVER_KEY ? `${process.env.GOOGLE_SERVER_KEY.substring(0, 10)}...` : 'undefined');
+    
     if (!process.env.GOOGLE_SERVER_KEY) {
+      console.error('❌ Google Places API key not configured');
       return res.status(500).json({ 
         message: 'Google Places API key not configured' 
       });
@@ -100,7 +105,11 @@ router.get('/places/nearby', async (req, res) => {
       radius: req.query.radius ? parseInt(req.query.radius as string) : undefined
     });
 
+    // Log API key status for debugging
+    console.log('🔑 Google Server API Key status (nearby):', process.env.GOOGLE_SERVER_KEY ? 'Configured' : 'Not configured');
+    
     if (!process.env.GOOGLE_SERVER_KEY) {
+      console.error('❌ Google Places API key not configured (nearby)');
       return res.status(500).json({ 
         message: 'Google Places API key not configured' 
       });
