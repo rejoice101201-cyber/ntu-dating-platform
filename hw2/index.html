@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pacman-hw2-refactor</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Preload images
+      const pacmanImg = new Image();
+      pacmanImg.src = '/pacman.png';
+      pacmanImg.onload = () => {
+        console.log('Pacman image loaded');
+        (window as any).__pacmanImg = pacmanImg;
+      };
+      pacmanImg.onerror = () => {
+        console.error('Failed to load pacman.png');
+      };
+      
+      const eyesImg = new Image();
+      eyesImg.src = '/eyes.png';
+      eyesImg.onload = () => {
+        console.log('Eyes image loaded');
+        (window as any).__eyesImg = eyesImg;
+      };
+      eyesImg.onerror = () => {
+        console.error('Failed to load eyes.png');
+      };
+    </script>
+  </body>
+</html>
