@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cafe } from '../types/Cafe';
+import type { Cafe } from '../types/Cafe';
 import { useCafes } from '../context/CafeContext';
 
 interface CafeCardProps {

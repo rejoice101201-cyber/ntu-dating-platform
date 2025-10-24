@@ -1,41 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-export const Login: React.FC = () => {
+export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Check for success message from registration
-  useEffect(() => {
-    if (location.state?.message) {
-      setSuccessMessage(location.state.message);
-      // Clear the state to prevent showing the message again
-      navigate(location.pathname, { replace: true });
+  const validateForm = (): string | null => {
+    if (!email || !password || !confirmPassword) {
+      return 'All fields are required';
     }
-  }, [location.state, location.pathname, navigate]);
+    
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    
+    if (password !== confirmPassword) {
+      return 'Passwords do not match';
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const result = await login(email, password);
+      const result = await register(email, password);
       if (result.success) {
-        navigate('/map');
+        // Registration successful, redirect to login
+        navigate('/login', { 
+          state: { message: 'Registration successful! Please log in.' }
+        });
       } else {
-        setError(result.error || 'Invalid email or password');
+        setError(result.error || 'Registration failed. Please try again.');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +69,7 @@ export const Login: React.FC = () => {
           <h1 className="text-4xl font-bold text-blue-500 mb-2">☕</h1>
           <h2 className="text-3xl font-bold text-gray-700">Cafe Explorer</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Discover and collect your favorite cafes
+            Create your account to start exploring cafes
           </p>
         </div>
       </div>
@@ -84,21 +105,34 @@ export const Login: React.FC = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Enter your password"
+                  placeholder="Enter your password (min 8 characters)"
                 />
               </div>
             </div>
 
-            {successMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md text-sm">
-                {successMessage}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Confirm your password"
+                />
               </div>
-            )}
+            </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
@@ -115,10 +149,10 @@ export const Login: React.FC = () => {
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
+                    Creating account...
                   </div>
                 ) : (
-                  'Sign in'
+                  'Create account'
                 )}
               </button>
             </div>
@@ -130,16 +164,16 @@ export const Login: React.FC = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
               </div>
             </div>
 
             <div className="mt-4 text-center">
               <Link
-                to="/register"
+                to="/login"
                 className="text-blue-600 hover:text-blue-500 text-sm font-medium"
               >
-                Create a new account
+                Sign in to your account
               </Link>
             </div>
           </div>

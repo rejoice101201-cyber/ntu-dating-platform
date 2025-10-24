@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState } from '../types/Cafe';
+import type { User, AuthState } from '../types/Cafe';
+import { authAPI } from '../services/api';
+import type { AuthResponse } from '../services/api';
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -33,42 +36,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     
     if (savedToken && savedUser) {
-      setAuthState({
-        user: JSON.parse(savedUser),
-        isLoggedIn: true,
-        token: savedToken,
-      });
+      try {
+        const user = JSON.parse(savedUser);
+        setAuthState({
+          user,
+          isLoggedIn: true,
+          token: savedToken,
+        });
+      } catch (error) {
+        // Invalid stored data, clear it
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user');
+      }
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Fake authentication - accept any email/password
-    if (email && password) {
-      const user: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-      };
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response: AuthResponse = await authAPI.login({ email, password });
       
-      const token = 'fake-jwt-token-' + Date.now();
+      const user: User = {
+        id: response.user.id.toString(),
+        email: response.user.email,
+        name: response.user.email.split('@')[0],
+      };
       
       setAuthState({
         user,
         isLoggedIn: true,
-        token,
+        token: response.token,
       });
       
       // Save to localStorage
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem('auth_token', response.token);
       localStorage.setItem('user', JSON.stringify(user));
       
-      return true;
+      return { success: true };
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      return { success: false, error: errorMessage };
     }
-    
-    return false;
+  };
+
+  const register = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await authAPI.register({ email, password });
+      return { success: true };
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
+      return { success: false, error: errorMessage };
+    }
   };
 
   const logout = () => {
@@ -85,6 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     ...authState,
     login,
+    register,
     logout,
   };
 

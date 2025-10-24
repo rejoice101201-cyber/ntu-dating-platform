@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CafeProvider } from './context/CafeContext';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { Map } from './pages/Map';
 import { List } from './pages/List';
 
@@ -18,6 +19,7 @@ const AppContent: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/map"
           element={

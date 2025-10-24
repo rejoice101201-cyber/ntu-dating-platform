@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Cafe } from '../types/Cafe';
+import type { Cafe } from '../types/Cafe';
+import { loadGoogleMaps, isGoogleMapsLoaded } from '../utils/googleMapsLoader';
+import { logDiagnostic } from '../utils/mapsDiagnostic';
+import { autoFixReferrerError } from '../utils/fixReferrerError';
 
 interface MapComponentProps {
   cafes: Cafe[];
@@ -23,78 +26,92 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
   // Load Google Maps API
   useEffect(() => {
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
+    // 先檢查 Referrer 錯誤
+    autoFixReferrerError();
+    
+    loadGoogleMaps()
+      .then(() => {
         setIsLoaded(true);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_JS_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setIsLoaded(true);
-      script.onerror = () => {
-        console.error('Failed to load Google Maps API');
-        // Fallback: show a message or use a different map service
-      };
-      document.head.appendChild(script);
-    };
-
-    loadGoogleMaps();
+        // 載入成功後運行診斷
+        setTimeout(() => logDiagnostic(), 1000);
+      })
+      .catch((error) => {
+        console.error('Failed to load Google Maps API:', error);
+        setIsLoaded(false);
+        // 載入失敗後也運行診斷
+        logDiagnostic();
+      });
   }, []);
 
   // Initialize map
   useEffect(() => {
     if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
 
-    const map = new google.maps.Map(mapRef.current, {
-      center,
-      zoom,
-      mapTypeControl: true,
-      streetViewControl: true,
-      fullscreenControl: true,
-    });
+    // 確保 Google Maps API 完全載入
+    if (!window.google || !window.google.maps || !window.google.maps.Map) {
+      console.warn('Google Maps API not fully loaded yet');
+      return;
+    }
 
-    mapInstanceRef.current = map;
+    try {
+      const map = new google.maps.Map(mapRef.current, {
+        center,
+        zoom,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
+      });
 
-    // Add click listener to map
-    map.addListener('click', (event: google.maps.MapMouseEvent) => {
-      if (event.latLng && onMapClick) {
-        const lat = event.latLng.lat();
-        const lng = event.latLng.lng();
-        onMapClick(lat, lng);
-      }
-    });
+      mapInstanceRef.current = map;
+
+      // Add click listener to map
+      map.addListener('click', (event: google.maps.MapMouseEvent) => {
+        if (event.latLng && onMapClick) {
+          const lat = event.latLng.lat();
+          const lng = event.latLng.lng();
+          onMapClick(lat, lng);
+        }
+      });
+    } catch (error) {
+      console.error('Error creating Google Map:', error);
+      return;
+    }
   }, [isLoaded, center, zoom, onMapClick]);
 
   // Update markers when cafes change
   useEffect(() => {
     if (!isLoaded || !mapInstanceRef.current) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
+    // 確保 Google Maps API 完全載入
+    if (!window.google || !window.google.maps || !window.google.maps.Marker) {
+      console.warn('Google Maps API not fully loaded for markers');
+      return;
+    }
 
-    // Add new markers
-    cafes.forEach(cafe => {
-      const marker = new google.maps.Marker({
-        position: { lat: cafe.lat, lng: cafe.lng },
-        map: mapInstanceRef.current,
-        title: cafe.name,
-        icon: {
-          url: cafe.isFavorite ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="red" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          `) : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="blue" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-          `),
-          scaledSize: new google.maps.Size(24, 24),
-        },
-      });
+    try {
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+
+      // Add new markers
+      cafes.forEach(cafe => {
+        const marker = new google.maps.Marker({
+          position: { lat: cafe.lat, lng: cafe.lng },
+          map: mapInstanceRef.current,
+          title: cafe.name,
+          icon: {
+            url: cafe.isFavorite ? 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="red" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            `) : 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="blue" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+              </svg>
+            `),
+            scaledSize: new google.maps.Size(24, 24),
+          },
+        });
 
       // Add click listener to marker
       marker.addListener('click', () => {
@@ -118,12 +135,15 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         `,
       });
 
-      marker.addListener('click', () => {
-        infoWindow.open(mapInstanceRef.current, marker);
-      });
+        marker.addListener('click', () => {
+          infoWindow.open(mapInstanceRef.current, marker);
+        });
 
-      markersRef.current.push(marker);
-    });
+        markersRef.current.push(marker);
+      });
+    } catch (error) {
+      console.error('Error creating markers:', error);
+    }
   }, [isLoaded, cafes, onCafeClick]);
 
   if (!isLoaded) {
@@ -134,6 +154,9 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           <p className="text-gray-600">Loading Google Maps...</p>
           <p className="text-sm text-gray-500 mt-2">
             Make sure to set VITE_GOOGLE_MAPS_JS_KEY in your .env file
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            If this takes too long, check your internet connection
           </p>
         </div>
       </div>

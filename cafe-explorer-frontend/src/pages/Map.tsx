@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCafes } from '../context/CafeContext';
 import { MapComponent } from '../components/MapComponent';
 import { Navigation } from '../components/Navigation';
-import { Cafe } from '../types/Cafe';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import type { Cafe } from '../types/Cafe';
+import { searchAPI } from '../services/api';
+import type { PlaceResult } from '../services/api';
 
 export const Map: React.FC = () => {
-  const { cafes, addCafe } = useCafes();
+  const { cafes, addCafe, loading, error } = useCafes();
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [newCafe, setNewCafe] = useState({
@@ -14,6 +17,10 @@ export const Map: React.FC = () => {
     rating: 5,
     notes: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
@@ -25,25 +32,27 @@ export const Map: React.FC = () => {
     // You could show a detailed view or edit form here
   };
 
-  const handleAddCafe = (e: React.FormEvent) => {
+  const handleAddCafe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedLocation && newCafe.name && newCafe.address) {
-      addCafe({
+      const success = await addCafe({
         ...newCafe,
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
         isFavorite: false,
       });
       
-      // Reset form
-      setNewCafe({
-        name: '',
-        address: '',
-        rating: 5,
-        notes: '',
-      });
-      setShowAddForm(false);
-      setSelectedLocation(null);
+      if (success) {
+        // Reset form
+        setNewCafe({
+          name: '',
+          address: '',
+          rating: 5,
+          notes: '',
+        });
+        setShowAddForm(false);
+        setSelectedLocation(null);
+      }
     }
   };
 
@@ -58,6 +67,53 @@ export const Map: React.FC = () => {
     });
   };
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    setSearchError(null);
+    
+    try {
+      // Use current map center or default to Taipei
+      const response = await searchAPI.searchPlaces({
+        query: searchQuery,
+        lat: 25.0330, // Default to Taipei
+        lng: 121.5654,
+        radius: 2000
+      });
+      
+      setSearchResults(response.places);
+    } catch (error: any) {
+      console.error('Search error:', error);
+      setSearchError(error.response?.data?.message || 'Search failed');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddFromSearch = async (place: PlaceResult) => {
+    const success = await addCafe({
+      name: place.name,
+      address: place.address,
+      lat: place.lat,
+      lng: place.lng,
+      rating: place.rating || 5,
+      notes: '',
+      isFavorite: false,
+    });
+    
+    if (success) {
+      setSearchResults([]);
+      setSearchQuery('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       <Navigation />
@@ -66,32 +122,84 @@ export const Map: React.FC = () => {
       <div className="flex-1 flex">
         {/* Map */}
         <div className="flex-1 relative">
-          <MapComponent
-            cafes={cafes}
-            onCafeClick={handleCafeClick}
-            onMapClick={handleMapClick}
-            center={{ lat: 25.0330, lng: 121.5654 }}
-            zoom={12}
-          />
+          <ErrorBoundary>
+            <MapComponent
+              cafes={cafes}
+              onCafeClick={handleCafeClick}
+              onMapClick={handleMapClick}
+              center={{ lat: 25.0330, lng: 121.5654 }}
+              zoom={12}
+            />
+          </ErrorBoundary>
           
-          {/* Map Controls */}
-          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4">
-            <h3 className="font-semibold text-gray-700 mb-2">Map Controls</h3>
-            <p className="text-sm text-gray-600 mb-2">
-              Click on the map to add a new cafe
-            </p>
-            <p className="text-sm text-gray-600">
-              Click on markers to view cafe details
+          {/* Search Bar */}
+          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 w-80">
+            <h3 className="font-semibold text-gray-700 mb-2">Search Cafes</h3>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Search for cafes..."
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                onClick={handleSearch}
+                disabled={isSearching || !searchQuery.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {isSearching ? '...' : 'Search'}
+              </button>
+            </div>
+            
+            {searchError && (
+              <p className="text-red-600 text-sm">{searchError}</p>
+            )}
+            
+            {searchResults.length > 0 && (
+              <div className="mt-2 max-h-40 overflow-y-auto">
+                <p className="text-sm text-gray-600 mb-1">Search Results:</p>
+                {searchResults.map((place, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded mb-1">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{place.name}</p>
+                      <p className="text-xs text-gray-600">{place.address}</p>
+                      {place.rating && (
+                        <p className="text-xs text-yellow-600">⭐ {place.rating}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleAddFromSearch(place)}
+                      className="ml-2 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-600 mt-2">
+              Click on the map to add a new cafe manually
             </p>
           </div>
 
           {/* Cafe Count */}
           <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4">
-            <h3 className="font-semibold text-gray-700 mb-2">Cafes Found</h3>
-            <p className="text-2xl font-bold text-blue-500">{cafes.length}</p>
-            <p className="text-sm text-gray-600">
-              {cafes.filter(c => c.isFavorite).length} favorites
-            </p>
+            <h3 className="font-semibold text-gray-700 mb-2">Your Cafes</h3>
+            {loading ? (
+              <p className="text-sm text-gray-600">Loading...</p>
+            ) : error ? (
+              <p className="text-sm text-red-600">{error}</p>
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-blue-500">{cafes.length}</p>
+                <p className="text-sm text-gray-600">
+                  {cafes.filter(c => c.isFavorite).length} favorites
+                </p>
+              </>
+            )}
           </div>
         </div>
 

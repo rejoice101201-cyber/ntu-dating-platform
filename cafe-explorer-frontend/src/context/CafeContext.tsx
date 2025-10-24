@@ -1,12 +1,18 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Cafe } from '../types/Cafe';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import type { Cafe } from '../types/Cafe';
+import { locationsAPI } from '../services/api';
+import type { Location, CreateLocationRequest, UpdateLocationRequest } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface CafeContextType {
   cafes: Cafe[];
-  addCafe: (cafe: Omit<Cafe, 'id'>) => void;
-  updateCafe: (id: string, updates: Partial<Cafe>) => void;
-  deleteCafe: (id: string) => void;
-  toggleFavorite: (id: string) => void;
+  loading: boolean;
+  error: string | null;
+  addCafe: (cafe: Omit<Cafe, 'id'>) => Promise<boolean>;
+  updateCafe: (id: string, updates: Partial<Cafe>) => Promise<boolean>;
+  deleteCafe: (id: string) => Promise<boolean>;
+  toggleFavorite: (id: string) => Promise<boolean>;
+  refreshCafes: () => Promise<void>;
 }
 
 const CafeContext = createContext<CafeContextType | undefined>(undefined);
@@ -23,127 +29,162 @@ interface CafeProviderProps {
   children: ReactNode;
 }
 
-// Fake data for cafes
-const initialCafes: Cafe[] = [
-  {
-    id: '1',
-    name: 'Starbucks',
-    address: '台北市信義區信義路五段7號',
-    lat: 25.0330,
-    lng: 121.5654,
-    rating: 4,
-    notes: 'Good coffee and comfortable seating',
-    isFavorite: false,
-  },
-  {
-    id: '2',
-    name: '路易莎咖啡',
-    address: '台北市大安區敦化南路二段216號',
-    lat: 25.0260,
-    lng: 121.5440,
-    rating: 5,
-    notes: 'Excellent atmosphere for studying',
-    isFavorite: true,
-  },
-  {
-    id: '3',
-    name: '85度C',
-    address: '台北市中山區南京東路二段100號',
-    lat: 25.0520,
-    lng: 121.5250,
-    rating: 3,
-    notes: 'Quick service, decent coffee',
-    isFavorite: false,
-  },
-  {
-    id: '4',
-    name: 'Cama咖啡',
-    address: '台北市松山區八德路四段138號',
-    lat: 25.0430,
-    lng: 121.5780,
-    rating: 4,
-    notes: 'Great for morning coffee runs',
-    isFavorite: false,
-  },
-  {
-    id: '5',
-    name: '丹堤咖啡',
-    address: '台北市萬華區西門町成都路10號',
-    lat: 25.0420,
-    lng: 121.5080,
-    rating: 3,
-    notes: 'Classic Taiwanese coffee chain',
-    isFavorite: true,
-  },
-  {
-    id: '6',
-    name: '伯朗咖啡',
-    address: '台北市內湖區瑞光路188號',
-    lat: 25.0700,
-    lng: 121.6100,
-    rating: 4,
-    notes: 'Good for business meetings',
-    isFavorite: false,
-  },
-  {
-    id: '7',
-    name: '怡客咖啡',
-    address: '台北市士林區中正路115號',
-    lat: 25.0880,
-    lng: 121.5250,
-    rating: 3,
-    notes: 'Local favorite with friendly staff',
-    isFavorite: false,
-  },
-  {
-    id: '8',
-    name: '西雅圖咖啡',
-    address: '台北市文山區木新路三段123號',
-    lat: 24.9880,
-    lng: 121.5680,
-    rating: 4,
-    notes: 'Cozy atmosphere, good for reading',
-    isFavorite: true,
-  },
-];
+// Convert backend Location to frontend Cafe format
+const locationToCafe = (location: Location): Cafe => ({
+  id: location.id.toString(),
+  name: location.name,
+  address: location.address || '',
+  lat: location.lat,
+  lng: location.lng,
+  rating: location.rating || 0,
+  notes: location.notes || '',
+  isFavorite: location.is_favorite,
+});
+
+// Convert frontend Cafe to backend CreateLocationRequest format
+const cafeToCreateRequest = (cafe: Omit<Cafe, 'id'>): CreateLocationRequest => ({
+  name: cafe.name,
+  lat: cafe.lat,
+  lng: cafe.lng,
+  address: cafe.address || undefined,
+  rating: cafe.rating || undefined,
+  notes: cafe.notes || undefined,
+});
+
+// Convert frontend Cafe updates to backend UpdateLocationRequest format
+const cafeToUpdateRequest = (updates: Partial<Cafe>): UpdateLocationRequest => ({
+  name: updates.name,
+  lat: updates.lat,
+  lng: updates.lng,
+  address: updates.address,
+  rating: updates.rating,
+  notes: updates.notes,
+  is_favorite: updates.isFavorite,
+});
 
 export const CafeProvider: React.FC<CafeProviderProps> = ({ children }) => {
-  const [cafes, setCafes] = useState<Cafe[]>(initialCafes);
+  const [cafes, setCafes] = useState<Cafe[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { isLoggedIn } = useAuth();
 
-  const addCafe = (newCafe: Omit<Cafe, 'id'>) => {
-    const cafe: Cafe = {
-      ...newCafe,
-      id: Date.now().toString(),
-    };
-    setCafes(prev => [...prev, cafe]);
+  // Load cafes when user is logged in
+  useEffect(() => {
+    if (isLoggedIn) {
+      refreshCafes();
+    } else {
+      setCafes([]);
+    }
+  }, [isLoggedIn]);
+
+  const refreshCafes = async (): Promise<void> => {
+    if (!isLoggedIn) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const locations = await locationsAPI.getAll();
+      const cafeList = locations.map(locationToCafe);
+      setCafes(cafeList);
+    } catch (err: any) {
+      console.error('Failed to load cafes:', err);
+      setError(err.response?.data?.message || 'Failed to load cafes');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateCafe = (id: string, updates: Partial<Cafe>) => {
-    setCafes(prev =>
-      prev.map(cafe =>
-        cafe.id === id ? { ...cafe, ...updates } : cafe
-      )
-    );
+  const addCafe = async (newCafe: Omit<Cafe, 'id'>): Promise<boolean> => {
+    if (!isLoggedIn) return false;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const createRequest = cafeToCreateRequest(newCafe);
+      const location = await locationsAPI.create(createRequest);
+      const cafe = locationToCafe(location);
+      setCafes(prev => [...prev, cafe]);
+      return true;
+    } catch (err: any) {
+      console.error('Failed to add cafe:', err);
+      setError(err.response?.data?.message || 'Failed to add cafe');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteCafe = (id: string) => {
-    setCafes(prev => prev.filter(cafe => cafe.id !== id));
+  const updateCafe = async (id: string, updates: Partial<Cafe>): Promise<boolean> => {
+    if (!isLoggedIn) return false;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const updateRequest = cafeToUpdateRequest(updates);
+      const location = await locationsAPI.update(parseInt(id), updateRequest);
+      const cafe = locationToCafe(location);
+      setCafes(prev => prev.map(c => c.id === id ? cafe : c));
+      return true;
+    } catch (err: any) {
+      console.error('Failed to update cafe:', err);
+      setError(err.response?.data?.message || 'Failed to update cafe');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleFavorite = (id: string) => {
-    setCafes(prev =>
-      prev.map(cafe =>
-        cafe.id === id ? { ...cafe, isFavorite: !cafe.isFavorite } : cafe
-      )
-    );
+  const deleteCafe = async (id: string): Promise<boolean> => {
+    if (!isLoggedIn) return false;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await locationsAPI.delete(parseInt(id));
+      setCafes(prev => prev.filter(cafe => cafe.id !== id));
+      return true;
+    } catch (err: any) {
+      console.error('Failed to delete cafe:', err);
+      setError(err.response?.data?.message || 'Failed to delete cafe');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFavorite = async (id: string): Promise<boolean> => {
+    if (!isLoggedIn) return false;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const location = await locationsAPI.toggleFavorite(parseInt(id));
+      const cafe = locationToCafe(location);
+      setCafes(prev => prev.map(c => c.id === id ? cafe : c));
+      return true;
+    } catch (err: any) {
+      console.error('Failed to toggle favorite:', err);
+      setError(err.response?.data?.message || 'Failed to toggle favorite');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value: CafeContextType = {
     cafes,
+    loading,
+    error,
     addCafe,
     updateCafe,
     deleteCafe,
     toggleFavorite,
+    refreshCafes,
   };
 
   return (
