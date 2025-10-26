@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { performanceMonitor } from '../utils/performanceMonitor';
+import { useAuth } from '../context/AuthContext';
 
 interface PerformanceMetrics {
   requestCount: number;
@@ -16,9 +17,18 @@ interface PerformanceMetrics {
 }
 
 const PerformanceDashboard: React.FC = () => {
+  const { isLoggedIn } = useAuth();
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
+
+  // Reset visibility when user logs out
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsVisible(false);
+      setAutoRefresh(false);
+    }
+  }, [isLoggedIn]);
 
   const fetchMetrics = async () => {
     try {
@@ -51,7 +61,7 @@ const PerformanceDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && isLoggedIn) {
       fetchMetrics();
       
       if (autoRefresh) {
@@ -59,7 +69,7 @@ const PerformanceDashboard: React.FC = () => {
         return () => clearInterval(interval);
       }
     }
-  }, [isVisible, autoRefresh]);
+  }, [isVisible, autoRefresh, isLoggedIn]);
 
   const resetMetrics = async () => {
     try {
@@ -99,35 +109,66 @@ const PerformanceDashboard: React.FC = () => {
     return 'text-red-600';
   };
 
+  // Only render if user is logged in
+  if (!isLoggedIn) {
+    return null;
+  }
+
   if (!isVisible) {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors z-50"
+        className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-xl shadow-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 z-50 flex items-center font-medium"
       >
-        📊 Performance
+        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        Performance Monitor
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-xl p-4 w-80 max-h-96 overflow-y-auto z-50">
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-2xl p-6 w-96 max-h-96 overflow-y-auto z-50">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Performance Dashboard</h3>
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center mr-3">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800">Performance Dashboard</h3>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-2 py-1 text-xs rounded ${
-              autoRefresh ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+            className={`px-3 py-1 text-xs rounded-lg font-medium transition-all duration-200 ${
+              autoRefresh 
+                ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-200'
             }`}
           >
-            {autoRefresh ? '🔄 Auto' : '⏸️ Manual'}
+            {autoRefresh ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-green-600 mr-1"></div>
+                Auto
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Manual
+              </div>
+            )}
           </button>
           <button
             onClick={() => setIsVisible(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-all duration-200"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>
@@ -219,17 +260,23 @@ const PerformanceDashboard: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-3 pt-3">
             <button
               onClick={fetchMetrics}
-              className="flex-1 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
             >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
               Refresh
             </button>
             <button
               onClick={resetMetrics}
-              className="flex-1 bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center"
             >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
               Reset
             </button>
           </div>

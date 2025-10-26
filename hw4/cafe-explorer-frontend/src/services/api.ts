@@ -97,12 +97,22 @@ export interface SearchPlacesRequest {
 }
 
 export interface PlaceResult {
-  name: string;
-  lat: number;
-  lng: number;
-  address: string;
   place_id: string;
+  name: string;
+  formatted_address: string;
+  geometry: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
   rating?: number;
+  price_level?: number;
+  types?: string[];
+  // 為了向後兼容，保留舊的字段
+  address?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface SearchPlacesResponse {

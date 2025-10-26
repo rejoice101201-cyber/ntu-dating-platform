@@ -14,18 +14,18 @@ const createLocationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   lat: z.number().min(-90).max(90, 'Latitude must be between -90 and 90'),
   lng: z.number().min(-180).max(180, 'Longitude must be between -180 and 180'),
-  address: z.string().optional(),
+  address: z.string().optional().or(z.literal('')),
   rating: z.number().min(1).max(5).optional(),
-  notes: z.string().optional()
+  notes: z.string().optional().or(z.literal(''))
 });
 
 const updateLocationSchema = z.object({
   name: z.string().min(1).optional(),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
-  address: z.string().optional(),
+  address: z.string().optional().or(z.literal('')),
   rating: z.number().min(1).max(5).optional(),
-  notes: z.string().optional(),
+  notes: z.string().optional().or(z.literal('')),
   is_favorite: z.boolean().optional()
 });
 

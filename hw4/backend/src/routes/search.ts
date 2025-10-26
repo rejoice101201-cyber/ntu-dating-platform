@@ -59,12 +59,18 @@ router.get('/places', async (req, res) => {
 
     // Transform results to our format
     const places: PlaceResult[] = (response.data.results || []).map((place: any) => ({
-      name: place.name,
-      lat: place.geometry.location.lat,
-      lng: place.geometry.location.lng,
-      address: place.formatted_address,
       place_id: place.place_id,
-      rating: place.rating
+      name: place.name,
+      formatted_address: place.formatted_address,
+      geometry: {
+        location: {
+          lat: place.geometry.location.lat,
+          lng: place.geometry.location.lng
+        }
+      },
+      rating: place.rating,
+      price_level: place.price_level,
+      types: place.types
     }));
 
     res.json({
@@ -135,12 +141,18 @@ router.get('/places/nearby', async (req, res) => {
 
     // Transform results to our format
     const places: PlaceResult[] = (response.data.results || []).map((place: any) => ({
-      name: place.name,
-      lat: place.geometry.location.lat,
-      lng: place.geometry.location.lng,
-      address: place.vicinity,
       place_id: place.place_id,
-      rating: place.rating
+      name: place.name,
+      formatted_address: place.vicinity || place.formatted_address,
+      geometry: {
+        location: {
+          lat: place.geometry.location.lat,
+          lng: place.geometry.location.lng
+        }
+      },
+      rating: place.rating,
+      price_level: place.price_level,
+      types: place.types
     }));
 
     res.json({

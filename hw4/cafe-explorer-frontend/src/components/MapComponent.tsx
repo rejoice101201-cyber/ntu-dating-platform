@@ -24,6 +24,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load Google Maps API
   useEffect(() => {
@@ -33,12 +34,14 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     loadGoogleMaps()
       .then(() => {
         setIsLoaded(true);
+        setLoadError(null);
         // 載入成功後運行診斷
         setTimeout(() => logDiagnostic(), 1000);
       })
       .catch((error) => {
         console.error('Failed to load Google Maps API:', error);
         setIsLoaded(false);
+        setLoadError('Google Maps API 載入失敗');
         // 載入失敗後也運行診斷
         logDiagnostic();
       });
@@ -48,46 +51,56 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   useEffect(() => {
     if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
 
-    // 確保 Google Maps API 完全載入
-    if (!window.google || !window.google.maps || !window.google.maps.Map) {
-      console.warn('Google Maps API not fully loaded yet');
-      return;
-    }
+    // 確保 Google Maps API 完全載入，增加重試機制
+    const initializeMap = () => {
+      if (!window.google || !window.google.maps || !window.google.maps.Map) {
+        console.warn('Google Maps API not fully loaded yet, retrying...');
+        setTimeout(initializeMap, 200); // 200ms 後重試
+        return;
+      }
 
-    try {
-      const map = new google.maps.Map(mapRef.current, {
-        center,
-        zoom,
-        mapTypeControl: true,
-        streetViewControl: true,
-        fullscreenControl: true,
-      });
+      console.log('Google Maps API fully loaded, initializing map...');
 
-      mapInstanceRef.current = map;
+      try {
+        const map = new google.maps.Map(mapRef.current, {
+          center,
+          zoom,
+          mapTypeControl: true,
+          streetViewControl: true,
+          fullscreenControl: true,
+        });
 
-      // Add click listener to map
-      map.addListener('click', (event: google.maps.MapMouseEvent) => {
-        if (event.latLng && onMapClick) {
-          const lat = event.latLng.lat();
-          const lng = event.latLng.lng();
-          onMapClick(lat, lng);
-        }
-      });
-    } catch (error) {
-      console.error('Error creating Google Map:', error);
-      return;
-    }
+        mapInstanceRef.current = map;
+
+        // Add click listener to map
+        map.addListener('click', (event: google.maps.MapMouseEvent) => {
+          if (event.latLng && onMapClick) {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            onMapClick(lat, lng);
+          }
+        });
+      } catch (error) {
+        console.error('Error creating Google Map:', error);
+        return;
+      }
+    };
+
+    // 開始初始化地圖
+    initializeMap();
   }, [isLoaded, center, zoom, onMapClick]);
 
   // Update markers when cafes change
   useEffect(() => {
     if (!isLoaded || !mapInstanceRef.current) return;
 
-    // 確保 Google Maps API 完全載入
-    if (!window.google || !window.google.maps || !window.google.maps.Marker) {
-      console.warn('Google Maps API not fully loaded for markers');
-      return;
-    }
+    // 確保 Google Maps API 完全載入，增加重試機制
+    const updateMarkers = () => {
+      if (!window.google || !window.google.maps || !window.google.maps.Marker) {
+        console.warn('Google Maps API not fully loaded for markers, retrying...');
+        setTimeout(updateMarkers, 200); // 200ms 後重試
+        return;
+      }
 
     try {
       // Clear existing markers
@@ -145,20 +158,38 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     } catch (error) {
       console.error('Error creating markers:', error);
     }
+    };
+
+    // 開始更新 markers
+    updateMarkers();
   }, [isLoaded, cafes, onCafeClick]);
 
   if (!isLoaded) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading Google Maps...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Make sure to set VITE_GOOGLE_MAPS_JS_KEY in your .env file
+        <div className="text-center p-6">
+          <div className="text-4xl mb-4">🗺️</div>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            Google Maps API 未配置
+          </h3>
+          <p className="text-gray-600 mb-4">
+            地圖功能需要有效的 Google Maps API 金鑰
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            If this takes too long, check your internet connection
-          </p>
+          <div className="text-sm text-gray-500 mb-4">
+            <p>請編輯 <code className="bg-gray-200 px-2 py-1 rounded">cafe-explorer-frontend/.env</code> 檔案</p>
+            <p>將 <code className="bg-gray-200 px-2 py-1 rounded">VITE_GOOGLE_MAPS_JS_KEY</code> 設為你的 API 金鑰</p>
+          </div>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">替代方案：</h4>
+            <p className="text-blue-700 text-sm">
+              你可以使用「列表檢視」來管理咖啡廳，所有功能都正常運作
+            </p>
+          </div>
+          {loadError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">錯誤：{loadError}</p>
+            </div>
+          )}
         </div>
       </div>
     );

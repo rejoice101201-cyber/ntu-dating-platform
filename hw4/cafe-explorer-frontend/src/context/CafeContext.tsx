@@ -36,7 +36,7 @@ const locationToCafe = (location: Location): Cafe => ({
   address: location.address || '',
   lat: location.lat,
   lng: location.lng,
-  rating: location.rating || 0,
+  rating: location.rating || 5, // 默認評分為 5 星
   notes: location.notes || '',
   isFavorite: location.is_favorite,
 });
@@ -46,9 +46,9 @@ const cafeToCreateRequest = (cafe: Omit<Cafe, 'id'>): CreateLocationRequest => (
   name: cafe.name,
   lat: cafe.lat,
   lng: cafe.lng,
-  address: cafe.address || undefined,
-  rating: cafe.rating || undefined,
-  notes: cafe.notes || undefined,
+  address: cafe.address && cafe.address.trim() ? cafe.address : undefined,
+  rating: cafe.rating && cafe.rating >= 1 && cafe.rating <= 5 ? cafe.rating : undefined,
+  notes: cafe.notes && cafe.notes.trim() ? cafe.notes : undefined,
 });
 
 // Convert frontend Cafe updates to backend UpdateLocationRequest format
@@ -56,9 +56,9 @@ const cafeToUpdateRequest = (updates: Partial<Cafe>): UpdateLocationRequest => (
   name: updates.name,
   lat: updates.lat,
   lng: updates.lng,
-  address: updates.address,
-  rating: updates.rating,
-  notes: updates.notes,
+  address: updates.address !== undefined ? (updates.address && updates.address.trim() ? updates.address : undefined) : undefined,
+  rating: updates.rating !== undefined ? (updates.rating >= 1 && updates.rating <= 5 ? updates.rating : undefined) : undefined,
+  notes: updates.notes !== undefined ? (updates.notes && updates.notes.trim() ? updates.notes : undefined) : undefined,
   is_favorite: updates.isFavorite,
 });
 

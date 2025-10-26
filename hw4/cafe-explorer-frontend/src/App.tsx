@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Map } from './pages/Map';
 import { List } from './pages/List';
+import { DiagnosticPage } from './pages/Diagnostic';
 import PerformanceDashboard from './components/PerformanceDashboard';
 
 // Protected Route Component
@@ -21,6 +22,7 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/diagnostic" element={<DiagnosticPage />} />
         <Route
           path="/map"
           element={
@@ -37,8 +39,8 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="/" element={<Navigate to="/map" replace />} />
-        <Route path="*" element={<Navigate to="/map" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <PerformanceDashboard />
     </Router>
