@@ -4,6 +4,13 @@
 
 ## 🚀 快速啟動（評分者專用）
 
+> 💡 **提示：如果你使用 Cursor 編輯器，可以直接請 AI 協助設定 API 金鑰**
+> ```
+> 請幫我設定 Google Maps API 金鑰到環境變數檔案：
+> 前端key:你的Google_Maps_JavaScript_API金鑰
+> 後端key:你的Google_Places_API金鑰
+> ```
+
 ### 1. 安裝依賴
 ```bash
 # 安裝後端依賴
@@ -37,12 +44,26 @@ cp backend/env.example backend/.env
 
 #### ✏️ 步驟 2.3：編輯環境變數檔案
 
+**方法一：使用 Cursor AI 協助（推薦）**
+
+如果你使用 Cursor 編輯器，可以直接請 AI 協助設定 API 金鑰：
+
+```
+請幫我設定 Google Maps API 金鑰到環境變數檔案：
+前端key:你的Google_Maps_JavaScript_API金鑰
+後端key:你的Google_Places_API金鑰
+```
+
+**方法二：手動編輯**
+
 **編輯前端環境變數** (`cafe-explorer-frontend/.env`)：
 ```bash
 # 使用文字編輯器開啟檔案
 nano cafe-explorer-frontend/.env
 # 或使用 vim
 vim cafe-explorer-frontend/.env
+# 或使用 VS Code
+code cafe-explorer-frontend/.env
 ```
 
 將以下內容替換為你的 API 金鑰：
@@ -58,6 +79,8 @@ VITE_NODE_ENV=development
 nano backend/.env
 # 或使用 vim
 vim backend/.env
+# 或使用 VS Code
+code backend/.env
 ```
 
 將以下內容替換為你的 API 金鑰：
@@ -126,6 +149,11 @@ npm start
 - 檢查環境變數檔案是否正確複製和編輯
 - 重新啟動應用以載入新的環境變數
 
+**問題 5：nano 編輯器無法正常顯示內容**
+- 使用 Cursor AI 協助：直接告訴 AI 你的 API 金鑰，讓 AI 幫你設定
+- 使用其他編輯器：`code cafe-explorer-frontend/.env` 或 `gedit cafe-explorer-frontend/.env`
+- 使用 echo 指令直接修改檔案
+
 #### 🔍 診斷工具
 訪問 `http://localhost:5173/diagnostic` 查看詳細的 API 狀態和錯誤訊息。
 
@@ -167,7 +195,17 @@ npm start
 # 複製環境變數範例
 cp cafe-explorer-frontend/env.example cafe-explorer-frontend/.env
 cp backend/env.example backend/.env
+```
 
+**方法一：使用 Cursor AI 協助（推薦）**
+```
+請幫我設定 Google Maps API 金鑰到環境變數檔案：
+前端key:你的Google_Maps_JavaScript_API金鑰
+後端key:你的Google_Places_API金鑰
+```
+
+**方法二：手動編輯**
+```bash
 # 編輯前端環境變數
 nano cafe-explorer-frontend/.env
 # 將 YOUR_BROWSER_KEY 替換為你的 Browser Key
