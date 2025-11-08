@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { calculatePostLength } from "@/lib/utils"
 
@@ -26,6 +26,8 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
   const [loadingDrafts, setLoadingDrafts] = useState(false)
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null)
 
+  const maxLength = 280
+
   useEffect(() => {
     if (isOpen && showDrafts) {
       fetchDrafts()
@@ -47,17 +49,23 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     }
   }
 
-  if (!isOpen) return null
-
-  const maxLength = 280
-  const currentLength = calculatePostLength(content)
-  const remainingChars = maxLength - currentLength
-  const hasContent = content.trim().length > 0
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault()
+    }
+    
+    // 關鍵修復：在函數內部重新計算，確保使用最新的 content 值
+    const currentContent = content
+    const currentLength = calculatePostLength(currentContent)
+    const hasContent = currentContent.trim().length > 0
     
     if (currentLength > maxLength || !hasContent) {
+      console.log("Post validation failed:", { 
+        currentLength, 
+        maxLength, 
+        hasContent,
+        content: currentContent 
+      })
       return
     }
 
@@ -67,7 +75,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content: currentContent }),
       })
 
       if (response.ok) {
@@ -79,23 +87,30 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
         setEditingDraftId(null)
         onClose()
         window.location.reload()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Failed to create post:", errorData)
+        alert(errorData.error || "Failed to create post. Please try again.")
       }
     } catch (error) {
       console.error("Failed to create post:", error)
+      alert("An error occurred while creating the post. Please try again.")
     } finally {
       setLoading(false)
     }
-  }
+  }, [content, editingDraftId, onClose, maxLength])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    const hasContent = content.trim().length > 0
     if (hasContent) {
       setShowDiscardConfirm(true)
     } else {
       onClose()
     }
-  }
+  }, [content, onClose])
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = useCallback(async () => {
+    const hasContent = content.trim().length > 0
     if (!hasContent) {
       setShowDiscardConfirm(false)
       onClose()
@@ -128,7 +143,7 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [content, editingDraftId, onClose])
 
   const handleDiscard = () => {
     setContent("")
@@ -168,9 +183,16 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
     }
   }
 
+  if (!isOpen) return null
+
+  // UI 顯示用的計算
+  const currentLength = calculatePostLength(content)
+  const remainingChars = maxLength - currentLength
+  const hasContent = content.trim().length > 0
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-black border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]" style={{ pointerEvents: 'auto' }}>
+      <div className="bg-black border border-gray-800 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col" style={{ pointerEvents: 'auto' }}>
         {showDiscardConfirm ? (
           <div className="p-6 space-y-4">
             <h3 className="text-xl font-bold">Discard post?</h3>
@@ -269,21 +291,22 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                 Drafts
               </button>
               <button
-                onClick={handleSubmit}
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={loading || currentLength > maxLength || !hasContent}
-                className="px-4 py-2 rounded-full bg-white text-black font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-full bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500"
               >
                 {loading ? "Posting..." : "Post"}
               </button>
             </div>
 
             {/* Content */}
-            <form onSubmit={handleSubmit} className="p-4">
+            <form id="post-form" onSubmit={handleSubmit} className="p-4">
               <div className="flex gap-4">
                 <img
                   src={session?.user?.image || "/default-avatar.png"}
                   alt={session?.user?.name || "User"}
-                  className="w-12 h-12 rounded-full"
+                  className="w-12 h-12 rounded-full object-cover"
                 />
                 <div className="flex-1">
                   <textarea
@@ -297,7 +320,13 @@ export function PostModal({ isOpen, onClose }: PostModalProps) {
                     placeholder="What's happening?"
                     className="w-full bg-transparent text-white placeholder-gray-500 resize-none focus:outline-none text-lg min-h-[200px]"
                   />
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-800">
+                    <div className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 cursor-pointer">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.53-7-3.06-7-6.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                      </svg>
+                      <span>Everyone can reply</span>
+                    </div>
                     <div className="text-sm text-gray-500">
                       {remainingChars >= 0 ? (
                         <span className={remainingChars < 20 ? "text-yellow-500" : ""}>

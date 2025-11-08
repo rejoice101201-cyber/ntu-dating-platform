@@ -20,6 +20,7 @@ interface ProfileHeaderProps {
   isFollowing: boolean
   followerCount: number
   followingCount: number
+  postCount: number
 }
 
 export function ProfileHeader({
@@ -28,6 +29,7 @@ export function ProfileHeader({
   isFollowing,
   followerCount,
   followingCount,
+  postCount,
 }: ProfileHeaderProps) {
   const { data: session } = useSession()
   const router = useRouter()
@@ -36,7 +38,7 @@ export function ProfileHeader({
   return (
     <>
       {/* Back Arrow */}
-      <div className="sticky top-0 bg-black/80 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-4 z-10">
+      <div className="sticky top-0 bg-black/80 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-4 z-0">
         <Link
           href="/"
           className="p-2 hover:bg-gray-900 rounded-full transition-colors"
@@ -47,7 +49,7 @@ export function ProfileHeader({
         </Link>
         <div>
           <div className="font-bold">{user.name}</div>
-          <div className="text-sm text-gray-500">0 posts</div>
+          <div className="text-sm text-gray-500">{postCount} {postCount === 1 ? 'post' : 'posts'}</div>
         </div>
       </div>
 
@@ -64,11 +66,11 @@ export function ProfileHeader({
 
       {/* Avatar and Edit Button */}
       <div className="px-4 pb-4 border-b border-gray-800">
-        <div className="relative flex justify-between items-end -mt-16 mb-4">
+        <div className="relative flex justify-between items-end -mt-16 mb-4 z-0">
           <img
             src={user.image || "/default-avatar.png"}
             alt={user.name || "User"}
-            className="w-32 h-32 rounded-full border-4 border-black"
+            className="w-32 h-32 rounded-full border-4 border-black object-cover relative z-0"
           />
           {isOwnProfile ? (
             <button
@@ -96,10 +98,10 @@ export function ProfileHeader({
           )}
           <div className="flex gap-4 text-sm">
             <span className="text-gray-500">
-              <span className="text-white font-semibold">{followingCount}</span> Following
+              <span className="text-white font-semibold">{followerCount}</span> Following
             </span>
             <span className="text-gray-500">
-              <span className="text-white font-semibold">{followerCount}</span> Followers
+              <span className="text-white font-semibold">{followingCount}</span> Followers
             </span>
           </div>
         </div>

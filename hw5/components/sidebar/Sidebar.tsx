@@ -55,7 +55,7 @@ export function Sidebar() {
   }
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 border-r border-gray-800 bg-black flex flex-col">
+    <div className="fixed left-0 top-0 h-full w-64 border-r border-gray-800 bg-black flex flex-col z-40">
       {/* Logo */}
       <div className="p-4 border-b border-gray-800 flex items-center">
         <Image 
@@ -111,7 +111,7 @@ export function Sidebar() {
           <img
             src={session.user.image || "/default-avatar.png"}
             alt={session.user.name || "User"}
-            className="w-10 h-10 rounded-full"
+            className="w-10 h-10 rounded-full object-cover"
           />
           <div className="flex-1 text-left">
             <div className="font-semibold">{session.user.name}</div>

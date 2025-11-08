@@ -55,7 +55,7 @@ export function PostComposer({ parentId }: PostComposerProps = {}) {
         <img
           src={session.user.image || "/default-avatar.png"}
           alt={session.user.name || "User"}
-          className="w-12 h-12 rounded-full"
+          className="w-12 h-12 rounded-full object-cover"
         />
         <div className="flex-1">
           <textarea

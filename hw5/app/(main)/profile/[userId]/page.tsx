@@ -85,6 +85,7 @@ export default async function ProfilePage({
         isFollowing={!!isFollowing}
         followerCount={user._count.followers}
         followingCount={user._count.following}
+        postCount={user._count.posts}
       />
       <ProfileTabs userId={user.id} userID={user.userID} isOwnProfile={isOwnProfile} />
     </div>

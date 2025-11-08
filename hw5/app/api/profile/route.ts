@@ -9,11 +9,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, bio } = await req.json()
+    const { name, bio, banner, image } = await req.json()
 
     const updateData: any = {}
     if (name !== undefined) updateData.name = name || null
     if (bio !== undefined) updateData.bio = bio || null
+    if (banner !== undefined) updateData.banner = banner || null
+    if (image !== undefined) updateData.image = image || null
 
     const updatedUser = await db.user.update({
       where: { id: session.user.id },

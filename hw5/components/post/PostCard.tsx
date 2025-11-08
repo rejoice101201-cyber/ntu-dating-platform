@@ -1,11 +1,11 @@
 "use client"
 
 import { PostWithAuthor } from "@/types"
-import { formatRelativeTime } from "@/lib/utils"
 import { useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { RelativeTime } from "./RelativeTime"
 
 interface PostCardProps {
   post: PostWithAuthor
@@ -104,7 +104,7 @@ export function PostCard({ post }: PostCardProps) {
           <img
             src={post.author.image || "/default-avatar.png"}
             alt={post.author.name || "User"}
-            className="w-12 h-12 rounded-full hover:opacity-80 transition-opacity"
+            className="w-12 h-12 rounded-full hover:opacity-80 transition-opacity object-cover"
           />
         </Link>
         
@@ -125,7 +125,7 @@ export function PostCard({ post }: PostCardProps) {
                 @{post.author.userID}
               </Link>
               <span className="text-gray-500">·</span>
-              <span className="text-gray-500">{formatRelativeTime(new Date(post.createdAt))}</span>
+              <RelativeTime date={post.createdAt} />
             </div>
             {isOwnPost && (
               <div className="relative">
