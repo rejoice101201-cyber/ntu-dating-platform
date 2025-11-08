@@ -60,7 +60,7 @@ export default async function ProfilePage({
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">使用者不存在</div>
+        <div className="text-xl">User not found</div>
       </div>
     )
   }

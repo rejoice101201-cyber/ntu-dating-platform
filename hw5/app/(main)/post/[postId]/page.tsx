@@ -46,7 +46,7 @@ export default async function PostDetailPage({
   if (!post) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">文章不存在</div>
+        <div className="text-xl">Post not found</div>
       </div>
     )
   }

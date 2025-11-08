@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Y",
   description: "A social networking platform",
+  icons: {
+    icon: "/Y.png",
+    apple: "/Y.png",
+  },
 };
 
 export default function RootLayout({

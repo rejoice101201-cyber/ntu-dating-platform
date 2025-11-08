@@ -13,10 +13,13 @@ export function isValidUserID(userID: string): boolean {
 
 // Calculate character count for posts (links count as 23, hashtags and mentions don't count)
 export function calculatePostLength(content: string): number {
-  // Remove hashtags (#hashtag)
-  let text = content.replace(/#\w+/g, '')
-  // Remove mentions (@mention)
-  text = text.replace(/@\w+/g, '')
+  // Remove hashtags (#hashtag) - match # followed by any non-whitespace characters (until space, punctuation, or end)
+  // This matches Twitter/X behavior where hashtags can contain various characters
+  let text = content.replace(/#[^\s#@]+/g, '')
+  
+  // Remove mentions (@mention) - match @ followed by alphanumeric and underscore (userID format)
+  // UserID is 1-15 chars, alphanumeric + underscore only
+  text = text.replace(/@[a-zA-Z0-9_]+/g, '')
   
   // Find all URLs (http/https)
   const urlRegex = /https?:\/\/[^\s]+/g
@@ -75,13 +78,13 @@ export function linkify(text: string): string {
 
 // Extract hashtags and mentions
 export function extractHashtags(text: string): string[] {
-  const hashtagRegex = /#(\w+)/g
+  const hashtagRegex = /#([^\s#@]+)/g
   const matches = text.match(hashtagRegex) || []
   return matches.map(tag => tag.substring(1))
 }
 
 export function extractMentions(text: string): string[] {
-  const mentionRegex = /@(\w+)/g
+  const mentionRegex = /@([a-zA-Z0-9_]+)/g
   const matches = text.match(mentionRegex) || []
   return matches.map(mention => mention.substring(1))
 }

@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/sidebar/Sidebar"
+import { BackButtonHandler } from "@/components/layout/BackButtonHandler"
 
 export default function MainLayout({
   children,
@@ -11,6 +12,7 @@ export default function MainLayout({
       <main className="flex-1 ml-64">
         {children}
       </main>
+      <BackButtonHandler />
     </div>
   )
 }

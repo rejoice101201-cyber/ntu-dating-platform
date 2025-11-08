@@ -76,22 +76,22 @@ export function PostCard({ post }: PostCardProps) {
   }
 
   const formatContent = (content: string) => {
-    // Replace URLs with links
+    // Replace URLs with links (do this first to avoid conflicts)
     let formatted = content.replace(
       /(https?:\/\/[^\s]+)/g,
       '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">$1</a>'
     )
     
-    // Replace hashtags
+    // Replace hashtags - match # followed by any non-whitespace characters
     formatted = formatted.replace(
-      /#(\w+)/g,
-      '<span class="text-blue-500 hover:underline cursor-pointer">#$1</span>'
+      /#([^\s#@]+)/g,
+      '<a href="/hashtag/$1" class="text-blue-500 hover:underline cursor-pointer" data-link-type="hashtag">#$1</a>'
     )
     
-    // Replace mentions
+    // Replace mentions - match @ followed by alphanumeric and underscore (userID format)
     formatted = formatted.replace(
-      /@(\w+)/g,
-      '<a href="/profile/$1" class="text-blue-500 hover:underline">@$1</a>'
+      /@([a-zA-Z0-9_]+)/g,
+      '<a href="/profile/$1" class="text-blue-500 hover:underline" data-link-type="mention">@$1</a>'
     )
     
     return formatted
@@ -109,6 +109,21 @@ export function PostCard({ post }: PostCardProps) {
         </Link>
         
         <div className="flex-1 min-w-0">
+          {/* Repost indicator */}
+          {(post as any).isRepost && (post as any).repostedBy && (
+            <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <Link 
+                href={`/profile/${(post as any).repostedBy.userID}`}
+                className="hover:underline"
+              >
+                {(post as any).repostedBy.name} reposted
+              </Link>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
@@ -145,7 +160,7 @@ export function PostCard({ post }: PostCardProps) {
                       onClick={handleDelete}
                       className="w-full px-4 py-2 text-left hover:bg-gray-800 text-red-500 transition-colors"
                     >
-                      刪除
+                      Delete
                     </button>
                   </div>
                 )}
@@ -154,12 +169,32 @@ export function PostCard({ post }: PostCardProps) {
           </div>
 
           {/* Content */}
-          <Link href={`/post/${post.id}`}>
-            <div 
-              className="mb-4 whitespace-pre-wrap break-words"
-              dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
-            />
-          </Link>
+          <div 
+            className="mb-4 whitespace-pre-wrap break-words"
+            onClick={(e) => {
+              // If clicking on a link (hashtag or mention), navigate to that link
+              const target = e.target as HTMLElement
+              if (target.tagName === 'A') {
+                e.preventDefault()
+                e.stopPropagation()
+                const href = target.getAttribute('href')
+                if (href) {
+                  router.push(href)
+                }
+              } else {
+                // If clicking on content (not a link), navigate to post detail
+                router.push(`/post/${post.id}`)
+              }
+            }}
+            onMouseDown={(e) => {
+              // Prevent default link behavior on mousedown for links inside
+              const target = e.target as HTMLElement
+              if (target.tagName === 'A') {
+                e.stopPropagation()
+              }
+            }}
+            dangerouslySetInnerHTML={{ __html: formatContent(post.content) }}
+          />
 
           {/* Actions */}
           <div className="flex items-center gap-8 text-gray-500">

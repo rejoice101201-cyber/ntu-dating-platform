@@ -28,5 +28,13 @@ export interface PostWithAuthor {
   }
   isLiked?: boolean
   isReposted?: boolean
+  isRepost?: boolean
+  repostedBy?: {
+    id: string
+    userID: string
+    name: string | null
+    image: string | null
+  }
+  repostedAt?: Date
 }
 

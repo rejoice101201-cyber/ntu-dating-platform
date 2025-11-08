@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { PostCard } from "./PostCard"
 import { PostComposer } from "./PostComposer"
 import { PostWithAuthor } from "@/types"
+import { signalInternalNavigation } from "@/components/layout/BackButtonHandler"
 
 interface PostDetailProps {
   post: PostWithAuthor & { isLiked?: boolean; isReposted?: boolean }
@@ -13,12 +14,20 @@ interface PostDetailProps {
 export function PostDetail({ post, comments }: PostDetailProps) {
   const router = useRouter()
 
+  const handleBack = () => {
+    // Signal internal navigation before calling router.back()
+    // This ensures the BackButtonHandler sets the ignore flag synchronously
+    // before popstate event fires
+    signalInternalNavigation()
+    router.back()
+  }
+
   return (
     <div>
       {/* Header with back arrow */}
       <div className="sticky top-0 bg-black/80 backdrop-blur-sm border-b border-gray-800 p-4 flex items-center gap-4 z-10">
         <button
-          onClick={() => router.back()}
+          onClick={handleBack}
           className="p-2 hover:bg-gray-900 rounded-full transition-colors"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
