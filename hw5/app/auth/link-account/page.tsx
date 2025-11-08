@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 
-export default function LinkAccountPage() {
+function LinkAccountContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -106,6 +106,23 @@ export default function LinkAccountPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LinkAccountPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
+        <div className="w-full max-w-md p-8 space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-2">Link Account</h1>
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <LinkAccountContent />
+    </Suspense>
   )
 }
 
