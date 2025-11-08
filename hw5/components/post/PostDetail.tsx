@@ -1,18 +1,51 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
 import { PostCard } from "./PostCard"
 import { PostComposer } from "./PostComposer"
 import { PostWithAuthor } from "@/types"
 import { signalInternalNavigation } from "@/components/layout/BackButtonHandler"
+import { getPusherClient } from "@/lib/pusher-client"
 
 interface PostDetailProps {
   post: PostWithAuthor & { isLiked?: boolean; isReposted?: boolean }
   comments: PostWithAuthor[]
 }
 
-export function PostDetail({ post, comments }: PostDetailProps) {
+export function PostDetail({ post, comments: initialComments }: PostDetailProps) {
   const router = useRouter()
+  const [comments, setComments] = useState<PostWithAuthor[]>(initialComments)
+
+  // Pusher real-time updates for new comments
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Check if Pusher is configured
+    if (!process.env.NEXT_PUBLIC_PUSHER_APP_KEY || !process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+      return
+    }
+
+    try {
+      const pusher = getPusherClient()
+      const channel = pusher.subscribe(`post-${post.id}`)
+
+      channel.bind("new-comment", (data: { comment: PostWithAuthor }) => {
+        setComments((prev) => {
+          // Check if comment already exists to avoid duplicates
+          const exists = prev.some((c) => c.id === data.comment.id)
+          if (exists) return prev
+          return [...prev, data.comment]
+        })
+      })
+
+      return () => {
+        pusher.unsubscribe(`post-${post.id}`)
+      }
+    } catch (error) {
+      console.error("Failed to subscribe to Pusher channel:", error)
+    }
+  }, [post.id])
 
   const handleBack = () => {
     // Signal internal navigation before calling router.back()

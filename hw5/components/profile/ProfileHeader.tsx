@@ -10,7 +10,7 @@ import { FollowButton } from "./FollowButton"
 interface ProfileHeaderProps {
   user: {
     id: string
-    userID: string
+    userID: string | null
     name: string | null
     image: string | null
     bio: string | null

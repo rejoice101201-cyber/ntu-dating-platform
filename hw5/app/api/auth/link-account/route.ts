@@ -12,9 +12,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Find existing user by email
-    const existingUser = await db.user.findUnique({
-      where: { email },
+    // Find existing user by email (need to use findFirst since email is not unique)
+    const existingUser = await db.user.findFirst({
+      where: { 
+        OR: [
+          { email },
+          { originalEmail: email }
+        ]
+      },
       include: { accounts: true },
     })
 

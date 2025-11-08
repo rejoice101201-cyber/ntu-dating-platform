@@ -19,6 +19,14 @@ export default async function PostDetailPage({
   if (!session) {
     redirect("/auth/signin")
   }
+  
+  if (!session.user) {
+    redirect("/auth/signin")
+  }
+  
+  if (!session.user.id) {
+    redirect("/auth/signin")
+  }
 
   const userId = session.user.id
 
@@ -125,7 +133,7 @@ export default async function PostDetailPage({
   }))
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto border-x border-gray-800">
+    <div className="min-h-screen border-x border-gray-800">
       <PostDetail
         post={{
           ...post,

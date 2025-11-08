@@ -16,7 +16,7 @@ export interface PostWithAuthor {
   createdAt: Date
   author: {
     id: string
-    userID: string
+    userID: string | null
     name: string | null
     image: string | null
   }
@@ -31,7 +31,7 @@ export interface PostWithAuthor {
   isRepost?: boolean
   repostedBy?: {
     id: string
-    userID: string
+    userID: string | null
     name: string | null
     image: string | null
   }

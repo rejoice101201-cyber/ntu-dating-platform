@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { calculatePostLength } from "@/lib/utils"
+import { pusherServer } from "@/lib/pusher"
 
 export async function GET(req: NextRequest) {
   try {
@@ -139,6 +140,31 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Broadcast new post via Pusher
+    try {
+      if (!parentId) {
+        // Only broadcast top-level posts to home feed
+        await pusherServer.trigger("home-feed", "new-post", {
+          post: {
+            ...post,
+            isLiked: false,
+            isReposted: false,
+          },
+        })
+      } else {
+        // Broadcast comment to post detail page
+        await pusherServer.trigger(`post-${parentId}`, "new-comment", {
+          comment: {
+            ...post,
+            isLiked: false,
+            isReposted: false,
+          },
+        })
+      }
+    } catch (pusherError) {
+      console.error("Pusher error:", pusherError)
+    }
 
     return NextResponse.json({ post })
   } catch (error) {

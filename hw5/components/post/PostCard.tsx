@@ -1,11 +1,12 @@
 "use client"
 
 import { PostWithAuthor } from "@/types"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { RelativeTime } from "./RelativeTime"
+import { getPusherClient } from "@/lib/pusher-client"
 
 interface PostCardProps {
   post: PostWithAuthor
@@ -22,6 +23,73 @@ export function PostCard({ post }: PostCardProps) {
   const [showMenu, setShowMenu] = useState(false)
   
   const isOwnPost = session?.user?.id === post.author.id
+
+  // Pusher real-time updates
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Check if Pusher is configured
+    if (!process.env.NEXT_PUBLIC_PUSHER_APP_KEY || !process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+      return
+    }
+
+    try {
+      const pusher = getPusherClient()
+      const channel = pusher.subscribe(`post-${post.id}`)
+
+      channel.bind("like", async (data: { postId: string; likeCount: number; userId: string }) => {
+        if (data.postId === post.id) {
+          // If this is the current user's action, skip count update (already updated locally)
+          // but still update isLiked status
+          if (data.userId === session?.user?.id) {
+            // Skip setLikeCount since we already updated it locally
+            // But still re-fetch to update isLiked status
+            try {
+              const response = await fetch(`/api/posts/${post.id}`)
+              if (response.ok) {
+                const responseData = await response.json()
+                setIsLiked(responseData.post.isLiked || false)
+              }
+            } catch (error) {
+              console.error("Failed to fetch updated post status:", error)
+            }
+          } else {
+            // Other user's action: update count normally
+            setLikeCount(data.likeCount)
+          }
+        }
+      })
+
+      channel.bind("repost", async (data: { postId: string; repostCount: number; userId: string }) => {
+        if (data.postId === post.id) {
+          // If this is the current user's action, skip count update (already updated locally)
+          // but still update isReposted status
+          if (data.userId === session?.user?.id) {
+            // Skip setRepostCount since we already updated it locally
+            // But still re-fetch to update isReposted status
+            try {
+              const response = await fetch(`/api/posts/${post.id}`)
+              if (response.ok) {
+                const responseData = await response.json()
+                setIsReposted(responseData.post.isReposted || false)
+              }
+            } catch (error) {
+              console.error("Failed to fetch updated post status:", error)
+            }
+          } else {
+            // Other user's action: update count normally
+            setRepostCount(data.repostCount)
+          }
+        }
+      })
+
+      return () => {
+        pusher.unsubscribe(`post-${post.id}`)
+      }
+    } catch (error) {
+      console.error("Failed to subscribe to Pusher channel:", error)
+    }
+  }, [post.id, session?.user?.id])
 
   const handleLike = async () => {
     try {

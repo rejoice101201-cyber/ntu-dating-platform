@@ -20,6 +20,14 @@ export default async function ProfilePage({
   if (!session) {
     redirect("/auth/signin")
   }
+  
+  if (!session.user) {
+    redirect("/auth/signin")
+  }
+  
+  if (!session.user.id) {
+    redirect("/auth/signin")
+  }
 
   // Try to find user by userID first, then by id (UUID)
   // This handles cases where userID is null and we're using id instead
@@ -78,7 +86,7 @@ export default async function ProfilePage({
     : null
 
   return (
-    <div className="min-h-screen max-w-2xl mx-auto border-x border-gray-800">
+    <div className="min-h-screen border-x border-gray-800">
       <ProfileHeader
         user={user}
         isOwnProfile={isOwnProfile}

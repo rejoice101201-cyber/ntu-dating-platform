@@ -5,7 +5,7 @@ import { PostCard } from "@/components/post/PostCard"
 
 interface ProfileTabsProps {
   userId: string
-  userID: string
+  userID: string | null
   isOwnProfile: boolean
 }
 
