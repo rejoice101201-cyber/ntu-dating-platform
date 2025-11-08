@@ -1,16 +1,19 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
+import { useSession } from "next-auth/react"
 import { PostCard } from "./PostCard"
 import { NewPostNotice } from "./NewPostNotice"
 import { PostWithAuthor } from "@/types"
 import { getPusherClient } from "@/lib/pusher-client"
 
 export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
+  const { data: session } = useSession()
   const [posts, setPosts] = useState<PostWithAuthor[]>([])
   const [loading, setLoading] = useState(true)
   const [newPostsQueue, setNewPostsQueue] = useState<PostWithAuthor[]>([])
   const [showNotice, setShowNotice] = useState(false)
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleShowNewPosts = useCallback(() => {
@@ -52,6 +55,25 @@ export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
     fetchPosts()
   }, [filter])
 
+  // Fetch following list to filter New Post Notice
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const fetchFollowing = async () => {
+      try {
+        const response = await fetch("/api/follow/following")
+        if (response.ok) {
+          const data = await response.json()
+          setFollowingIds(new Set(data.followingIds || []))
+        }
+      } catch (error) {
+        console.error("Failed to fetch following list:", error)
+      }
+    }
+
+    fetchFollowing()
+  }, [session?.user?.id])
+
   // Pusher real-time updates for new posts
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -72,10 +94,15 @@ export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
       channel.bind("new-post", (data: { post: PostWithAuthor }) => {
         console.log("[PostFeed] Received new-post event:", data.post.id)
         
-        // Always queue new posts for "all" filter
-        // For "following" filter, we'll show all posts (filtering happens on server side)
-        // The Pusher event is broadcast to all clients, so we show the notice
-        // Add to queue instead of immediately adding to feed
+        // Only show notice for posts from users we're following
+        const isFollowingAuthor = followingIds.has(data.post.author.id)
+        
+        if (!isFollowingAuthor) {
+          console.log("[PostFeed] Post author not in following list, skipping notice")
+          return
+        }
+        
+        // Queue the post
         setNewPostsQueue((prev) => {
           // Check if post already exists in queue to avoid duplicates
           const exists = prev.some((p) => p.id === data.post.id)
@@ -88,7 +115,7 @@ export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
         })
         
         // Show notice
-        console.log("[PostFeed] Showing notice for new post")
+        console.log("[PostFeed] Showing notice for new post from following user")
         setShowNotice(true)
         
         // Clear existing timer if any
@@ -130,7 +157,7 @@ export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
     } catch (error) {
       console.error("[PostFeed] Failed to subscribe to Pusher channel:", error)
     }
-  }, [filter, handleShowNewPosts])
+  }, [filter, handleShowNewPosts, followingIds])
 
   const fetchPosts = async () => {
     try {
@@ -169,12 +196,25 @@ export function PostFeed({ filter = "all" }: { filter?: "all" | "following" }) {
     )
   }
 
+  // Extract unique authors from queued posts (for New Post Notice)
+  const authors = newPostsQueue
+    .map((post) => ({
+      id: post.author.id,
+      name: post.author.name,
+      image: post.author.image,
+      userID: post.author.userID,
+    }))
+    .filter((author, index, self) => 
+      index === self.findIndex((a) => a.id === author.id)
+    )
+
   return (
     <div>
       {/* New Post Notice */}
       {showNotice && newPostsQueue.length > 0 && (
         <NewPostNotice
           count={newPostsQueue.length}
+          authors={authors}
           onShow={handleShowNewPosts}
           onDismiss={handleDismissNotice}
         />
