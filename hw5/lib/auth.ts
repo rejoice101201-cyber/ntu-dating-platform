@@ -39,17 +39,56 @@ const baseAdapter = PrismaAdapter(db) as any
 const customAdapter = {
   ...baseAdapter,
   async createUser(data: any) {
-    // Remove userID from data if present, as it should be null initially
-    // and set later in the registration page
-    // Now that Prisma Client types are correct, we can simply omit userID
-    const { userID, ...userData } = data
-    
-    // Create user without userID - Prisma will use NULL as default
+    const { userID, originalEmail, ...userData } = data;
+    // 使用 modified email 作為 email，原始存到 originalEmail
     return db.user.create({
-      data: userData,
-    })
+      data: {
+        ...userData,
+        originalEmail: originalEmail || userData.email,  // fallback
+      },
+    });
   },
-}
+  // 覆寫 getUserByAccount，添加調試日誌
+  // 注意：我們不能簡單地返回 null，因為 PrismaAdapter 期望找到 account 時返回用戶
+  // 真正的解決方案是在 signIn callback 中處理，或者清理資料庫中錯誤連結的 account
+  async getUserByAccount({ providerAccountId, provider }: { providerAccountId: string; provider: string }) {
+    console.log("[CustomAdapter] getUserByAccount called:", { provider, providerAccountId });
+    // 使用 baseAdapter 的方法，但添加日誌
+    const result = await baseAdapter.getUserByAccount({ providerAccountId, provider });
+    if (result) {
+      console.log("[CustomAdapter] Found existing account, userId:", result.id);
+      // 檢查這個用戶是否有其他 provider 的 account
+      const userAccounts = await db.account.findMany({
+        where: { userId: result.id },
+        select: { provider: true },
+      });
+      if (userAccounts.length > 1) {
+        console.log("[CustomAdapter] WARNING: User has multiple provider accounts:", userAccounts.map(a => a.provider));
+        console.log("[CustomAdapter] This user was incorrectly linked. Consider cleaning the database.");
+      }
+    } else {
+      console.log("[CustomAdapter] No existing account found, will create new user");
+    }
+    return result;
+  },
+  // 覆寫 getUserByEmail，防止根據 email 自動連結帳號
+  // 我們希望每個 OAuth provider 創建獨立的用戶，即使 email 相同
+  async getUserByEmail(email: string) {
+    console.log("[CustomAdapter] getUserByEmail called with:", email);
+    console.log("[CustomAdapter] Returning null to prevent auto-linking by email");
+    // 永遠返回 null，強制創建新用戶
+    // 這樣可以確保不同 provider 的相同 email 會創建不同的用戶
+    return null;
+  },
+  // 覆寫 linkAccount，防止自動連結帳號
+  // 我們希望每個 OAuth provider 創建獨立的用戶
+  async linkAccount(account: any) {
+    console.log("[CustomAdapter] linkAccount called for provider:", account?.provider);
+    // 只創建 account，不連結到現有用戶
+    // 這個方法會在 createUser 之後被調用，所以 account 會連結到新創建的用戶
+    return baseAdapter.linkAccount(account);
+  },
+};
 
 export const authOptions: NextAuthConfig = {
   adapter: customAdapter,
@@ -60,36 +99,43 @@ export const authOptions: NextAuthConfig = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
     FacebookProvider({
       clientId: process.env.FACEBOOK_ID!,
       clientSecret: process.env.FACEBOOK_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {
     async signIn({ user, account, profile }: any) {
-      // Log sign-in attempts for debugging
       console.log("[NextAuth] Sign-in attempt:", {
         userId: user?.id,
         email: user?.email,
         provider: account?.provider,
         accountId: account?.providerAccountId,
-      })
+      });
       
-      // Check if user has required fields
       if (!user?.email && !user?.id) {
-        console.error("[NextAuth] User missing required fields:", user)
-        return false
+        console.error("[NextAuth] User missing required fields:", user);
+        return false;
       }
       
-      // Check if this provider account already exists
-      // If it exists, use the existing user (normal login)
-      // If it doesn't exist, let PrismaAdapter create a new user (even if email is the same)
-      // This allows each OAuth provider to create independent accounts
+      if (account && profile) {
+        const originalEmail = user.email || profile.email;
+        if (originalEmail) {
+          // 使 email unique per provider，避免合併
+          user.email = `${originalEmail}#${account.provider}`;
+          // 暫存原始 email 到 user object，供 createUser 使用
+          user.originalEmail = originalEmail;
+        }
+      }
+      
       if (account) {
         const existingAccount = await db.account.findUnique({
           where: {
@@ -98,28 +144,47 @@ export const authOptions: NextAuthConfig = {
               providerAccountId: account.providerAccountId,
             },
           },
-          include: { user: true },
-        })
+          include: { 
+            user: {
+              include: {
+                accounts: {
+                  select: { provider: true },
+                },
+              },
+            },
+          },
+        });
         
         if (existingAccount) {
-          // This provider account already exists, use the existing user
-          user.id = existingAccount.user.id
+          // 檢查這個用戶是否有其他 provider 的 account
+          const otherProviders = existingAccount.user.accounts.filter(
+            (acc: any) => acc.provider !== account.provider
+          );
+          
+          if (otherProviders.length > 0) {
+            console.error("[NextAuth] ERROR: User has multiple provider accounts:", {
+              userId: existingAccount.user.id,
+              currentProvider: account.provider,
+              otherProviders: otherProviders.map((acc: any) => acc.provider),
+            });
+            console.error("[NextAuth] This user was incorrectly linked. The account should be separated.");
+            // 拒絕登入，強制用戶重新註冊
+            // 或者，我們可以刪除錯誤連結的 account，但這很危險
+            return false;
+          }
+          
+          user.id = existingAccount.user.id;
           console.log("[NextAuth] Using existing account:", {
             userId: existingAccount.user.id,
             provider: account.provider,
             accountId: account.providerAccountId,
-          })
+          });
+          return true;
         }
-        // If account doesn't exist, let PrismaAdapter create a new user
-        // This allows multiple users with the same email but different providers
+        // 如果不存在，讓 adapter 創建新用戶（現在 email 是 unique 的）
       }
       
-      // Note: OAuth 認證失敗（錯誤的帳密）會由 OAuth provider 直接拒絕
-      // NextAuth.js 會自動處理並重定向到錯誤頁面
-      // 這裡我們只處理成功的認證流程
-      
-      // Allow sign in - we'll handle userID registration separately
-      return true
+      return true;
     },
     async jwt({ token, user, account }: any) {
       // Log JWT callback for debugging
@@ -131,17 +196,17 @@ export const authOptions: NextAuthConfig = {
     },
     async session({ session, user }: any) {
       if (session.user && user) {
-        (session.user as any).id = user.id
-        // Fetch userID from database
+        (session.user as any).id = user.id;
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { userID: true },
-        })
+          select: { userID: true, originalEmail: true },
+        });
         if (dbUser) {
-          (session.user as any).userID = dbUser.userID
+          (session.user as any).userID = dbUser.userID;
+          (session.user as any).originalEmail = dbUser.originalEmail;
         }
       }
-      return session
+      return session;
     },
     async redirect({ url, baseUrl }) {
       // Handle redirect after OAuth login

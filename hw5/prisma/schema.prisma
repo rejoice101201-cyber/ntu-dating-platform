@@ -56,6 +56,7 @@ model User {
   userID        String?   @unique // User-chosen username (1-15 chars, alphanumeric + underscore) - optional until registration
   name          String?
   email         String?
+  originalEmail String?     // 新增: 儲存原始 email
   emailVerified DateTime?
   image         String? // Avatar URL
   bio           String?   @db.Text // Brief description

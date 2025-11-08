@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "未授權" },
+        { error: "Unauthorized" },
         { status: 401 }
       )
     }
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       where: { id: session.user.id },
       data: { 
         userID,
-        email: session.user.email || undefined,
+        originalEmail: (session.user as any).originalEmail || session.user.email?.split('#')[0] || undefined,
         name: session.user.name || undefined,
         image: session.user.image || undefined,
       },

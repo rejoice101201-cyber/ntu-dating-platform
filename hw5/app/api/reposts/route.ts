@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!post) {
-      return NextResponse.json({ error: "文章不存在" }, { status: 404 })
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
     // Check if already reposted

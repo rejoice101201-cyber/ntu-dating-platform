@@ -33,7 +33,7 @@ export async function GET(
     })
 
     if (!post) {
-      return NextResponse.json({ error: "文章不存在" }, { status: 404 })
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
     // Check if liked/reposted
@@ -96,7 +96,7 @@ export async function DELETE(
     })
 
     if (!post) {
-      return NextResponse.json({ error: "文章不存在" }, { status: 404 })
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
     if (post.authorId !== session.user.id) {

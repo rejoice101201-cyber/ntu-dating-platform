@@ -4,6 +4,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { PostModal } from "@/components/post/PostModal"
 
 interface SidebarItem {
@@ -56,8 +57,16 @@ export function Sidebar() {
   return (
     <div className="fixed left-0 top-0 h-full w-64 border-r border-gray-800 bg-black flex flex-col">
       {/* Logo */}
-      <div className="p-4 border-b border-gray-800">
-        <img src="/Y.jpg" alt="Y" className="h-8 w-8" />
+      <div className="p-4 border-b border-gray-800 flex items-center">
+        <Image 
+          src="/Y.png" 
+          alt="Y" 
+          width={32} 
+          height={32} 
+          className="object-contain"
+          priority
+          unoptimized
+        />
       </div>
 
       {/* Menu Items */}
