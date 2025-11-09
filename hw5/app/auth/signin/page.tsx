@@ -1,7 +1,7 @@
 "use client"
 
 import { signIn, getSession } from "next-auth/react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { isValidUserID } from "@/lib/utils"
@@ -12,11 +12,58 @@ export default function SignInPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showUserIDLogin, setShowUserIDLogin] = useState(false)
+  
+  // Refs for button elements
+  const googleButtonRef = useRef<HTMLButtonElement>(null)
+  const githubButtonRef = useRef<HTMLButtonElement>(null)
+  const facebookButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Global error handler
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("[GlobalError] JavaScript error caught:", {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error,
+        stack: event.error?.stack,
+      })
+    }
+    
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("[GlobalError] Unhandled promise rejection:", {
+        reason: event.reason,
+        promise: event.promise,
+      })
+    }
+    
+    window.addEventListener("error", handleError)
+    window.addEventListener("unhandledrejection", handleUnhandledRejection)
+    
+    return () => {
+      window.removeEventListener("error", handleError)
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection)
+    }
+  }, [])
 
   useEffect(() => {
     console.log("[SignIn] Page loaded/rendered")
     console.log("[SignIn] Loading state:", loading)
     console.log("[SignIn] Error state:", error)
+    console.log("[SignIn] Button disabled state (loading):", loading)
+    
+    // Check button references
+    if (googleButtonRef.current) {
+      console.log("[SignIn] Google button found in DOM:", {
+        disabled: googleButtonRef.current.disabled,
+        className: googleButtonRef.current.className,
+        pointerEvents: window.getComputedStyle(googleButtonRef.current).pointerEvents,
+        zIndex: window.getComputedStyle(googleButtonRef.current).zIndex,
+      })
+    } else {
+      console.warn("[SignIn] Google button NOT found in DOM!")
+    }
     
     // Check if already logged in with valid session
     console.log("[SignIn] Checking for existing session...")
@@ -198,9 +245,42 @@ export default function SignInPage() {
           {/* OAuth Sign-in Buttons */}
           <div className="space-y-3">
             <button
-              onClick={() => {
-                console.log("[Button] Google button clicked!")
+              ref={googleButtonRef}
+              onClick={(e) => {
+                console.log("[Button] Google button onClick triggered!")
+                console.log("[Button] Event details:", {
+                  type: e.type,
+                  target: e.target,
+                  currentTarget: e.currentTarget,
+                  button: e.button,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
+                e.preventDefault()
+                e.stopPropagation()
                 handleOAuthSignIn("google")
+              }}
+              onMouseDown={(e) => {
+                console.log("[Button] Google button onMouseDown triggered!")
+                console.log("[Button] MouseDown event:", {
+                  button: e.button,
+                  buttons: e.buttons,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
+              }}
+              onPointerDown={(e) => {
+                console.log("[Button] Google button onPointerDown triggered!")
+                console.log("[Button] PointerDown event:", {
+                  pointerId: e.pointerId,
+                  pointerType: e.pointerType,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
+              }}
+              onTouchStart={(e) => {
+                console.log("[Button] Google button onTouchStart triggered!")
+                console.log("[Button] TouchStart event:", {
+                  touches: e.touches.length,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
               }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -215,9 +295,25 @@ export default function SignInPage() {
             </button>
             
             <button
-              onClick={() => {
-                console.log("[Button] GitHub button clicked!")
+              ref={githubButtonRef}
+              onClick={(e) => {
+                console.log("[Button] GitHub button onClick triggered!")
+                console.log("[Button] Event details:", {
+                  type: e.type,
+                  target: e.target,
+                  currentTarget: e.currentTarget,
+                  button: e.button,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
+                e.preventDefault()
+                e.stopPropagation()
                 handleOAuthSignIn("github")
+              }}
+              onMouseDown={(e) => {
+                console.log("[Button] GitHub button onMouseDown triggered!")
+              }}
+              onPointerDown={(e) => {
+                console.log("[Button] GitHub button onPointerDown triggered!")
               }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -229,9 +325,25 @@ export default function SignInPage() {
             </button>
             
             <button
-              onClick={() => {
-                console.log("[Button] Facebook button clicked!")
+              ref={facebookButtonRef}
+              onClick={(e) => {
+                console.log("[Button] Facebook button onClick triggered!")
+                console.log("[Button] Event details:", {
+                  type: e.type,
+                  target: e.target,
+                  currentTarget: e.currentTarget,
+                  button: e.button,
+                  disabled: (e.currentTarget as HTMLButtonElement).disabled,
+                })
+                e.preventDefault()
+                e.stopPropagation()
                 handleOAuthSignIn("facebook")
+              }}
+              onMouseDown={(e) => {
+                console.log("[Button] Facebook button onMouseDown triggered!")
+              }}
+              onPointerDown={(e) => {
+                console.log("[Button] Facebook button onPointerDown triggered!")
               }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
