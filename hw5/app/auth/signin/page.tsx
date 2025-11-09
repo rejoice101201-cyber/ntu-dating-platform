@@ -14,66 +14,101 @@ export default function SignInPage() {
   const [showUserIDLogin, setShowUserIDLogin] = useState(false)
 
   useEffect(() => {
+    console.log("[SignIn] Page loaded/rendered")
+    console.log("[SignIn] Loading state:", loading)
+    console.log("[SignIn] Error state:", error)
+    
     // Check if already logged in with valid session
+    console.log("[SignIn] Checking for existing session...")
     getSession().then((session) => {
+      console.log("[SignIn] Session check result:", session ? "has session" : "no session")
       if (session?.user) {
+        console.log("[SignIn] User found in session:", session.user)
         // If user has userID, redirect to home
         // Otherwise redirect to register page
         const user = session.user as any
         if (user.userID) {
+          console.log("[SignIn] User has userID, redirecting to home")
           router.push("/")
         } else {
+          console.log("[SignIn] User has no userID, redirecting to register")
           router.push("/auth/register")
         }
+      } else {
+        console.log("[SignIn] No session found, staying on signin page")
       }
+    }).catch((err) => {
+      console.error("[SignIn] Error getting session:", err)
     })
-  }, [router])
+  }, [router, loading, error])
 
   const handleOAuthSignIn = async (provider: string) => {
+    // 立即記錄，確認函數被調用
+    console.log("=".repeat(50))
+    console.log(`[SignIn] ====== START handleOAuthSignIn(${provider}) ======`)
+    console.log(`[SignIn] Timestamp:`, new Date().toISOString())
+    
     setError("")
     setLoading(true)
+    
     try {
-      console.log(`[SignIn] Attempting to sign in with ${provider}...`)
+      console.log(`[SignIn] Step 1: Attempting to sign in with ${provider}...`)
       
       // Check if user already has session with userID
+      console.log(`[SignIn] Step 2: Getting current session...`)
       const session = await getSession()
+      console.log(`[SignIn] Step 2: Session result:`, session ? "exists" : "null", session?.user ? "has user" : "no user")
+      
       const callbackUrl = session?.user && (session.user as any).userID 
         ? "/"  // If already registered, go to home
         : "/auth/register"  // Otherwise go to register
       
-      console.log(`[SignIn] Callback URL: ${callbackUrl}`)
+      console.log(`[SignIn] Step 3: Callback URL set to:`, callbackUrl)
       
       // signIn with redirect: false returns a result object
       // We need to manually handle the redirect
+      console.log(`[SignIn] Step 4: Calling signIn(${provider}, { callbackUrl: "${callbackUrl}", redirect: false })...`)
+      
       const result = await signIn(provider, {
         callbackUrl,
         redirect: false,
       })
       
-      console.log(`[SignIn] signIn result:`, result)
+      console.log(`[SignIn] Step 5: signIn returned:`, JSON.stringify(result, null, 2))
+      console.log(`[SignIn] Step 5: result type:`, typeof result)
+      console.log(`[SignIn] Step 5: result.ok:`, result?.ok)
+      console.log(`[SignIn] Step 5: result.error:`, result?.error)
+      console.log(`[SignIn] Step 5: result.url:`, result?.url)
       
       // Check for errors
       if (result?.error) {
-        console.error(`[SignIn] OAuth error:`, result.error)
+        console.error(`[SignIn] ERROR: OAuth error detected:`, result.error)
         setError(`Sign in failed: ${result.error}`)
         setLoading(false)
+        console.log(`[SignIn] ====== END (error) ======`)
         return
       }
       
       // If successful and has URL, manually redirect
       if (result?.ok && result.url) {
-        console.log(`[SignIn] Redirecting to:`, result.url)
+        console.log(`[SignIn] Step 6: Success! Redirecting to:`, result.url)
+        console.log(`[SignIn] ====== END (redirecting) ======`)
         window.location.href = result.url
         return
       }
       
       // If no URL returned, it's a configuration issue
-      console.error(`[SignIn] No redirect URL returned from signIn`)
+      console.error(`[SignIn] ERROR: No redirect URL returned from signIn`)
+      console.error(`[SignIn] Result object:`, result)
       setError("Sign in failed: Unable to initiate OAuth flow")
       setLoading(false)
+      console.log(`[SignIn] ====== END (no URL) ======`)
       
     } catch (err: any) {
-      console.error("[SignIn] OAuth sign-in error:", err)
+      console.error("[SignIn] EXCEPTION caught:", err)
+      console.error("[SignIn] Exception type:", err?.constructor?.name)
+      console.error("[SignIn] Exception message:", err?.message)
+      console.error("[SignIn] Exception stack:", err?.stack)
       // NextAuth.js errors are usually handled by redirecting to error page
       // But we can catch client-side errors here
       if (err?.message) {
@@ -82,6 +117,7 @@ export default function SignInPage() {
         setError("Sign in failed, please try again")
       }
       setLoading(false)
+      console.log(`[SignIn] ====== END (exception) ======`)
     }
   }
 
@@ -162,7 +198,10 @@ export default function SignInPage() {
           {/* OAuth Sign-in Buttons */}
           <div className="space-y-3">
             <button
-              onClick={() => handleOAuthSignIn("google")}
+              onClick={() => {
+                console.log("[Button] Google button clicked!")
+                handleOAuthSignIn("google")
+              }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -176,7 +215,10 @@ export default function SignInPage() {
             </button>
             
             <button
-              onClick={() => handleOAuthSignIn("github")}
+              onClick={() => {
+                console.log("[Button] GitHub button clicked!")
+                handleOAuthSignIn("github")
+              }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -187,7 +229,10 @@ export default function SignInPage() {
             </button>
             
             <button
-              onClick={() => handleOAuthSignIn("facebook")}
+              onClick={() => {
+                console.log("[Button] Facebook button clicked!")
+                handleOAuthSignIn("facebook")
+              }}
               disabled={loading}
               className="w-full py-3 px-4 bg-white text-black rounded-full font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
