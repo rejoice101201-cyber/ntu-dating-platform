@@ -19,7 +19,7 @@ async function debugOAuth() {
     FACEBOOK_ID: process.env.FACEBOOK_ID,
     FACEBOOK_SECRET: process.env.FACEBOOK_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    AUTH_SECRET: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
     DATABASE_URL: process.env.DATABASE_URL ? "已設置" : "未設置",
   }
 
@@ -31,7 +31,10 @@ async function debugOAuth() {
   console.log("✅ FACEBOOK_ID:", envVars.FACEBOOK_ID ? envVars.FACEBOOK_ID : "❌ 未設置")
   console.log("✅ FACEBOOK_SECRET:", envVars.FACEBOOK_SECRET ? "已設置" : "❌ 未設置")
   console.log("✅ NEXTAUTH_URL:", envVars.NEXTAUTH_URL || "❌ 未設置")
-  console.log("✅ NEXTAUTH_SECRET:", envVars.NEXTAUTH_SECRET ? (envVars.NEXTAUTH_SECRET === "changeme_replace_with_random_base64" ? "⚠️  使用預設值（建議更換）" : "已設置") : "❌ 未設置")
+  console.log("✅ AUTH_SECRET:", envVars.AUTH_SECRET ? (envVars.AUTH_SECRET === "changeme_replace_with_random_base64" ? "⚠️  使用預設值（建議更換）" : "已設置") : "❌ 未設置")
+  if (process.env.NEXTAUTH_SECRET && !process.env.AUTH_SECRET) {
+    console.log("⚠️  NEXTAUTH_SECRET 已設置，但建議使用 AUTH_SECRET（NextAuth v5 標準）")
+  }
   console.log("✅ DATABASE_URL:", envVars.DATABASE_URL)
 
   // Check database connection

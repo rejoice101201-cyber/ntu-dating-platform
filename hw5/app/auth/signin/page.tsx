@@ -43,21 +43,34 @@ export default function SignInPage() {
       
       console.log(`[SignIn] Callback URL: ${callbackUrl}`)
       
-      // signIn with redirect: true will redirect the page, so it never returns
-      // If there's an error, NextAuth will redirect to /auth/error
-      await signIn(provider, {
+      // signIn with redirect: false returns a result object
+      // We need to manually handle the redirect
+      const result = await signIn(provider, {
         callbackUrl,
-        redirect: true,
+        redirect: false,
       })
       
-      // If we get here, redirect didn't happen (shouldn't happen with redirect: true)
-      // But we'll wait a bit in case redirect is delayed
-      setTimeout(() => {
-        if (!document.hidden) {
-          console.warn(`[SignIn] Redirect did not occur, this may indicate an error`)
-          setLoading(false)
-        }
-      }, 2000)
+      console.log(`[SignIn] signIn result:`, result)
+      
+      // Check for errors
+      if (result?.error) {
+        console.error(`[SignIn] OAuth error:`, result.error)
+        setError(`Sign in failed: ${result.error}`)
+        setLoading(false)
+        return
+      }
+      
+      // If successful and has URL, manually redirect
+      if (result?.ok && result.url) {
+        console.log(`[SignIn] Redirecting to:`, result.url)
+        window.location.href = result.url
+        return
+      }
+      
+      // If no URL returned, it's a configuration issue
+      console.error(`[SignIn] No redirect URL returned from signIn`)
+      setError("Sign in failed: Unable to initiate OAuth flow")
+      setLoading(false)
       
     } catch (err: any) {
       console.error("[SignIn] OAuth sign-in error:", err)
