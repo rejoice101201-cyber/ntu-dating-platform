@@ -90,28 +90,50 @@ const customAdapter = {
   },
 };
 
+// Build providers array conditionally based on available environment variables
+const providers = [
+  // Only add provider if both clientId and clientSecret are available
+  ...(requiredEnvVars.GOOGLE_CLIENT_ID && requiredEnvVars.GOOGLE_CLIENT_SECRET
+    ? [GoogleProvider({
+        clientId: requiredEnvVars.GOOGLE_CLIENT_ID,
+        clientSecret: requiredEnvVars.GOOGLE_CLIENT_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })]
+    : []),
+  ...(requiredEnvVars.GITHUB_ID && requiredEnvVars.GITHUB_SECRET
+    ? [GitHubProvider({
+        clientId: requiredEnvVars.GITHUB_ID,
+        clientSecret: requiredEnvVars.GITHUB_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })]
+    : []),
+  ...(requiredEnvVars.FACEBOOK_ID && requiredEnvVars.FACEBOOK_SECRET
+    ? [FacebookProvider({
+        clientId: requiredEnvVars.FACEBOOK_ID,
+        clientSecret: requiredEnvVars.FACEBOOK_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })]
+    : []),
+]
+
+// Log enabled providers for debugging
+const enabledProviders = providers.map((p: any) => p.id || p.name || "unknown").filter(Boolean)
+console.log("[NextAuth] Enabled providers:", enabledProviders)
+if (enabledProviders.length === 0) {
+  console.error("[NextAuth] WARNING: No OAuth providers configured! Check environment variables.")
+  if (process.env.NODE_ENV === "production") {
+    console.error("[NextAuth] CRITICAL: Missing OAuth environment variables in production!")
+  }
+} else {
+  console.log(`[NextAuth] Successfully configured ${enabledProviders.length} OAuth provider(s)`)
+}
+
 export const authOptions: NextAuthConfig = {
   adapter: customAdapter,
   trustHost: true, // Required for NextAuth v5
   secret: requiredEnvVars.AUTH_SECRET,
   debug: process.env.NODE_ENV === "development", // Enable debug mode in development
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-    }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_ID!,
-      clientSecret: process.env.FACEBOOK_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+  providers,
   callbacks: {
     async signIn({ user, account, profile }: any) {
       console.log("[NextAuth] Sign-in attempt:", {
@@ -232,6 +254,16 @@ export const authOptions: NextAuthConfig = {
       // This callback is called before signIn callback
       // We can use it to handle special cases
       return true
+    },
+  },
+  events: {
+    async signIn({ user, account, profile }) {
+      console.log("[NextAuth] Sign-in successful:", {
+        userId: user?.id,
+        email: user?.email,
+        provider: account?.provider,
+        accountId: account?.providerAccountId,
+      });
     },
   },
   pages: {
