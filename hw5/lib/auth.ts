@@ -136,77 +136,101 @@ export const authOptions: NextAuthConfig = {
   providers,
   callbacks: {
     async signIn({ user, account, profile }: any) {
-      console.log("[NextAuth] Sign-in attempt:", {
-        userId: user?.id,
-        email: user?.email,
-        provider: account?.provider,
-        accountId: account?.providerAccountId,
-      });
-      
-      if (!user?.email && !user?.id) {
-        console.error("[NextAuth] User missing required fields:", user);
-        return false;
-      }
-      
-      if (account && profile) {
-        const originalEmail = user.email || profile.email;
-        if (originalEmail) {
-          // 使 email unique per provider，避免合併
-          user.email = `${originalEmail}#${account.provider}`;
-          // 暫存原始 email 到 user object，供 createUser 使用
-          user.originalEmail = originalEmail;
-        }
-      }
-      
-      if (account) {
-        const existingAccount = await db.account.findUnique({
-          where: {
-            provider_providerAccountId: {
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-            },
-          },
-          include: { 
-            user: {
-              include: {
-                accounts: {
-                  select: { provider: true },
-                },
-              },
-            },
-          },
+      try {
+        console.log("[NextAuth] Sign-in attempt:", {
+          userId: user?.id,
+          email: user?.email,
+          provider: account?.provider,
+          accountId: account?.providerAccountId,
         });
         
-        if (existingAccount) {
-          // 檢查這個用戶是否有其他 provider 的 account
-          const otherProviders = existingAccount.user.accounts.filter(
-            (acc: any) => acc.provider !== account.provider
-          );
-          
-          if (otherProviders.length > 0) {
-            console.error("[NextAuth] ERROR: User has multiple provider accounts:", {
-              userId: existingAccount.user.id,
-              currentProvider: account.provider,
-              otherProviders: otherProviders.map((acc: any) => acc.provider),
-            });
-            console.error("[NextAuth] This user was incorrectly linked. The account should be separated.");
-            // 拒絕登入，強制用戶重新註冊
-            // 或者，我們可以刪除錯誤連結的 account，但這很危險
-            return false;
-          }
-          
-          user.id = existingAccount.user.id;
-          console.log("[NextAuth] Using existing account:", {
-            userId: existingAccount.user.id,
-            provider: account.provider,
-            accountId: account.providerAccountId,
-          });
-          return true;
+        if (!user?.email && !user?.id) {
+          console.error("[NextAuth] User missing required fields:", user);
+          return false;
         }
-        // 如果不存在，讓 adapter 創建新用戶（現在 email 是 unique 的）
+        
+        if (account && profile) {
+          const originalEmail = user.email || profile.email;
+          if (originalEmail) {
+            // 使 email unique per provider，避免合併
+            user.email = `${originalEmail}#${account.provider}`;
+            // 暫存原始 email 到 user object，供 createUser 使用
+            user.originalEmail = originalEmail;
+          }
+        }
+        
+        if (account) {
+          try {
+            const existingAccount = await db.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                },
+              },
+              include: { 
+                user: {
+                  include: {
+                    accounts: {
+                      select: { provider: true },
+                    },
+                  },
+                },
+              },
+            });
+            
+            if (existingAccount) {
+              // 檢查這個用戶是否有其他 provider 的 account
+              const otherProviders = existingAccount.user.accounts.filter(
+                (acc: any) => acc.provider !== account.provider
+              );
+              
+              if (otherProviders.length > 0) {
+                console.error("[NextAuth] ERROR: User has multiple provider accounts:", {
+                  userId: existingAccount.user.id,
+                  currentProvider: account.provider,
+                  otherProviders: otherProviders.map((acc: any) => acc.provider),
+                });
+                console.error("[NextAuth] This user was incorrectly linked. The account should be separated.");
+                // 拒絕登入，強制用戶重新註冊
+                return false;
+              }
+              
+              user.id = existingAccount.user.id;
+              console.log("[NextAuth] Using existing account:", {
+                userId: existingAccount.user.id,
+                provider: account.provider,
+                accountId: account.providerAccountId,
+              });
+              return true;
+            }
+            // 如果不存在，讓 adapter 創建新用戶（現在 email 是 unique 的）
+          } catch (dbError: any) {
+            console.error("[NextAuth] Database error in signIn callback:", {
+              error: dbError?.message,
+              stack: dbError?.stack,
+              provider: account?.provider,
+              providerAccountId: account?.providerAccountId,
+            });
+            // 如果資料庫查詢失敗，記錄錯誤但允許繼續（讓 adapter 處理）
+            // 這樣至少不會完全阻止登入流程
+            console.log("[NextAuth] Allowing sign-in to continue despite database error");
+            return true;
+          }
+        }
+        
+        return true;
+      } catch (error: any) {
+        console.error("[NextAuth] Unexpected error in signIn callback:", {
+          error: error?.message,
+          stack: error?.stack,
+          provider: account?.provider,
+          userId: user?.id,
+          email: user?.email,
+        });
+        // 返回 false 會阻止登入，但至少不會導致未捕獲的異常
+        return false;
       }
-      
-      return true;
     },
     async jwt({ token, user, account }: any) {
       // Log JWT callback for debugging
@@ -217,18 +241,37 @@ export const authOptions: NextAuthConfig = {
       return token
     },
     async session({ session, user }: any) {
-      if (session.user && user) {
-        (session.user as any).id = user.id;
-        const dbUser = await db.user.findUnique({
-          where: { id: user.id },
-          select: { userID: true, originalEmail: true },
-        });
-        if (dbUser) {
-          (session.user as any).userID = dbUser.userID;
-          (session.user as any).originalEmail = dbUser.originalEmail;
+      try {
+        if (session.user && user) {
+          (session.user as any).id = user.id;
+          try {
+            const dbUser = await db.user.findUnique({
+              where: { id: user.id },
+              select: { userID: true, originalEmail: true },
+            });
+            if (dbUser) {
+              (session.user as any).userID = dbUser.userID;
+              (session.user as any).originalEmail = dbUser.originalEmail;
+            }
+          } catch (dbError: any) {
+            console.error("[NextAuth] Database error in session callback:", {
+              error: dbError?.message,
+              stack: dbError?.stack,
+              userId: user.id,
+            });
+            // 即使資料庫查詢失敗，也返回 session（只是沒有 userID 和 originalEmail）
+          }
         }
+        return session;
+      } catch (error: any) {
+        console.error("[NextAuth] Unexpected error in session callback:", {
+          error: error?.message,
+          stack: error?.stack,
+          userId: user?.id,
+        });
+        // 返回原始 session，避免完全失敗
+        return session;
       }
-      return session;
     },
     async redirect({ url, baseUrl }) {
       // Handle redirect after OAuth login
