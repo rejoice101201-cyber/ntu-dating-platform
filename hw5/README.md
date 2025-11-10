@@ -8,25 +8,7 @@
 
 ### **👉 [https://wp1141-azure.vercel.app](https://wp1141-azure.vercel.app) 👈**
 
-**重要提示**：請使用上述連結訪問部署的應用程式。首次訪問需要註冊，請使用下方提供的 REG_KEY。
-
----
-
-## 🔐 安全性措施
-
-為了防止任意路人註冊，本應用程式需要註冊金鑰（REG_KEY）才能完成註冊。
-
-### **註冊金鑰 (REG_KEY)**
-
-```
-wp1141-hw5-2024-reg-key-xyz789abc
-```
-
-**使用方式**：
-1. 訪問部署連結：https://wp1141-azure.vercel.app
-2. 使用 OAuth 登入（Google/GitHub/Facebook）
-3. 在註冊頁面輸入上述 REG_KEY
-4. 完成 userID 註冊
+**重要提示**：請使用上述連結訪問部署的應用程式。
 
 ---
 
@@ -41,7 +23,6 @@ wp1141-hw5-2024-reg-key-xyz789abc
 
 - ✅ **UserID 註冊系統**
   - 自訂 userID（1-15 字元，字母、數字、底線）
-  - 需要 REG_KEY 才能註冊
   - 每個 OAuth provider 可註冊不同的 userID
 
 - ✅ **完整的側邊欄導航**
@@ -227,9 +208,8 @@ wp1141-hw5-2024-reg-key-xyz789abc
 
 1. **訪問部署連結**：https://wp1141-azure.vercel.app
 2. **使用 OAuth 登入**（Google/GitHub/Facebook）
-3. **輸入 REG_KEY**：`wp1141-hw5-2024-reg-key-xyz789abc`
-4. **完成 userID 註冊**
-5. **開始使用！**
+3. **完成 userID 註冊**
+4. **開始使用！**
 
 ### 方式二：本地開發環境
 
@@ -526,5 +506,3 @@ WP1141 作業 5 - X-like 社群網站
 ---
 
 **再次提醒：Deployed Link 為 [https://wp1141-azure.vercel.app](https://wp1141-azure.vercel.app)**
-
-**REG_KEY: `wp1141-hw5-2024-reg-key-xyz789abc`**
