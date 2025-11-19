@@ -16,7 +16,10 @@ backend/dist/
 
 # Database
 *.db
+*.db-journal
 *.sqlite
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
 
 # Logs
 logs/
