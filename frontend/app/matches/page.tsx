@@ -100,7 +100,8 @@ export default function MatchesPage() {
                         alt={match.user.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error('Failed to load image:', match.user.photos[0].url);
+                          const photoUrl = match.user?.photos?.[0]?.url;
+                          console.error('Failed to load image:', photoUrl || 'unknown');
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
