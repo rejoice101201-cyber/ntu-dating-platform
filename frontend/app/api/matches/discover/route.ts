@@ -36,12 +36,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's tag IDs
-    const userTagIds = currentUser.tags.map(ut => ut.tagId);
+    const userTagIds = currentUser.tags.map((ut: any) => ut.tagId);
 
     // Find users with common tags, different gender (if preference), not already matched
     const matchedUserIds = [
-      ...currentUser.matches.map(m => m.matchedUserId),
-      ...currentUser.ratings.map(r => r.ratedUserId),
+      ...currentUser.matches.map((m: any) => m.matchedUserId),
+      ...currentUser.ratings.map((r: any) => r.ratedUserId),
     ];
 
     const recommendations = await prisma.user.findMany({
@@ -66,14 +66,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate match score based on common tags
-    const scoredRecommendations = recommendations.map(user => {
-      const commonTags = user.tags.filter(ut => userTagIds.includes(ut.tagId));
+    const scoredRecommendations = recommendations.map((user: any) => {
+      const commonTags = user.tags.filter((ut: any) => userTagIds.includes(ut.tagId));
       const matchScore = (commonTags.length / Math.max(userTagIds.length, user.tags.length)) * 100;
 
       return {
         ...user,
         matchScore: Math.round(matchScore),
-        commonTags: commonTags.map(ut => ut.tag),
+        commonTags: commonTags.map((ut: any) => ut.tag),
       };
     });
 

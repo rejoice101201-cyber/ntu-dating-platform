@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Format matches to always show the other user
-    const formattedMatches = matches.map(match => {
+    const formattedMatches = matches.map((match: any) => {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
       return {
         id: match.id,

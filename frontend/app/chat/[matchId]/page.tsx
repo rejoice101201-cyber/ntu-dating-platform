@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
-import { io, Socket } from 'socket.io-client'
+import Pusher from 'pusher-js'
 import api from '@/lib/api'
 
 interface Message {
@@ -26,7 +26,7 @@ export default function ChatPage() {
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [socket, setSocket] = useState<Socket | null>(null)
+  const [pusher, setPusher] = useState<Pusher | null>(null)
   const [otherUser, setOtherUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,29 +43,42 @@ export default function ChatPage() {
       return
     }
 
-    // Initialize socket
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
-    const newSocket = io(socketUrl, {
-      auth: { token },
+    // Initialize Pusher
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY || !process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+      console.error('Pusher environment variables not set')
+      return
+    }
+
+    const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     })
 
-    newSocket.on('connect', () => {
-      console.log('Connected to chat server')
-    })
-
-    newSocket.on('new_message', (message: Message) => {
+    // Subscribe to match channel
+    const channel = newPusher.subscribe(`match-${matchId}`)
+    
+    channel.bind('new_message', (message: Message) => {
       setMessages(prev => [...prev, message])
     })
 
-    setSocket(newSocket)
+    // Also subscribe to user channel for notifications
+    if (user) {
+      const userChannel = newPusher.subscribe(`user-${user.id}`)
+      userChannel.bind('new_message', (message: Message) => {
+        if (message.matchId === matchId) {
+          setMessages(prev => [...prev, message])
+        }
+      })
+    }
+
+    setPusher(newPusher)
 
     // Load messages
     loadMessages()
 
     return () => {
-      newSocket.close()
+      newPusher.disconnect()
     }
-  }, [matchId, token])
+  }, [matchId, token, user])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -83,9 +96,9 @@ export default function ChatPage() {
       const matchResponse = await api.get('/matches')
       const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
       if (match) {
-        setOtherUser(match.user)
+        setOtherUser(match.otherUser)
         // Load other user's profile to get unlock progress
-        loadOtherUserProfile(match.user.id)
+        loadOtherUserProfile(match.otherUser.id)
       } else {
         setError('找不到配對資訊')
       }
@@ -100,9 +113,9 @@ export default function ChatPage() {
     }
   }
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !socket || !user) return
+    if (!input.trim() || !user) return
 
     const messageContent = input.trim()
     
@@ -121,20 +134,24 @@ export default function ChatPage() {
     setMessages(prev => [...prev, tempMessage])
     setInput('')
 
-    // Send message via socket
-    socket.emit('send_message', {
-      matchId,
-      content: messageContent,
-      type: 'text',
-    })
-
-    // Listen for confirmation
-    socket.once('message_sent', (sentMessage: Message) => {
+    try {
+      // Send via API (which will trigger Pusher)
+      const response = await api.post(`/chat/${matchId}`, {
+        content: messageContent,
+        type: 'text',
+      })
+      
       // Replace temp message with real message
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempMessage.id ? sentMessage : msg
-      ))
-    })
+      if (response.data.message) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempMessage.id ? response.data.message : msg
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
+    }
   }
 
   const loadOtherUserProfile = async (userId: string) => {

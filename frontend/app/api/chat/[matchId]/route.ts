@@ -127,8 +127,14 @@ export async function POST(
     const otherUserId = match.userId === authUser.id ? match.matchedUserId : match.userId;
 
     // Send via Pusher
-    await pusher.trigger(`match-${matchId}`, 'new_message', message);
-    await pusher.trigger(`user-${otherUserId}`, 'new_message', message);
+    await pusher.trigger(`match-${matchId}`, 'new_message', {
+      ...message,
+      matchId, // Include matchId for filtering
+    });
+    await pusher.trigger(`user-${otherUserId}`, 'new_message', {
+      ...message,
+      matchId, // Include matchId for filtering
+    });
 
     return NextResponse.json({ message });
   } catch (error) {

@@ -65,7 +65,7 @@ export default function MyProfilePage() {
       formData.append('photo', file)
 
       const token = localStorage.getItem('token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/me/photos`, {
+      const response = await fetch('/api/users/me/photos', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -228,7 +228,7 @@ export default function MyProfilePage() {
               // Convert relative URL to absolute URL
               const photoUrl = photo.url.startsWith('http') 
                 ? photo.url 
-                : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${photo.url}`;
+                : photo.url; // Vercel Blob URLs are already absolute
               
               return (
               <div

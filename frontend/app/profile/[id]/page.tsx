@@ -119,7 +119,7 @@ export default function ProfilePage() {
           // Convert relative URL to absolute URL
           const photoUrl = photo.url.startsWith('http') 
             ? photo.url 
-            : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${photo.url}`;
+            : photo.url; // Vercel Blob URLs are already absolute
           
           return (
           <div

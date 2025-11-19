@@ -118,10 +118,8 @@ export default function DiscoverPage() {
             {/* Photo */}
             <div className="relative h-96 bg-gray-200">
               {current.photos[0] && (() => {
-                // Convert relative URL to absolute URL
-                const photoUrl = current.photos[0].url.startsWith('http') 
-                  ? current.photos[0].url 
-                  : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${current.photos[0].url}`;
+                // Vercel Blob URLs are already absolute
+                const photoUrl = current.photos[0].url;
                 
                 return (
                 <div

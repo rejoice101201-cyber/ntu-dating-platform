@@ -97,7 +97,7 @@ export default function MatchesPage() {
                       // Convert relative URL to absolute URL
                       const photoUrl = match.user.photos[0].url.startsWith('http') 
                         ? match.user.photos[0].url 
-                        : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${match.user.photos[0].url}`;
+                        : match.user.photos[0].url; // Vercel Blob URLs are already absolute
                       
                       return (
                       <img

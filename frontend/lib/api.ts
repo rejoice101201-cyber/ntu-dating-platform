@@ -1,11 +1,7 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
-
-// Log API URL in development to help debug
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('API URL:', API_URL);
-}
+// Use relative path for Next.js API Routes
+const API_URL = '/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -14,8 +10,7 @@ const api = axios.create({
   },
 });
 
-// Helper function to create FormData requests without Content-Type header
-// (browser will set it automatically with boundary)
+// Helper function for FormData requests
 const apiFormData = axios.create({
   baseURL: API_URL,
 });
