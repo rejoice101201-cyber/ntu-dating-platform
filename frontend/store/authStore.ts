@@ -42,13 +42,19 @@ export const useAuthStore = create<AuthState>()(
         token: null,
         login: async (email: string, password: string) => {
           const response = await api.post('/auth/login', { email, password });
-          set({ user: response.data.user, token: response.data.token });
-          localStorage.setItem('token', response.data.token);
+          const { user, token } = response.data;
+          set({ user, token });
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('token', token);
+          }
         },
         register: async (data: RegisterData) => {
           const response = await api.post('/auth/register', data);
-          set({ user: response.data.user, token: response.data.token });
-          localStorage.setItem('token', response.data.token);
+          const { user, token } = response.data;
+          set({ user, token });
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('token', token);
+          }
         },
         logout: () => {
           set({ user: null, token: null });

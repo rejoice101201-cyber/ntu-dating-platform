@@ -20,10 +20,12 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      router.push('/discover')
+      // Wait a bit for state to update
+      setTimeout(() => {
+        router.push('/discover')
+      }, 100)
     } catch (err: any) {
       setError(err.response?.data?.error || '登入失敗')
-    } finally {
       setLoading(false)
     }
   }
@@ -53,6 +55,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="your@email.com"
             />
@@ -60,13 +63,14 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              密码
+              密碼
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="••••••••"
             />

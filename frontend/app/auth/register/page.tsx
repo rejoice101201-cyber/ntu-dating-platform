@@ -30,10 +30,12 @@ export default function RegisterPage() {
         ...formData,
         height: formData.height ? parseInt(formData.height) : undefined,
       })
-      router.push('/discover')
+      // Wait a bit for state to update
+      setTimeout(() => {
+        router.push('/discover')
+      }, 100)
     } catch (err: any) {
       setError(err.response?.data?.error || '註冊失敗')
-    } finally {
       setLoading(false)
     }
   }
