@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const answer = await prisma.qaAnswer.upsert({
+    const answer = await prisma.qAAnswer.upsert({
       where: {
         userId_questionId: {
           userId: authUser.id,
