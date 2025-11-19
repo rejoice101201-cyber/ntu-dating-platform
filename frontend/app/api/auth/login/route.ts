@@ -28,20 +28,36 @@ export async function POST(request: NextRequest) {
     console.log('Login request body:', { email: body.email });
     const data = loginSchema.parse(body);
 
+    // Check database connection
+    try {
+      await prisma.$connect();
+      console.log('Database connected successfully');
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
 
     if (!user) {
+      console.log('User not found:', data.email);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
+    console.log('User found:', { id: user.id, email: user.email, isActive: user.isActive });
+
     const isValidPassword = await bcrypt.compare(data.password, user.password);
 
     if (!isValidPassword) {
+      console.log('Invalid password for user:', data.email);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
