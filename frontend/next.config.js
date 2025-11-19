@@ -4,16 +4,11 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  experimental: {
-    // Disable build trace collection to avoid stack overflow
-    outputFileTracingExcludes: {
-      '*': [
-        'node_modules/@swc/core-linux-x64-gnu',
-        'node_modules/@swc/core-linux-x64-musl',
-        'node_modules/@esbuild/linux-x64',
-        'node_modules/webpack',
-      ],
-    },
+  // Disable output file tracing to avoid stack overflow
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/**',
+    ],
   },
   // Exclude problematic directories from build
   webpack: (config, { isServer }) => {
