@@ -30,6 +30,11 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showQAGame, setShowQAGame] = useState(false)
+  const [questions, setQuestions] = useState<any[]>([])
+  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [unlockProgress, setUnlockProgress] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -79,6 +84,8 @@ export default function ChatPage() {
       const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
       if (match) {
         setOtherUser(match.user)
+        // Load other user's profile to get unlock progress
+        loadOtherUserProfile(match.user.id)
       } else {
         setError('找不到配對資訊')
       }
@@ -130,6 +137,53 @@ export default function ChatPage() {
     })
   }
 
+  const loadOtherUserProfile = async (userId: string) => {
+    try {
+      const response = await api.get(`/users/${userId}`)
+      setUnlockProgress(response.data.unlockProgress)
+    } catch (error) {
+      console.error('Failed to load other user profile:', error)
+    }
+  }
+
+  const loadQuestions = async () => {
+    try {
+      const response = await api.get('/qa/questions?limit=5')
+      const questionsData = response.data.questions || []
+      setQuestions(questionsData)
+      if (questionsData.length > 0) {
+        setSelectedQuestions(questionsData.slice(0, 3).map((q: any) => q.id))
+      }
+    } catch (error) {
+      console.error('Failed to load questions:', error)
+      setQuestions([])
+    }
+  }
+
+  const handlePlayQA = async () => {
+    if (!otherUser?.id || selectedQuestions.length === 0) return
+
+    try {
+      const answerArray = selectedQuestions.map(qId => answers[qId] || '')
+      const response = await api.post(`/qa/play/${otherUser.id}`, {
+        questionIds: selectedQuestions,
+        answers: answerArray,
+      })
+
+      alert(`匹配度: ${response.data.matchPercentage}%！解鎖進度: ${response.data.unlockProgress.unlockLevel}%`)
+      setShowQAGame(false)
+      setAnswers({})
+      // Reload profile to update unlock progress
+      await loadOtherUserProfile(otherUser.id)
+    } catch (error: any) {
+      if (error.response?.data?.error?.includes('energy')) {
+        alert('體力不足！')
+      } else {
+        alert('問答遊戲失敗，請重試')
+      }
+    }
+  }
+
   const getOpeningLines = async () => {
     if (!otherUser?.id) {
       console.error('Other user not loaded yet')
@@ -167,15 +221,118 @@ export default function ChatPage() {
         </button>
         <div className="flex-1">
           <h2 className="font-semibold">{otherUser?.name || '聊天'}</h2>
+          {unlockProgress && (
+            <p className="text-xs text-gray-500">解鎖進度: {unlockProgress.unlockLevel}%</p>
+          )}
         </div>
-        <button
-          onClick={getOpeningLines}
-          className="text-2xl"
-          title="AI 柴犬建議"
-        >
-          🐕
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setShowQAGame(!showQAGame)
+              if (!showQAGame && questions.length === 0) {
+                loadQuestions()
+              }
+            }}
+            className="text-xl"
+            title="問答遊戲解鎖照片"
+          >
+            🎮
+          </button>
+          <button
+            onClick={getOpeningLines}
+            className="text-2xl"
+            title="AI 柴犬建議"
+          >
+            🐕
+          </button>
+        </div>
       </div>
+
+      {/* Q&A Game Panel */}
+      {showQAGame && otherUser && (
+        <div className="bg-white border-b p-4 max-h-96 overflow-y-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-semibold">🐕 問答遊戲 - 解鎖照片</h3>
+            <button
+              onClick={() => setShowQAGame(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+          {unlockProgress && (
+            <div className="mb-3">
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                <div
+                  className="bg-primary-500 h-2 rounded-full transition-all"
+                  style={{ width: `${unlockProgress.unlockLevel}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-600">解鎖進度: {unlockProgress.unlockLevel}%</p>
+            </div>
+          )}
+          {questions.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-gray-500 mb-2">載入問題中...</p>
+              <button
+                onClick={loadQuestions}
+                className="text-primary-500 hover:underline text-sm"
+              >
+                重新載入
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {selectedQuestions.map((qId) => {
+                const question = questions.find((q) => q.id === qId)
+                if (!question) return null
+
+                return (
+                  <div key={qId} className="border rounded-lg p-3 bg-gray-50">
+                    <p className="font-medium mb-2 text-sm">{question.content}</p>
+                    {question.type === 'multiple_choice' && question.options ? (
+                      <div className="space-y-1">
+                        {JSON.parse(question.options).map((opt: string, idx: number) => (
+                          <label key={idx} className="flex items-center text-sm">
+                            <input
+                              type="radio"
+                              name={`q-${qId}`}
+                              value={opt}
+                              checked={answers[qId] === opt}
+                              onChange={(e) =>
+                                setAnswers({ ...answers, [qId]: e.target.value })
+                              }
+                              className="mr-2"
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={answers[qId] || ''}
+                        onChange={(e) =>
+                          setAnswers({ ...answers, [qId]: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg text-sm"
+                        placeholder="輸入答案"
+                      />
+                    )}
+                  </div>
+                )
+              })}
+              <button
+                onClick={handlePlayQA}
+                disabled={selectedQuestions.some(qId => !answers[qId])}
+                className="w-full bg-primary-500 text-white py-2 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                提交答案並解鎖
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
