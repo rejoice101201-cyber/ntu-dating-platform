@@ -195,23 +195,21 @@ export default function ChatPage() {
               </button>
             </div>
           </div>
+        ) : messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-gray-500 mb-4">还没有消息，开始聊天吧！</p>
+              <button
+                onClick={getOpeningLines}
+                disabled={!otherUser?.id}
+                className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                🐕 获取开场白建议
+              </button>
+            </div>
+          </div>
         ) : (
-          <>
-            {messages.length === 0 && (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-gray-500 mb-4">还没有消息，开始聊天吧！</p>
-                  <button
-                    onClick={getOpeningLines}
-                    disabled={!otherUser?.id}
-                    className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    🐕 获取开场白建议
-                  </button>
-                </div>
-              </div>
-            )}
-            {messages.map((message) => {
+          messages.map((message) => {
             const isOwn = message.senderId === user?.id
             return (
               <div
@@ -235,8 +233,7 @@ export default function ChatPage() {
                 </div>
               </div>
             )
-          })}
-          </>
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
