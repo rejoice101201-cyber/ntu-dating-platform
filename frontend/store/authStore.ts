@@ -36,27 +36,45 @@ interface RegisterData {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
-      user: null,
-      token: null,
-      login: async (email: string, password: string) => {
-        const response = await api.post('/auth/login', { email, password });
-        set({ user: response.data.user, token: response.data.token });
-        localStorage.setItem('token', response.data.token);
-      },
-      register: async (data: RegisterData) => {
-        const response = await api.post('/auth/register', data);
-        set({ user: response.data.user, token: response.data.token });
-        localStorage.setItem('token', response.data.token);
-      },
-      logout: () => {
-        set({ user: null, token: null });
-        localStorage.removeItem('token');
-      },
-      updateUser: (user: User) => {
-        set({ user });
-      },
-    }),
+    (set, get) => {
+      // Initialize from localStorage on mount
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('token');
+        if (storedToken && !get().token) {
+          // Try to restore user from token
+          api.get('/auth/me')
+            .then(response => {
+              set({ user: response.data.user, token: storedToken });
+            })
+            .catch(() => {
+              // Token invalid, clear it
+              localStorage.removeItem('token');
+            });
+        }
+      }
+
+      return {
+        user: null,
+        token: null,
+        login: async (email: string, password: string) => {
+          const response = await api.post('/auth/login', { email, password });
+          set({ user: response.data.user, token: response.data.token });
+          localStorage.setItem('token', response.data.token);
+        },
+        register: async (data: RegisterData) => {
+          const response = await api.post('/auth/register', data);
+          set({ user: response.data.user, token: response.data.token });
+          localStorage.setItem('token', response.data.token);
+        },
+        logout: () => {
+          set({ user: null, token: null });
+          localStorage.removeItem('token');
+        },
+        updateUser: (user: User) => {
+          set({ user });
+        },
+      };
+    },
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),

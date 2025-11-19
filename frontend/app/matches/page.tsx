@@ -27,19 +27,34 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!token) {
-      router.push('/auth/login')
-      return
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token')
+      if (!token && !storedToken) {
+        router.push('/auth/login')
+        return
+      }
+      if (token || storedToken) {
+        await loadMatches()
+      }
     }
-    loadMatches()
-  }, [token])
+    checkAuth()
+  }, [token, router])
 
   const loadMatches = async () => {
     try {
       const response = await api.get('/matches')
-      setMatches(response.data.matches)
-    } catch (error) {
+      console.log('Matches response:', response.data)
+      if (response.data && response.data.matches) {
+        setMatches(response.data.matches)
+      } else {
+        setMatches([])
+      }
+    } catch (error: any) {
       console.error('Failed to load matches:', error)
+      if (error.response?.status === 401) {
+        // Token expired, redirect to login
+        router.push('/auth/login')
+      }
     } finally {
       setLoading(false)
     }
