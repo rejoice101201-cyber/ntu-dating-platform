@@ -39,7 +39,8 @@ export default function ChatPage() {
     }
 
     // Initialize socket
-    const newSocket = io(process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const newSocket = io(socketUrl, {
       auth: { token },
     })
 
