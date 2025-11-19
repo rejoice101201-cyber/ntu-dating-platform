@@ -32,7 +32,7 @@ export default function RegisterPage() {
       })
       router.push('/discover')
     } catch (err: any) {
-      setError(err.response?.data?.error || '注册失败')
+      setError(err.response?.data?.error || '註冊失敗')
     } finally {
       setLoading(false)
     }
@@ -43,8 +43,8 @@ export default function RegisterPage() {
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl mb-2">🐕</h1>
-          <h2 className="text-2xl font-bold text-gray-800">创建账户</h2>
-          <p className="text-gray-600 mt-2">开始你的交友之旅</p>
+          <h2 className="text-2xl font-bold text-gray-800">建立帳戶</h2>
+          <p className="text-gray-600 mt-2">開始你的交友之旅</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              邮箱 *
+              郵箱 *
             </label>
             <input
               type="email"
@@ -110,7 +110,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                性别 *
+                性別 *
               </label>
               <select
                 value={formData.gender}
@@ -127,7 +127,7 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                地区
+                地區
               </label>
               <input
                 type="text"
@@ -155,14 +155,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-primary-500 text-white py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
           >
-            {loading ? '注册中...' : '注册'}
+            {loading ? '註冊中...' : '註冊'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          已有账户？{' '}
+          已有帳戶？{' '}
           <Link href="/auth/login" className="text-primary-500 hover:underline">
-            登录
+            登入
           </Link>
         </p>
       </div>

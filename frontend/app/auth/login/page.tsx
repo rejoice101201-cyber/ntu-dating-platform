@@ -22,7 +22,7 @@ export default function LoginPage() {
       await login(email, password)
       router.push('/discover')
     } catch (err: any) {
-      setError(err.response?.data?.error || '登录失败')
+      setError(err.response?.data?.error || '登入失敗')
     } finally {
       setLoading(false)
     }
@@ -33,8 +33,8 @@ export default function LoginPage() {
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl mb-2">🐕</h1>
-          <h2 className="text-2xl font-bold text-gray-800">欢迎回来</h2>
-          <p className="text-gray-600 mt-2">登录你的账户</p>
+          <h2 className="text-2xl font-bold text-gray-800">歡迎回來</h2>
+          <p className="text-gray-600 mt-2">登入你的帳戶</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -46,7 +46,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              邮箱
+              郵箱
             </label>
             <input
               type="email"
@@ -77,14 +77,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-primary-500 text-white py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? '登录中...' : '登录'}
+            {loading ? '登入中...' : '登入'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          还没有账户？{' '}
+          還沒有帳戶？{' '}
           <Link href="/auth/register" className="text-primary-500 hover:underline">
-            注册
+            註冊
           </Link>
         </p>
       </div>

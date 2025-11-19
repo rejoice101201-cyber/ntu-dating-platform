@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'NTU Dating Platform - 找到你的另一半',
-  description: '一个注重内在的交友平台，通过互动解锁照片，找到真正适合的人',
+  description: '一個注重內在的交友平台，透過互動解鎖照片，找到真正適合的人',
 }
 
 export default function RootLayout({

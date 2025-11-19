@@ -20,7 +20,7 @@ export default function Home() {
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">🐕 NTU Dating Platform</h1>
-        <p className="text-gray-600">加载中...</p>
+        <p className="text-gray-600">載入中...</p>
       </div>
     </div>
   )

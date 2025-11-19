@@ -12,7 +12,7 @@ const bots = [
     gender: 'female',
     location: '台北',
     height: 165,
-    bio: '喜欢旅行和摄影，寻找有趣的灵魂 🎨',
+    bio: '喜歡旅行和攝影，尋找有趣的靈魂 🎨',
     tags: ['旅行', '摄影', '阅读', '开朗', '早睡早起'],
   },
   {
@@ -23,7 +23,7 @@ const bots = [
     gender: 'male',
     location: '新竹',
     height: 178,
-    bio: '健身爱好者，喜欢户外运动，周末常去爬山 🏔️',
+    bio: '健身愛好者，喜歡戶外運動，週末常去爬山 🏔️',
     tags: ['运动', '健身', '美食', '开朗', '认真'],
   },
   {
@@ -34,7 +34,7 @@ const bots = [
     gender: 'male',
     location: '台中',
     height: 175,
-    bio: '电影迷，喜欢看各种类型的电影，也喜欢打游戏 🎮',
+    bio: '電影迷，喜歡看各種類型的電影，也喜歡打遊戲 🎮',
     tags: ['电影', '游戏', '音乐', '随和', '夜猫子'],
   },
   {
@@ -45,7 +45,7 @@ const bots = [
     gender: 'female',
     location: '高雄',
     height: 160,
-    bio: '喜欢阅读和写作，偶尔会去咖啡厅坐一下午 📚',
+    bio: '喜歡閱讀和寫作，偶爾會去咖啡廳坐一下午 📚',
     tags: ['阅读', '音乐', '美食', '内向', '早睡早起'],
   },
   {
@@ -56,7 +56,7 @@ const bots = [
     gender: 'female',
     location: '台北',
     height: 162,
-    bio: '热爱生活，喜欢尝试新事物，寻找志同道合的朋友 ✨',
+    bio: '熱愛生活，喜歡嘗試新事物，尋找志同道合的朋友 ✨',
     tags: ['旅行', '美食', '电影', '开朗', '幽默'],
   },
   {
@@ -67,13 +67,13 @@ const bots = [
     gender: 'male',
     location: '桃园',
     height: 180,
-    bio: '工程师，喜欢编程和科技，也喜欢户外活动 💻',
+    bio: '工程師，喜歡程式設計和科技，也喜歡戶外活動 💻',
     tags: ['游戏', '运动', '阅读', '认真', '随和'],
   },
 ];
 
 async function createBots() {
-  console.log('🤖 开始创建机器人用户...\n');
+  console.log('🤖 開始建立機器人用戶...\n');
 
   // 获取所有标签
   const allTags = await prisma.tag.findMany();
@@ -87,7 +87,7 @@ async function createBots() {
       });
 
       if (existing) {
-        console.log(`⏭️  用户 ${bot.name} 已存在，更新信息...`);
+        console.log(`⏭️  用戶 ${bot.name} 已存在，更新資訊...`);
         // 更新现有用户信息
         const user = await prisma.user.update({
           where: { id: existing.id },
@@ -142,7 +142,7 @@ async function createBots() {
               order: 0,
             },
           });
-          console.log(`   为 ${bot.name} 添加了封面照片`);
+          console.log(`   為 ${bot.name} 新增了封面照片`);
         }
         continue;
       }
@@ -212,15 +212,15 @@ async function createBots() {
         }
       }
 
-      console.log(`✅ 创建用户: ${bot.name} (${bot.email})`);
+      console.log(`✅ 建立用戶: ${bot.name} (${bot.email})`);
     } catch (error) {
-      console.error(`❌ 创建用户 ${bot.name} 失败:`, error);
+      console.error(`❌ 建立用戶 ${bot.name} 失敗:`, error);
     }
   }
 
-  console.log('\n🎉 机器人用户创建完成！');
-  console.log('\n📝 测试账户信息:');
-  console.log('   所有机器人的密码都是: 123456');
+  console.log('\n🎉 機器人用戶建立完成！');
+  console.log('\n📝 測試帳戶資訊:');
+  console.log('   所有機器人的密碼都是: 123456');
   bots.forEach(bot => {
     console.log(`   - ${bot.name}: ${bot.email}`);
   });

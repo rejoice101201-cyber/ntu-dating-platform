@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function createMatch() {
-  console.log('💕 开始创建配对...\n');
+  console.log('💕 開始建立配對...\n');
 
   // 获取所有用户
   const allUsers = await prisma.user.findMany({
@@ -13,39 +13,39 @@ async function createMatch() {
   });
 
   if (allUsers.length < 2) {
-    console.log('❌ 用户数量不足，无法创建配对');
+    console.log('❌ 用戶數量不足，無法建立配對');
     return;
   }
 
-  // 为所有真实用户（非机器人）创建配对
+  // 為所有真實用戶（非機器人）建立配對
   const botEmails = ['alice@example.com', 'bob@example.com', 'charlie@example.com', 
                      'diana@example.com', 'eve@example.com', 'frank@example.com'];
   const realUsers = allUsers.filter(u => !botEmails.includes(u.email));
   const bots = allUsers.filter(u => botEmails.includes(u.email));
 
   if (realUsers.length === 0) {
-    console.log('❌ 没有找到真实用户');
+    console.log('❌ 沒有找到真實用戶');
     return;
   }
 
-  console.log(`找到 ${realUsers.length} 个真实用户，${bots.length} 个机器人\n`);
+  console.log(`找到 ${realUsers.length} 個真實用戶，${bots.length} 個機器人\n`);
 
   let totalMatches = 0;
 
-  // 为每个真实用户创建配对
+  // 為每個真實用戶建立配對
   for (const user1 of realUsers) {
-    console.log(`\n👤 为用户 ${user1.name} (${user1.email}) 创建配对...`);
+    console.log(`\n👤 為用戶 ${user1.name} (${user1.email}) 建立配對...`);
     let matchCount = 0;
 
-    // 选择前3个机器人进行配对
+    // 選擇前3個機器人進行配對
     const targets = bots.slice(0, 3);
 
     for (const user2 of targets) {
     if (user2.id === user1.id) continue;
 
-    console.log(`\n📌 处理与 ${user2.name} 的配对...`);
+    console.log(`\n📌 處理與 ${user2.name} 的配對...`);
 
-    // 检查是否已经配对
+    // 檢查是否已經配對
     const existingMatch = await prisma.match.findFirst({
       where: {
         OR: [
@@ -56,12 +56,12 @@ async function createMatch() {
     });
 
     if (existingMatch) {
-      console.log(`   ⏭️  已经配对过了，跳过`);
+      console.log(`   ⏭️  已經配對過了，跳過`);
       continue;
     }
 
-    // 创建互相评分（总分 >= 7 才能配对）
-    // 用户1给用户2评分 4分
+    // 建立互相評分（總分 >= 7 才能配對）
+    // 用戶1給用戶2評分 4分
     const rating1 = await prisma.rating.upsert({
       where: {
         userId_ratedUserId: {
@@ -79,7 +79,7 @@ async function createMatch() {
       },
     });
 
-    // 用户2给用户1评分 4分（总分 = 8 >= 7，可以配对）
+    // 用戶2給用戶1評分 4分（總分 = 8 >= 7，可以配對）
     const rating2 = await prisma.rating.upsert({
       where: {
         userId_ratedUserId: {
@@ -97,7 +97,7 @@ async function createMatch() {
       },
     });
 
-    // 创建配对（因为总分 = 8 >= 7）
+    // 建立配對（因為總分 = 8 >= 7）
     const totalScore = rating1.score + rating2.score;
     const match = await prisma.match.upsert({
       where: {
@@ -120,16 +120,16 @@ async function createMatch() {
       },
     });
 
-      console.log(`   ✅ 配对成功！总分: ${totalScore}分`);
+      console.log(`   ✅ 配對成功！總分: ${totalScore}分`);
       matchCount++;
       totalMatches++;
     }
 
-    console.log(`   📊 ${user1.name} 的配对数量: ${matchCount}`);
+    console.log(`   📊 ${user1.name} 的配對數量: ${matchCount}`);
   }
 
-  console.log(`\n🎉 完成！共创建了 ${totalMatches} 个配对`);
-  console.log(`💬 现在所有用户都可以在配对页面看到配对了！`);
+  console.log(`\n🎉 完成！共建立了 ${totalMatches} 個配對`);
+  console.log(`💬 現在所有用戶都可以在配對頁面看到配對了！`);
 }
 
 createMatch()

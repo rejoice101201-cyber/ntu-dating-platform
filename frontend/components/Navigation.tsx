@@ -15,7 +15,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: '/discover', label: '探索', icon: '🔍' },
-    { href: '/matches', label: '配对', icon: '💕' },
+    { href: '/matches', label: '配對', icon: '💕' },
     { href: '/profile/me', label: '我的', icon: '👤' },
   ]
 
@@ -42,7 +42,7 @@ export default function Navigation() {
           className="flex flex-col items-center py-2 px-4 text-gray-600"
         >
           <span className="text-2xl mb-1">🚪</span>
-          <span className="text-xs">退出</span>
+          <span className="text-xs">登出</span>
         </button>
       </div>
     </nav>

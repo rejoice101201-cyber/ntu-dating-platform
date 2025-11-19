@@ -77,7 +77,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed data created successfully!');
+  console.log('✅ 種子資料建立成功！');
 }
 
 main()

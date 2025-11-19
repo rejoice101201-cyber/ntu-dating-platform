@@ -63,7 +63,7 @@ export default function MatchesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>加载中...</p>
+        <p>載入中...</p>
       </div>
     )
   }
@@ -71,16 +71,16 @@ export default function MatchesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto py-8">
-        <h1 className="text-2xl font-bold px-4 mb-4">🐕 我的配对</h1>
+        <h1 className="text-2xl font-bold px-4 mb-4">🐕 我的配對</h1>
 
         {matches.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">还没有配对，去探索一下吧！</p>
+            <p className="text-gray-600">還沒有配對，去探索一下吧！</p>
             <Link
               href="/discover"
               className="mt-4 inline-block bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-600"
             >
-              开始探索
+              開始探索
             </Link>
           </div>
         ) : (

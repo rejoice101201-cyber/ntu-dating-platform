@@ -59,7 +59,7 @@ export default function DiscoverPage() {
       }
     } catch (error: any) {
       if (error.response?.data?.error?.includes('energy')) {
-        alert('体力不足！请稍后再试')
+        alert('體力不足！請稍後再試')
       }
     }
   }
@@ -69,7 +69,7 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-4">🐕</div>
-          <p>加载中...</p>
+          <p>載入中...</p>
         </div>
       </div>
     )
@@ -80,7 +80,7 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="text-4xl mb-4">🐕</div>
-          <p className="text-gray-600">暂时没有推荐，请稍后再试</p>
+          <p className="text-gray-600">暫時沒有推薦，請稍後再試</p>
         </div>
       </div>
     )
@@ -95,7 +95,7 @@ export default function DiscoverPage() {
         <div className="flex items-center justify-between px-4 mb-4">
           <h1 className="text-2xl font-bold">🐕 探索</h1>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">体力:</span>
+            <span className="text-sm text-gray-600">體力:</span>
             <span className="font-bold text-primary-500">{user?.energy || 0}</span>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function DiscoverPage() {
 
         {/* Rating buttons */}
         <div className="mt-4 px-4">
-          <p className="text-center text-sm text-gray-600 mb-2">评分 (1-5分)</p>
+          <p className="text-center text-sm text-gray-600 mb-2">評分 (1-5分)</p>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((score) => (
               <button

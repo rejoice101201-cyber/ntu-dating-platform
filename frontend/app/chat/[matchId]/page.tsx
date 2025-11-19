@@ -80,13 +80,13 @@ export default function ChatPage() {
       if (match) {
         setOtherUser(match.user)
       } else {
-        setError('找不到配对信息')
+        setError('找不到配對資訊')
       }
     } catch (error: any) {
       console.error('Failed to load messages:', error)
-      setError(error.response?.data?.error || '加载消息失败')
+      setError(error.response?.data?.error || '載入訊息失敗')
       if (error.response?.status === 404) {
-        setError('配对不存在')
+        setError('配對不存在')
       }
     } finally {
       setLoading(false)
@@ -171,7 +171,7 @@ export default function ChatPage() {
         <button
           onClick={getOpeningLines}
           className="text-2xl"
-          title="AI 柴犬建议"
+          title="AI 柴犬建議"
         >
           🐕
         </button>
@@ -181,7 +181,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">加载中...</p>
+            <p className="text-gray-500">載入中...</p>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
@@ -198,13 +198,13 @@ export default function ChatPage() {
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-gray-500 mb-4">还没有消息，开始聊天吧！</p>
+              <p className="text-gray-500 mb-4">還沒有訊息，開始聊天吧！</p>
               <button
                 onClick={getOpeningLines}
                 disabled={!otherUser?.id}
                 className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🐕 获取开场白建议
+                🐕 獲取開場白建議
               </button>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function ChatPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="输入消息..."
+            placeholder="輸入訊息..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <button
@@ -253,7 +253,7 @@ export default function ChatPage() {
             disabled={!input.trim() || !socket}
             className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            发送
+            發送
           </button>
         </form>
       </div>

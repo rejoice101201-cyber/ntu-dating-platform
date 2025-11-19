@@ -59,7 +59,7 @@ export default function MyProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>加载中...</p>
+        <p>載入中...</p>
       </div>
     )
   }
@@ -69,13 +69,13 @@ export default function MyProfilePage() {
       <div className="max-w-2xl mx-auto py-8">
         <div className="bg-white rounded-lg p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">我的资料</h1>
+            <h1 className="text-2xl font-bold">我的資料</h1>
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
                 className="text-primary-500 hover:text-primary-600"
               >
-                编辑
+                編輯
               </button>
             ) : (
               <div className="flex gap-2">
@@ -92,7 +92,7 @@ export default function MyProfilePage() {
                   onClick={handleSave}
                   className="text-primary-500 hover:text-primary-600"
                 >
-                  保存
+                  儲存
                 </button>
               </div>
             )}
@@ -110,7 +110,7 @@ export default function MyProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">自我介绍</label>
+                <label className="block text-sm font-medium mb-1">自我介紹</label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -120,7 +120,7 @@ export default function MyProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">地区</label>
+                  <label className="block text-sm font-medium mb-1">地區</label>
                   <input
                     type="text"
                     value={formData.location}
@@ -147,14 +147,14 @@ export default function MyProfilePage() {
               </div>
               {profile?.bio && (
                 <div>
-                  <h2 className="font-semibold mb-2">自我介绍</h2>
+                    <h2 className="font-semibold mb-2">自我介紹</h2>
                   <p className="text-gray-700">{profile.bio}</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 {profile?.location && (
                   <div>
-                    <h2 className="font-semibold mb-2">地区</h2>
+                    <h2 className="font-semibold mb-2">地區</h2>
                     <p>{profile.location}</p>
                   </div>
                 )}
