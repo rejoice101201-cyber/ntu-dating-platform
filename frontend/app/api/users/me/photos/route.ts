@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
-import sharp from 'sharp';
+
+// Lazy load sharp to handle platform-specific issues
+let sharp: any;
+async function getSharp() {
+  if (!sharp) {
+    try {
+      sharp = (await import('sharp')).default;
+    } catch (error) {
+      console.error('Failed to load sharp:', error);
+      throw new Error('Image processing library not available');
+    }
+  }
+  return sharp;
+}
 
 // Set runtime to nodejs for server-side execution
 export const runtime = 'nodejs';
@@ -53,21 +66,30 @@ export async function POST(request: NextRequest) {
 
     console.log('File received:', { name: file.name, size: file.size, type: file.type });
 
-    // Process image with sharp
+    // Process image with sharp (lazy loaded)
     let processedBuffer: Buffer;
     try {
       const buffer = Buffer.from(await file.arrayBuffer());
-      processedBuffer = await sharp(buffer)
+      const sharpInstance = await getSharp();
+      processedBuffer = await sharpInstance(buffer)
         .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 85 })
         .toBuffer();
       console.log('Image processed successfully, size:', processedBuffer.length);
     } catch (sharpError) {
       console.error('Sharp processing error:', sharpError);
-      return NextResponse.json(
-        { error: 'Failed to process image', details: sharpError instanceof Error ? sharpError.message : 'Unknown error' },
-        { status: 500 }
-      );
+      // If sharp fails, try uploading the original image without processing
+      console.log('Attempting to upload original image without processing...');
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        processedBuffer = buffer;
+        console.log('Using original image, size:', processedBuffer.length);
+      } catch (fallbackError) {
+        return NextResponse.json(
+          { error: 'Failed to process image', details: sharpError instanceof Error ? sharpError.message : 'Unknown error' },
+          { status: 500 }
+        );
+      }
     }
 
     // Upload to Vercel Blob
