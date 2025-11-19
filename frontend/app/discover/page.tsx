@@ -24,19 +24,31 @@ export default function DiscoverPage() {
 
   useEffect(() => {
     if (!token) {
-      router.push('/auth/login')
-      return
+      // Check localStorage as fallback
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      if (!storedToken) {
+        router.push('/auth/login')
+        return
+      }
     }
     fetchRecommendations()
-  }, [token])
+  }, [token, router])
 
   const fetchRecommendations = async () => {
     try {
       const response = await api.get('/matches/discover')
       setRecommendations(response.data.recommendations)
       setCurrentIndex(0)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch recommendations:', error)
+      if (error.response?.status === 401) {
+        // Token expired, redirect to login
+        router.push('/auth/login')
+      } else if (!error.response) {
+        // Network error - API not available
+        console.error('API not available. Check NEXT_PUBLIC_API_URL environment variable.')
+        alert('無法連接到伺服器。請檢查 API 配置。')
+      }
     } finally {
       setLoading(false)
     }
