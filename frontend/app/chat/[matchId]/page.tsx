@@ -31,6 +31,7 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showQAGame, setShowQAGame] = useState(false)
   const [questions, setQuestions] = useState<any[]>([])
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
@@ -45,7 +46,7 @@ export default function ChatPage() {
     }
 
     // Load messages first (even without Pusher)
-    loadMessages()
+    loadMessages(true)
 
     // Initialize Pusher if environment variables are set
     if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
@@ -82,9 +83,11 @@ export default function ChatPage() {
       }
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
-      // Set up polling to check for new messages periodically
+      // Set up polling to check for new messages periodically (only after initial load)
       const pollInterval = setInterval(() => {
-        loadMessages()
+        if (!isInitialLoad) {
+          loadMessages(false) // Don't show loading spinner on polling
+        }
       }, 5000) // Poll every 5 seconds
 
       return () => {
@@ -97,29 +100,34 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const loadMessages = async () => {
+  const loadMessages = async (showLoading = true) => {
     try {
-      setLoading(true)
+      if (showLoading) {
+        setLoading(true)
+      }
       setError(null)
       
       const response = await api.get(`/chat/${matchId}`)
       setMessages(response.data.messages || [])
 
-      // Get match info to find other user
-      const matchResponse = await api.get('/matches')
-      const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
-      if (match) {
-        // Use 'user' instead of 'otherUser' based on API response structure
-        const otherUserData = match.user || match.otherUser
-        if (otherUserData) {
-          setOtherUser(otherUserData)
-          // Load other user's profile to get unlock progress
-          loadOtherUserProfile(otherUserData.id)
+      // Get match info to find other user (only on initial load)
+      if (isInitialLoad) {
+        const matchResponse = await api.get('/matches')
+        const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
+        if (match) {
+          // Use 'user' instead of 'otherUser' based on API response structure
+          const otherUserData = match.user || match.otherUser
+          if (otherUserData) {
+            setOtherUser(otherUserData)
+            // Load other user's profile to get unlock progress
+            loadOtherUserProfile(otherUserData.id)
+          } else {
+            setError('找不到配對用戶資訊')
+          }
         } else {
-          setError('找不到配對用戶資訊')
+          setError('找不到配對資訊')
         }
-      } else {
-        setError('找不到配對資訊')
+        setIsInitialLoad(false)
       }
     } catch (error: any) {
       console.error('Failed to load messages:', error)
@@ -128,7 +136,9 @@ export default function ChatPage() {
         setError('配對不存在')
       }
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }
 
