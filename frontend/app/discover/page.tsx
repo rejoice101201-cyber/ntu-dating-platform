@@ -105,17 +105,24 @@ export default function DiscoverPage() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Photo */}
             <div className="relative h-96 bg-gray-200">
-              {current.photos[0] && (
+              {current.photos[0] && (() => {
+                // Convert relative URL to absolute URL
+                const photoUrl = current.photos[0].url.startsWith('http') 
+                  ? current.photos[0].url 
+                  : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${current.photos[0].url}`;
+                
+                return (
                 <div
                   className="w-full h-full"
                   style={{
                     filter: `blur(${current.photos[0].blurLevel}px)`,
-                    backgroundImage: `url(${current.photos[0].url})`,
+                    backgroundImage: `url(${photoUrl})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                   }}
                 />
-              )}
+                );
+              })()}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
                 <h2 className="text-white text-2xl font-bold mb-1">{current.name}</h2>
                 {current.bio && (

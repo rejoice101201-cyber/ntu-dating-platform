@@ -224,15 +224,25 @@ export default function MyProfilePage() {
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            {profile?.photos?.map((photo: any) => (
+            {profile?.photos?.map((photo: any) => {
+              // Convert relative URL to absolute URL
+              const photoUrl = photo.url.startsWith('http') 
+                ? photo.url 
+                : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${photo.url}`;
+              
+              return (
               <div
                 key={photo.id}
                 className="aspect-square bg-gray-200 rounded-lg overflow-hidden relative group"
               >
                 <img
-                  src={photo.url}
+                  src={photoUrl}
                   alt="Profile"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Failed to load image:', photoUrl);
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
                 />
                 {editing && (
                   <button
@@ -243,7 +253,8 @@ export default function MyProfilePage() {
                   </button>
                 )}
               </div>
-            ))}
+            );
+            })}
             {editing && (
               <div className="aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                 <label className="cursor-pointer w-full h-full flex items-center justify-center">

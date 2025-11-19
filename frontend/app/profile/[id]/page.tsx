@@ -111,7 +111,13 @@ export default function ProfilePage() {
 
       {/* Photos */}
       <div className="grid grid-cols-2 gap-2 p-4">
-        {profile.photos.map((photo) => (
+        {profile.photos.map((photo) => {
+          // Convert relative URL to absolute URL
+          const photoUrl = photo.url.startsWith('http') 
+            ? photo.url 
+            : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${photo.url}`;
+          
+          return (
           <div
             key={photo.id}
             className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden"
@@ -120,7 +126,7 @@ export default function ProfilePage() {
               className="w-full h-full"
               style={{
                 filter: `blur(${photo.blurLevel}px)`,
-                backgroundImage: `url(${photo.url})`,
+                backgroundImage: `url(${photoUrl})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}
@@ -131,7 +137,8 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Info */}

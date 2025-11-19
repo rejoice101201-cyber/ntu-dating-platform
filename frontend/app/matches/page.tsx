@@ -93,13 +93,24 @@ export default function MatchesPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-                    {match.user.photos[0] && (
+                    {match.user.photos[0] && (() => {
+                      // Convert relative URL to absolute URL
+                      const photoUrl = match.user.photos[0].url.startsWith('http') 
+                        ? match.user.photos[0].url 
+                        : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001'}${match.user.photos[0].url}`;
+                      
+                      return (
                       <img
-                        src={match.user.photos[0].url}
+                        src={photoUrl}
                         alt={match.user.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Failed to load image:', photoUrl);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
-                    )}
+                      );
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{match.user.name}</h3>
