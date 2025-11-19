@@ -9,6 +9,9 @@ export default function Navigation() {
   const { user, logout } = useAuthStore()
 
   if (!user) return null
+  
+  // Hide navigation on chat pages
+  if (pathname?.startsWith('/chat/')) return null
 
   const navItems = [
     { href: '/discover', label: '探索', icon: '🔍' },

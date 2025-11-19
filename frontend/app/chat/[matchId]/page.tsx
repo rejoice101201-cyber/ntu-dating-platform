@@ -215,7 +215,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
-      <div className="bg-white border-t p-4 pb-20">
+      <div className="bg-white border-t p-4">
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
