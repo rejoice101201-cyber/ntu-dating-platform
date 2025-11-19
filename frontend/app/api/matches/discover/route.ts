@@ -46,10 +46,12 @@ export async function GET(request: NextRequest) {
 
     const recommendations = await prisma.user.findMany({
       where: {
-        id: { not: authUser.id },
+        id: { 
+          not: authUser.id,
+          notIn: matchedUserIds,
+        },
         isActive: true,
         isVerified: true,
-        id: { notIn: matchedUserIds },
       },
       include: {
         photos: {
