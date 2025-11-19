@@ -1,6 +1,5 @@
 {
   "buildCommand": "cd frontend && npm ci && npx prisma generate && npm run build",
-  "outputDirectory": "frontend/.next",
   "installCommand": "cd frontend && npm ci",
   "framework": null,
   "rootDirectory": "frontend"

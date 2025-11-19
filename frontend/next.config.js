@@ -4,19 +4,9 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Exclude only problematic packages from file tracing to avoid stack overflow
-  // while keeping essential dependencies like styled-jsx
-  experimental: {
-    outputFileTracingExcludes: {
-      '*': [
-        '**/node_modules/@swc/**',
-        '**/node_modules/.cache/**',
-        '**/node_modules/.bin/**',
-        '**/.next/cache/**',
-        '**/prisma/migrations/**',
-      ],
-    },
-  },
+  // Use standalone output to avoid file tracing stack overflow
+  // This creates a self-contained build with all dependencies included
+  output: 'standalone',
   // Exclude problematic directories from build
   webpack: (config, { isServer }) => {
     if (!isServer) {
