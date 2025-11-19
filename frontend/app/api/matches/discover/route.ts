@@ -44,6 +44,32 @@ export async function GET(request: NextRequest) {
       ...currentUser.ratings.map((r: any) => r.ratedUserId),
     ];
 
+    console.log('Current user:', {
+      id: authUser.id,
+      email: currentUser.email,
+      isActive: currentUser.isActive,
+      isVerified: currentUser.isVerified,
+      tagsCount: userTagIds.length,
+      matchedUserIds: matchedUserIds.length,
+      ratingsCount: currentUser.ratings.length,
+    });
+
+    // Get all available users for debugging
+    const allUsers = await prisma.user.findMany({
+      where: {
+        id: { not: authUser.id },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        isVerified: true,
+      },
+    });
+
+    console.log('All users in database:', allUsers);
+
     const recommendations = await prisma.user.findMany({
       where: {
         id: { 
@@ -51,7 +77,8 @@ export async function GET(request: NextRequest) {
           notIn: matchedUserIds,
         },
         isActive: true,
-        isVerified: true,
+        // Temporarily remove isVerified requirement for testing
+        // isVerified: true,
       },
       include: {
         photos: {
@@ -81,6 +108,18 @@ export async function GET(request: NextRequest) {
 
     // Sort by match score
     scoredRecommendations.sort((a: any, b: any) => b.matchScore - a.matchScore);
+
+    console.log('Recommendations found:', {
+      count: scoredRecommendations.length,
+      users: scoredRecommendations.map((r: any) => ({
+        id: r.id,
+        email: r.email,
+        name: r.name,
+        isActive: r.isActive,
+        isVerified: r.isVerified,
+        matchScore: r.matchScore,
+      })),
+    });
 
     return NextResponse.json({ recommendations: scoredRecommendations });
   } catch (error) {
