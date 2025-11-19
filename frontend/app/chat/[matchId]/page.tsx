@@ -44,40 +44,52 @@ export default function ChatPage() {
       return
     }
 
-    // Initialize Pusher
-    if (!process.env.NEXT_PUBLIC_PUSHER_KEY || !process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
-      console.error('Pusher environment variables not set')
-      return
-    }
-
-    const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-    })
-
-    // Subscribe to match channel
-    const channel = newPusher.subscribe(`match-${matchId}`)
-    
-    channel.bind('new_message', (message: Message) => {
-      setMessages(prev => [...prev, message])
-    })
-
-    // Also subscribe to user channel for notifications
-    if (user) {
-      const userChannel = newPusher.subscribe(`user-${user.id}`)
-      userChannel.bind('new_message', (message: Message) => {
-        if (message.matchId === matchId) {
-          setMessages(prev => [...prev, message])
-        }
-      })
-    }
-
-    setPusher(newPusher)
-
-    // Load messages
+    // Load messages first (even without Pusher)
     loadMessages()
 
-    return () => {
-      newPusher.disconnect()
+    // Initialize Pusher if environment variables are set
+    if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+      try {
+        const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+        })
+
+        // Subscribe to match channel
+        const channel = newPusher.subscribe(`match-${matchId}`)
+        
+        channel.bind('new_message', (message: Message) => {
+          setMessages(prev => [...prev, message])
+        })
+
+        // Also subscribe to user channel for notifications
+        if (user) {
+          const userChannel = newPusher.subscribe(`user-${user.id}`)
+          userChannel.bind('new_message', (message: Message) => {
+            if (message.matchId === matchId) {
+              setMessages(prev => [...prev, message])
+            }
+          })
+        }
+
+        setPusher(newPusher)
+
+        return () => {
+          newPusher.disconnect()
+        }
+      } catch (error) {
+        console.error('Failed to initialize Pusher:', error)
+        // Continue without Pusher - messages will still work via API polling
+      }
+    } else {
+      console.warn('Pusher environment variables not set - real-time updates disabled')
+      // Set up polling to check for new messages periodically
+      const pollInterval = setInterval(() => {
+        loadMessages()
+      }, 5000) // Poll every 5 seconds
+
+      return () => {
+        clearInterval(pollInterval)
+      }
     }
   }, [matchId, token, user])
 
@@ -97,9 +109,15 @@ export default function ChatPage() {
       const matchResponse = await api.get('/matches')
       const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
       if (match) {
-        setOtherUser(match.otherUser)
-        // Load other user's profile to get unlock progress
-        loadOtherUserProfile(match.otherUser.id)
+        // Use 'user' instead of 'otherUser' based on API response structure
+        const otherUserData = match.user || match.otherUser
+        if (otherUserData) {
+          setOtherUser(otherUserData)
+          // Load other user's profile to get unlock progress
+          loadOtherUserProfile(otherUserData.id)
+        } else {
+          setError('找不到配對用戶資訊')
+        }
       } else {
         setError('找不到配對資訊')
       }
