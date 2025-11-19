@@ -4,7 +4,20 @@ import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
 
+// Handle OPTIONS for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
+  console.log('Upload photo endpoint called');
   const authResult = await requireAuth(request);
   
   if (authResult instanceof Response) {

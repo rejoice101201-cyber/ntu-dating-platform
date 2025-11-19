@@ -9,9 +9,23 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+// Handle OPTIONS for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
+    console.log('Login endpoint called');
     const body = await request.json();
+    console.log('Login request body:', { email: body.email });
     const data = loginSchema.parse(body);
 
     const user = await prisma.user.findUnique({
