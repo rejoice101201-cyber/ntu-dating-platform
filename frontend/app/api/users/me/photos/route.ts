@@ -33,9 +33,11 @@ export async function POST(request: NextRequest) {
       .toBuffer();
 
     // Upload to Vercel Blob
+    // Vercel Blob automatically uses BLOB_READ_WRITE_TOKEN from environment variables
     const blob = await put(`photos/${authUser.id}/${Date.now()}.jpg`, processedBuffer, {
       access: 'public',
       contentType: 'image/jpeg',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     // Get current photo count for ordering

@@ -102,7 +102,9 @@ export async function DELETE(
 
     // Delete from Vercel Blob
     try {
-      await del(photo.url);
+      await del(photo.url, {
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
     } catch (blobError) {
       console.error('Failed to delete from blob:', blobError);
       // Continue with database deletion even if blob deletion fails
