@@ -17,20 +17,30 @@ async function createMatch() {
     return;
   }
 
-  // 第一个用户（通常是你的账户）
-  const user1 = allUsers[0];
-  
-  // 要配对的目标用户列表
-  const targetEmails = ['alice@example.com', 'bob@example.com', 'diana@example.com'];
-  const targets = targetEmails
-    .map(email => allUsers.find(u => u.email === email))
-    .filter(Boolean) as typeof allUsers;
+  // 为所有真实用户（非机器人）创建配对
+  const botEmails = ['alice@example.com', 'bob@example.com', 'charlie@example.com', 
+                     'diana@example.com', 'eve@example.com', 'frank@example.com'];
+  const realUsers = allUsers.filter(u => !botEmails.includes(u.email));
+  const bots = allUsers.filter(u => botEmails.includes(u.email));
 
-  console.log(`👤 主用户: ${user1.name} (${user1.email})\n`);
+  if (realUsers.length === 0) {
+    console.log('❌ 没有找到真实用户');
+    return;
+  }
 
-  let matchCount = 0;
+  console.log(`找到 ${realUsers.length} 个真实用户，${bots.length} 个机器人\n`);
 
-  for (const user2 of targets) {
+  let totalMatches = 0;
+
+  // 为每个真实用户创建配对
+  for (const user1 of realUsers) {
+    console.log(`\n👤 为用户 ${user1.name} (${user1.email}) 创建配对...`);
+    let matchCount = 0;
+
+    // 选择前3个机器人进行配对
+    const targets = bots.slice(0, 3);
+
+    for (const user2 of targets) {
     if (user2.id === user1.id) continue;
 
     console.log(`\n📌 处理与 ${user2.name} 的配对...`);
@@ -110,12 +120,16 @@ async function createMatch() {
       },
     });
 
-    console.log(`   ✅ 配对成功！总分: ${totalScore}分`);
-    matchCount++;
+      console.log(`   ✅ 配对成功！总分: ${totalScore}分`);
+      matchCount++;
+      totalMatches++;
+    }
+
+    console.log(`   📊 ${user1.name} 的配对数量: ${matchCount}`);
   }
 
-  console.log(`\n🎉 完成！共创建了 ${matchCount} 个配对`);
-  console.log(`💬 现在可以在配对页面看到这些用户了！`);
+  console.log(`\n🎉 完成！共创建了 ${totalMatches} 个配对`);
+  console.log(`💬 现在所有用户都可以在配对页面看到配对了！`);
 }
 
 createMatch()
