@@ -23,8 +23,13 @@ const io = new Server(httpServer, {
   }
 });
 
-// Middleware
-app.use(cors());
+// Middleware - CORS must be before other middleware
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
