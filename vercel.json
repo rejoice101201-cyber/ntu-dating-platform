@@ -1,7 +1,10 @@
 {
-  "buildCommand": "cd frontend && npm ci && npm rebuild sharp --platform=linux --arch=x64 && npx prisma generate && NEXT_PRIVATE_SKIP_BUILD_TRACE=1 npm run build",
+  "buildCommand": "cd frontend && npm ci --include=optional && npx prisma generate && NEXT_PRIVATE_SKIP_BUILD_TRACE=1 npm run build",
   "installCommand": "cd frontend && npm ci --include=optional",
   "framework": null,
-  "rootDirectory": "frontend"
+  "rootDirectory": "frontend",
+  "env": {
+    "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+  }
 }
 
