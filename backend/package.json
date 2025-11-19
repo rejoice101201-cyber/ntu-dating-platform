@@ -10,7 +10,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx src/scripts/seed.ts",
-    "db:create-bots": "tsx src/scripts/createBots.ts"
+    "db:create-bots": "tsx src/scripts/createBots.ts",
+    "db:create-match": "tsx src/scripts/createMatch.ts"
   },
   "dependencies": {
     "express": "^4.18.2",
