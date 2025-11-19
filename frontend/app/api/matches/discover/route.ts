@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Sort by match score
-    scoredRecommendations.sort((a, b) => b.matchScore - a.matchScore);
+    scoredRecommendations.sort((a: any, b: any) => b.matchScore - a.matchScore);
 
     return NextResponse.json({ recommendations: scoredRecommendations });
   } catch (error) {
