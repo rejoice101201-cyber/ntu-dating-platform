@@ -1,0 +1,109 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/authStore'
+import api from '@/lib/api'
+import Link from 'next/link'
+
+interface Match {
+  id: string
+  user: {
+    id: string
+    name: string
+    photos: Array<{ url: string }>
+  }
+  matchedAt: string
+  lastMessage?: {
+    content: string
+    createdAt: string
+  }
+}
+
+export default function MatchesPage() {
+  const router = useRouter()
+  const { token } = useAuthStore()
+  const [matches, setMatches] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!token) {
+      router.push('/auth/login')
+      return
+    }
+    loadMatches()
+  }, [token])
+
+  const loadMatches = async () => {
+    try {
+      const response = await api.get('/matches')
+      setMatches(response.data.matches)
+    } catch (error) {
+      console.error('Failed to load matches:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>加载中...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto py-8">
+        <h1 className="text-2xl font-bold px-4 mb-4">🐕 我的配对</h1>
+
+        {matches.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600">还没有配对，去探索一下吧！</p>
+            <Link
+              href="/discover"
+              className="mt-4 inline-block bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-600"
+            >
+              开始探索
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2 px-4">
+            {matches.map((match) => (
+              <Link
+                key={match.id}
+                href={`/chat/${match.id}`}
+                className="block bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+                    {match.user.photos[0] && (
+                      <img
+                        src={match.user.photos[0].url}
+                        alt={match.user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{match.user.name}</h3>
+                    {match.lastMessage && (
+                      <p className="text-sm text-gray-600 truncate">
+                        {match.lastMessage.content}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(match.matchedAt).toLocaleDateString('zh-TW')}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
