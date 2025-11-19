@@ -4,12 +4,8 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Disable output file tracing to avoid stack overflow
-  outputFileTracingExcludes: {
-    '*': [
-      'node_modules/**',
-    ],
-  },
+  // Use standalone output to avoid build trace issues
+  output: 'standalone',
   // Exclude problematic directories from build
   webpack: (config, { isServer }) => {
     if (!isServer) {
