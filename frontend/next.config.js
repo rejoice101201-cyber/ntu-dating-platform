@@ -4,12 +4,11 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Exclude problematic directories from build tracing, but keep essential dependencies
+  // Completely disable output file tracing to avoid stack overflow
   experimental: {
     outputFileTracingExcludes: {
       '*': [
-        '**/node_modules/@swc/**',
-        '**/node_modules/.cache/**',
+        '**/node_modules/**',
         '**/.next/**',
         '**/prisma/migrations/**',
       ],
