@@ -107,19 +107,32 @@ export default function ChatPage() {
   }
 
   const getOpeningLines = async () => {
+    if (!otherUser?.id) {
+      console.error('Other user not loaded yet')
+      return
+    }
+    
     try {
-      const response = await api.get(`/ai-coach/opening-lines/${otherUser?.id}`)
+      console.log('Getting opening lines for user:', otherUser.id)
+      const response = await api.get(`/ai-coach/opening-lines/${otherUser.id}`)
+      console.log('Opening lines response:', response.data)
       const suggestions = response.data.suggestions
-      if (suggestions.length > 0) {
+      if (suggestions && suggestions.length > 0) {
         setInput(suggestions[0])
+        console.log('Set opening line:', suggestions[0])
+      } else {
+        // Fallback suggestions
+        setInput('你好！很高兴认识你 😊')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to get opening lines:', error)
+      // Fallback suggestions
+      setInput('你好！很高兴认识你 😊')
     }
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 relative">
       {/* Header */}
       <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
         <button
@@ -164,7 +177,8 @@ export default function ChatPage() {
               <p className="text-gray-500 mb-4">还没有消息，开始聊天吧！</p>
               <button
                 onClick={getOpeningLines}
-                className="text-primary-500 hover:underline"
+                disabled={!otherUser?.id}
+                className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🐕 获取开场白建议
               </button>
@@ -200,9 +214,9 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} className="bg-white border-t p-4">
-        <div className="flex gap-2">
+      {/* Input - Always visible at bottom */}
+      <div className="bg-white border-t p-4 pb-20">
+        <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
             value={input}
@@ -212,12 +226,13 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors"
+            disabled={!input.trim() || !socket}
+            className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             发送
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }
