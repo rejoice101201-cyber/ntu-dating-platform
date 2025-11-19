@@ -11,6 +11,7 @@ interface Message {
   content: string
   type: string
   senderId: string
+  matchId?: string
   sender: {
     id: string
     name: string
@@ -424,7 +425,7 @@ export default function ChatPage() {
           />
           <button
             type="submit"
-            disabled={!input.trim() || !socket}
+            disabled={!input.trim()}
             className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             發送
