@@ -4,16 +4,8 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  // Completely disable output file tracing to avoid stack overflow
-  experimental: {
-    outputFileTracingExcludes: {
-      '*': [
-        '**/node_modules/**',
-        '**/.next/**',
-        '**/prisma/migrations/**',
-      ],
-    },
-  },
+  // Use standalone output to avoid stack overflow and ensure all dependencies are included
+  output: 'standalone',
   // Exclude problematic directories from build
   webpack: (config, { isServer }) => {
     if (!isServer) {
