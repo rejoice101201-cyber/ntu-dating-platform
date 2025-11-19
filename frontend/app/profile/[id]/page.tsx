@@ -54,10 +54,14 @@ export default function ProfilePage() {
   const loadQuestions = async () => {
     try {
       const response = await api.get('/qa/questions?limit=5')
-      setQuestions(response.data.questions)
-      setSelectedQuestions(response.data.questions.slice(0, 3).map((q: any) => q.id))
+      const questionsData = response.data.questions || []
+      setQuestions(questionsData)
+      if (questionsData.length > 0) {
+        setSelectedQuestions(questionsData.slice(0, 3).map((q: any) => q.id))
+      }
     } catch (error) {
       console.error('Failed to load questions:', error)
+      setQuestions([])
     }
   }
 
@@ -199,9 +203,22 @@ export default function ProfilePage() {
         )}
 
         {/* Q&A Game */}
-        {!isOwnProfile && questions.length > 0 && (
+        {!isOwnProfile && (
           <div className="border-t pt-4 mt-4">
+            {questions.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500 mb-2">載入問題中...</p>
+                <button
+                  onClick={loadQuestions}
+                  className="text-primary-500 hover:underline"
+                >
+                  重新載入
+                </button>
+              </div>
+            ) : (
+              <>
             <h3 className="font-semibold mb-4">🐕 問答遊戲 - 解鎖照片</h3>
+            <p className="text-sm text-gray-600 mb-4">回答問題來解鎖對方的照片，匹配度越高解鎖越多！</p>
             <div className="space-y-4">
               {selectedQuestions.map((qId) => {
                 const question = questions.find((q) => q.id === qId)
@@ -248,6 +265,8 @@ export default function ProfilePage() {
                 提交答案並解鎖
               </button>
             </div>
+            </>
+            )}
           </div>
         )}
 

@@ -163,6 +163,13 @@ export default function DiscoverPage() {
             <span>ℹ️</span>
             <span>查看資料</span>
           </button>
+          <button
+            onClick={() => router.push(`/profile/${current.id}`)}
+            className="px-6 py-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors flex items-center gap-2"
+          >
+            <span>🐕</span>
+            <span>玩問答解鎖</span>
+          </button>
         </div>
 
         {/* Rating buttons */}
