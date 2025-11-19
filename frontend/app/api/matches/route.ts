@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         id: match.id,
         otherUser,
         createdAt: match.createdAt,
-        updatedAt: match.updatedAt,
+        matchedAt: match.matchedAt,
       };
     });
 
