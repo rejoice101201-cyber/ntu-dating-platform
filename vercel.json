@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd frontend && npm ci && npx prisma generate && npm run build",
+  "buildCommand": "cd frontend && npm ci && npx prisma generate && NEXT_PRIVATE_SKIP_BUILD_TRACE=1 npm run build",
   "installCommand": "cd frontend && npm ci",
   "framework": null,
   "rootDirectory": "frontend"
