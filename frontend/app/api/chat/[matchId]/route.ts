@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { pusher } from '@/lib/pusher';
+import { getPusher } from '@/lib/pusher';
 
 export async function GET(
   request: NextRequest,
@@ -127,14 +127,20 @@ export async function POST(
     const otherUserId = match.userId === authUser.id ? match.matchedUserId : match.userId;
 
     // Send via Pusher
-    await pusher.trigger(`match-${matchId}`, 'new_message', {
-      ...message,
-      matchId, // Include matchId for filtering
-    });
-    await pusher.trigger(`user-${otherUserId}`, 'new_message', {
-      ...message,
-      matchId, // Include matchId for filtering
-    });
+    try {
+      const pusher = getPusher();
+      await pusher.trigger(`match-${matchId}`, 'new_message', {
+        ...message,
+        matchId, // Include matchId for filtering
+      });
+      await pusher.trigger(`user-${otherUserId}`, 'new_message', {
+        ...message,
+        matchId, // Include matchId for filtering
+      });
+    } catch (pusherError) {
+      // If Pusher is not configured, log but don't fail the request
+      console.warn('Pusher not configured, message saved but not broadcast:', pusherError);
+    }
 
     return NextResponse.json({ message });
   } catch (error) {
