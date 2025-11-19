@@ -155,36 +155,25 @@ export default function DiscoverPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-center gap-6 px-4">
-          <button
-            onClick={() => handleRate(1)}
-            className="w-16 h-16 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-2xl hover:bg-red-200 transition-colors"
-          >
-            ✕
-          </button>
+        <div className="flex justify-center gap-4 px-4 mb-4">
           <button
             onClick={() => router.push(`/profile/${current.id}`)}
-            className="w-16 h-16 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-2xl hover:bg-blue-200 transition-colors"
+            className="px-6 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
           >
-            ℹ️
-          </button>
-          <button
-            onClick={() => handleRate(5)}
-            className="w-16 h-16 rounded-full bg-green-100 text-green-500 flex items-center justify-center text-2xl hover:bg-green-200 transition-colors"
-          >
-            ❤️
+            <span>ℹ️</span>
+            <span>查看資料</span>
           </button>
         </div>
 
         {/* Rating buttons */}
-        <div className="mt-4 px-4">
-          <p className="text-center text-sm text-gray-600 mb-2">評分 (1-5分)</p>
-          <div className="flex justify-center gap-2">
+        <div className="px-4">
+          <p className="text-center text-sm text-gray-600 mb-3">評分 (1-5分)</p>
+          <div className="flex justify-center gap-3">
             {[1, 2, 3, 4, 5].map((score) => (
               <button
                 key={score}
                 onClick={() => handleRate(score)}
-                className="px-4 py-2 bg-white rounded-lg border border-gray-200 hover:bg-primary-50 hover:border-primary-300 transition-colors"
+                className="w-14 h-14 bg-white rounded-full border-2 border-gray-200 hover:bg-primary-50 hover:border-primary-500 hover:text-primary-600 transition-colors text-lg font-semibold shadow-sm"
               >
                 {score}
               </button>
