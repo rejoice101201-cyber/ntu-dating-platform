@@ -36,23 +36,7 @@ interface RegisterData {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => {
-      // Initialize from localStorage on mount
-      if (typeof window !== 'undefined') {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken && !get().token) {
-          // Try to restore user from token
-          api.get('/auth/me')
-            .then(response => {
-              set({ user: response.data.user, token: storedToken });
-            })
-            .catch(() => {
-              // Token invalid, clear it
-              localStorage.removeItem('token');
-            });
-        }
-      }
-
+    (set) => {
       return {
         user: null,
         token: null,
@@ -78,6 +62,28 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => {
+        return (state) => {
+          // After rehydration, try to restore user from token
+          if (state && typeof window !== 'undefined') {
+            const storedToken = localStorage.getItem('token');
+            if (storedToken && !state.token) {
+              // Try to restore user from token
+              api.get('/auth/me')
+                .then(response => {
+                  state.user = response.data.user;
+                  state.token = storedToken;
+                })
+                .catch(() => {
+                  // Token invalid, clear it
+                  localStorage.removeItem('token');
+                  state.user = null;
+                  state.token = null;
+                });
+            }
+          }
+        };
+      },
     }
   )
 );
