@@ -65,6 +65,12 @@ export default function MyProfilePage() {
       formData.append('photo', file)
 
       const token = localStorage.getItem('token')
+      if (!token) {
+        alert('請先登入')
+        router.push('/auth/login')
+        return
+      }
+
       const response = await fetch('/api/users/me/photos', {
         method: 'POST',
         headers: {
@@ -74,15 +80,20 @@ export default function MyProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Upload failed')
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        console.error('Upload failed:', errorData)
+        alert(`照片上傳失敗：${errorData.error || errorData.details || '未知錯誤'}`)
+        return
       }
 
+      const result = await response.json()
+      console.log('Photo uploaded successfully:', result)
       await loadProfile()
       // Reset input
       e.target.value = ''
     } catch (error) {
       console.error('Failed to upload photo:', error)
-      alert('照片上傳失敗，請重試')
+      alert(`照片上傳失敗：${error instanceof Error ? error.message : '請重試'}`)
     }
   }
 
