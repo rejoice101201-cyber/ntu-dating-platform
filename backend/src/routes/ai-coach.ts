@@ -62,7 +62,7 @@ router.get('/opening-lines/:targetUserId', authenticate, async (req: AuthRequest
           .replace('{tag}', randomTag.tag.name)
           .replace('{commonInterest}', randomTag.tag.name);
       }
-      return line.replace(/\{[^}]+\}/g, '某个话题');
+      return line.replace(/\{[^}]+\}/g, '某個話題');
     });
 
     res.json({ suggestions });

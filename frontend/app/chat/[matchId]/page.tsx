@@ -146,12 +146,12 @@ export default function ChatPage() {
         console.log('Set opening line:', suggestions[0])
       } else {
         // Fallback suggestions
-        setInput('你好！很高兴认识你 😊')
+        setInput('你好！很高興認識你 😊')
       }
     } catch (error: any) {
       console.error('Failed to get opening lines:', error)
       // Fallback suggestions
-      setInput('你好！很高兴认识你 😊')
+      setInput('你好！很高興認識你 😊')
     }
   }
 

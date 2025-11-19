@@ -56,6 +56,48 @@ export default function MyProfilePage() {
     }
   }
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/users/me/photos`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      await loadProfile()
+      // Reset input
+      e.target.value = ''
+    } catch (error) {
+      console.error('Failed to upload photo:', error)
+      alert('照片上傳失敗，請重試')
+    }
+  }
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!confirm('確定要刪除這張照片嗎？')) return
+
+    try {
+      await api.delete(`/photos/${photoId}`)
+      await loadProfile()
+    } catch (error) {
+      console.error('Failed to delete photo:', error)
+      alert('刪除照片失敗，請重試')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -170,20 +212,51 @@ export default function MyProfilePage() {
         </div>
 
         <div className="bg-white rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">我的照片</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">我的照片</h2>
+            {!editing && (
+              <button
+                onClick={() => setEditing(true)}
+                className="text-primary-500 hover:text-primary-600 text-sm"
+              >
+                編輯
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-4">
             {profile?.photos?.map((photo: any) => (
               <div
                 key={photo.id}
-                className="aspect-square bg-gray-200 rounded-lg overflow-hidden"
+                className="aspect-square bg-gray-200 rounded-lg overflow-hidden relative group"
               >
                 <img
                   src={photo.url}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
+                {editing && (
+                  <button
+                    onClick={() => handleDeletePhoto(photo.id)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
+            {editing && (
+              <div className="aspect-square bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
+                <label className="cursor-pointer w-full h-full flex items-center justify-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
+                  />
+                  <span className="text-4xl text-gray-400">+</span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </div>

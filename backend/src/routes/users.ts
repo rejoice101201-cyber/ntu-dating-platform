@@ -4,6 +4,12 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import multer from 'multer';
 import sharp from 'sharp';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -138,9 +144,19 @@ router.post('/me/photos', authenticate, upload.single('photo'), async (req: Auth
       .jpeg({ quality: 85 })
       .toBuffer();
 
-    // In production, upload to S3 or similar
-    // For now, we'll store the URL (you'd upload to cloud storage)
-    const photoUrl = `/uploads/${req.userId}/${Date.now()}.jpg`;
+    // Create uploads directory if it doesn't exist
+    const uploadsDir = path.join(__dirname, '../../uploads', req.userId!);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Save file
+    const filename = `${Date.now()}.jpg`;
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, processedImage);
+
+    // Return URL that can be served statically
+    const photoUrl = `/uploads/${req.userId}/${filename}`;
 
     // Get current photo count to set order
     const photoCount = await prisma.photo.count({
