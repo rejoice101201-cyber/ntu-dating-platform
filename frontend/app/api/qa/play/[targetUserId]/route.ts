@@ -40,7 +40,7 @@ export async function POST(
     }
 
     // Get target user's answers
-    const targetAnswers = await prisma.qaAnswer.findMany({
+    const targetAnswers = await prisma.qAAnswer.findMany({
       where: {
         userId: targetUserId,
         questionId: { in: questionIds },
