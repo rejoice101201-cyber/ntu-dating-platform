@@ -16,7 +16,9 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Register endpoint called');
     const body = await request.json();
+    console.log('Request body received:', { email: body.email, name: body.name });
     const data = registerSchema.parse(body);
 
     // Check if user exists
@@ -70,15 +72,20 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    console.error('Register error:', error);
     if (error instanceof z.ZodError) {
+      console.error('Validation errors:', error.errors);
       return NextResponse.json(
         { error: error.errors },
         { status: 400 }
       );
     }
-    console.error('Register error:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'Registration failed' },
+      { error: 'Registration failed', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

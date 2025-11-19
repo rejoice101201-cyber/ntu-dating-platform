@@ -9,12 +9,17 @@ const globalForPrisma = globalThis as unknown as {
 // 否则使用标准的 DATABASE_URL
 const databaseUrl = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
 
+if (!databaseUrl) {
+  console.error('DATABASE_URL is not set!');
+}
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   datasources: {
     db: {
       url: databaseUrl,
     },
   },
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
 if (process.env.NODE_ENV !== 'production') {

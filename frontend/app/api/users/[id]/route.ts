@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   const authResult = await requireAuth(request);
   
@@ -13,7 +13,8 @@ export async function GET(
   }
 
   const { user: authUser } = authResult;
-  const { id: userId } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const { id: userId } = resolvedParams;
 
   try {
     const user = await prisma.user.findUnique({
