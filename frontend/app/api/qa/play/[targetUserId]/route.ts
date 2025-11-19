@@ -71,7 +71,7 @@ export async function POST(
         targetUserId,
         qaCompleted: questionIds.length,
         unlockLevel: Math.min(100, Math.floor(matchPercentage)),
-        interactionCount: { increment: 1 },
+        interactionCount: 1,
       },
       update: {
         qaCompleted: { increment: questionIds.length },
