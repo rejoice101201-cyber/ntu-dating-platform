@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
 
+// Set runtime to nodejs for server-side execution
+export const runtime = 'nodejs';
+
 // Handle OPTIONS for CORS
 export async function OPTIONS() {
   return new NextResponse(null, {
