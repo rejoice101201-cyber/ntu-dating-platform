@@ -5,7 +5,17 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+// 如果使用 Prisma Accelerate，使用 PRISMA_DATABASE_URL
+// 否则使用标准的 DATABASE_URL
+const databaseUrl = process.env.PRISMA_DATABASE_URL || process.env.DATABASE_URL;
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  datasources: {
+    db: {
+      url: databaseUrl,
+    },
+  },
+});
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
