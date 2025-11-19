@@ -11,9 +11,10 @@ interface Match {
   user: {
     id: string
     name: string
-    photos: Array<{ url: string }>
+    photos?: Array<{ url: string }>
   }
   matchedAt: string
+  createdAt?: string
   lastMessage?: {
     content: string
     createdAt: string
@@ -93,24 +94,21 @@ export default function MatchesPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
-                    {match.user.photos[0] && (() => {
-                      // Convert relative URL to absolute URL
-                      const photoUrl = match.user.photos[0].url.startsWith('http') 
-                        ? match.user.photos[0].url 
-                        : match.user.photos[0].url; // Vercel Blob URLs are already absolute
-                      
-                      return (
+                    {match.user?.photos && match.user.photos.length > 0 && match.user.photos[0]?.url ? (
                       <img
-                        src={photoUrl}
+                        src={match.user.photos[0].url}
                         alt={match.user.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error('Failed to load image:', photoUrl);
+                          console.error('Failed to load image:', match.user.photos[0].url);
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
-                      );
-                    })()}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
+                        {match.user?.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{match.user.name}</h3>

@@ -50,11 +50,21 @@ export async function GET(request: NextRequest) {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
       return {
         id: match.id,
-        otherUser,
+        user: {
+          id: otherUser.id,
+          name: otherUser.name,
+          photos: otherUser.photos || [], // Ensure photos is always an array
+        },
         createdAt: match.createdAt,
         matchedAt: match.matchedAt,
       };
     });
+
+    console.log('Formatted matches:', formattedMatches.map((m: any) => ({
+      id: m.id,
+      userName: m.user.name,
+      photosCount: m.user.photos?.length || 0,
+    })));
 
     return NextResponse.json({ matches: formattedMatches });
   } catch (error) {
