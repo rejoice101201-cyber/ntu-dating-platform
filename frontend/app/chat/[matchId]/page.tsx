@@ -109,22 +109,27 @@ export default function ChatPage() {
       }
       setError(null)
       
+      console.log('Loading messages for match:', matchId)
       const response = await api.get(`/chat/${matchId}`)
+      console.log('Messages response:', response.data)
       setMessages(response.data.messages || [])
 
       // Get match info to find other user (only on initial load)
       if (isInitialLoad) {
+        console.log('Loading match info for initial load')
         const matchResponse = await api.get('/matches')
-        const match = matchResponse.data.matches.find((m: any) => m.id === matchId)
+        console.log('Matches response:', matchResponse.data)
+        const match = matchResponse.data.matches?.find((m: any) => m.id === matchId)
         if (match) {
           // Use 'user' instead of 'otherUser' based on API response structure
           const otherUserData = match.user || match.otherUser
           if (otherUserData) {
+            console.log('Loading profile for other user:', otherUserData.id)
             // Load full profile to get all photos with blur levels
             const profileResponse = await api.get(`/users/${otherUserData.id}`)
             console.log('Loaded other user profile in chat:', {
               userId: otherUserData.id,
-              userName: otherUserData.name,
+              userName: profileResponse.data.name,
               photos: profileResponse.data.photos,
               photosCount: profileResponse.data.photos?.length || 0,
               unlockProgress: profileResponse.data.unlockProgress,
@@ -133,16 +138,23 @@ export default function ChatPage() {
             setUnlockProgress(profileResponse.data.unlockProgress)
             setKeys(profileResponse.data.unlockProgress?.keys || 0)
           } else {
+            console.error('No otherUserData found in match:', match)
             setError('找不到配對用戶資訊')
           }
         } else {
+          console.error('Match not found in matches list:', matchId)
           setError('找不到配對資訊')
         }
         setIsInitialLoad(false)
       }
     } catch (error: any) {
       console.error('Failed to load messages:', error)
-      setError(error.response?.data?.error || '載入訊息失敗')
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      })
+      setError(error.response?.data?.error || error.message || '載入訊息失敗')
       if (error.response?.status === 404) {
         setError('配對不存在')
       }

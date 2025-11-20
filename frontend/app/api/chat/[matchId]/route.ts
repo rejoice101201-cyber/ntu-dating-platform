@@ -5,7 +5,7 @@ import { getPusher } from '@/lib/pusher';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { matchId: string } }
+  { params }: { params: Promise<{ matchId: string }> | { matchId: string } }
 ) {
   const authResult = await requireAuth(request);
   
@@ -14,7 +14,8 @@ export async function GET(
   }
 
   const { user: authUser } = authResult;
-  const { matchId } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const { matchId } = resolvedParams;
 
   try {
     // Verify user is part of this match
@@ -71,7 +72,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { matchId: string } }
+  { params }: { params: Promise<{ matchId: string }> | { matchId: string } }
 ) {
   const authResult = await requireAuth(request);
   
@@ -80,7 +81,8 @@ export async function POST(
   }
 
   const { user: authUser } = authResult;
-  const { matchId } = params;
+  const resolvedParams = await Promise.resolve(params);
+  const { matchId } = resolvedParams;
 
   try {
     const body = await request.json();
