@@ -709,7 +709,7 @@ export default function ChatPage() {
                 {/* Avatar for other user's messages */}
                 {!isOwn && (
                   <button
-                    onClick={() => otherUser?.id && router.push(`/profile/${otherUser.id}`)}
+                    onClick={() => otherUser?.id && router.push(`/profile/${otherUser.id}?matchId=${matchId}`)}
                     className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative"
                   >
                     {senderPhoto?.url ? (

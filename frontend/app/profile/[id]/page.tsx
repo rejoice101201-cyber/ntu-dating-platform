@@ -65,17 +65,26 @@ export default function ProfilePage() {
   const userId = params.id as string
   const isOwnProfile = userId === currentUser?.id
 
+  // Get matchId from URL search params if available
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const urlMatchId = searchParams?.get('matchId')
+
   const [profile, setProfile] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [datingNote, setDatingNote] = useState('')
-  const [matchId, setMatchId] = useState<string | null>(null)
+  const [matchId, setMatchId] = useState<string | null>(urlMatchId || null)
 
   useEffect(() => {
     loadProfile()
     if (!isOwnProfile) {
-      checkMatch()
+      // If matchId is in URL, use it directly; otherwise check for match
+      if (urlMatchId) {
+        setMatchId(urlMatchId)
+      } else {
+        checkMatch()
+      }
     }
-  }, [userId, isOwnProfile])
+  }, [userId, isOwnProfile, urlMatchId])
 
   const loadProfile = async () => {
     try {
@@ -94,11 +103,19 @@ export default function ProfilePage() {
     try {
       const response = await api.get('/matches')
       const matches = response.data.matches || []
-      const match = matches.find((m: any) => 
-        m.user?.id === userId || m.otherUser?.id === userId
-      )
+      // Check both user and otherUser fields (API returns user field)
+      const match = matches.find((m: any) => {
+        const otherUserId = m.user?.id
+        return otherUserId === userId
+      })
       if (match) {
+        console.log('Found match:', match.id, 'for user:', userId)
         setMatchId(match.id)
+      } else {
+        console.log('No match found for user:', userId, 'Available matches:', matches.map((m: any) => ({
+          id: m.id,
+          userId: m.user?.id,
+        })))
       }
     } catch (error) {
       console.error('Failed to check match:', error)
