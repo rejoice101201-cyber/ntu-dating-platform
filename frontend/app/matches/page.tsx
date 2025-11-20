@@ -56,6 +56,12 @@ export default function MatchesPage() {
             try {
               // Load full user profile to get photos with correct blur levels
               const profileResponse = await api.get(`/users/${match.user.id}`)
+              console.log(`Loaded profile for ${match.user.name}:`, {
+                userId: match.user.id,
+                photos: profileResponse.data.photos,
+                photosCount: profileResponse.data.photos?.length || 0,
+                unlockProgress: profileResponse.data.unlockProgress,
+              })
               return {
                 ...match,
                 user: {
@@ -70,6 +76,11 @@ export default function MatchesPage() {
             }
           })
         )
+        console.log('Final matches with profiles:', matchesWithProfiles.map((m: any) => ({
+          name: m.user.name,
+          photosCount: m.user.photos?.length || 0,
+          firstPhoto: m.user.photos?.[0],
+        })))
         setMatches(matchesWithProfiles)
       } else {
         setMatches([])
@@ -123,39 +134,48 @@ export default function MatchesPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-pink-100 rounded-full overflow-hidden flex-shrink-0 relative">
-                    {match.user?.photos && match.user.photos.length > 0 ? (
-                      (() => {
-                        // Find cover photo or first photo
-                        const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
-                        const photoUrl = coverPhoto?.url
-                        const blurLevel = coverPhoto?.blurLevel ?? 20
-                        
-                        if (!photoUrl) {
-                          console.error('No photo URL found:', { match, coverPhoto, photos: match.user.photos })
-                          return (
-                            <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
-                              {match.user?.name?.[0]?.toUpperCase() || '?'}
-                            </div>
-                          )
-                        }
-                        
+                    {(() => {
+                      // 完全按照资料页面的方式显示照片
+                      if (!match.user?.photos || match.user.photos.length === 0) {
                         return (
-                          <div
-                            className="w-full h-full rounded-full"
-                            style={{
-                              filter: `blur(${blurLevel}px)`,
-                              backgroundImage: `url(${photoUrl})`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                            }}
-                          />
+                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                            {match.user?.name?.[0]?.toUpperCase() || '?'}
+                          </div>
                         )
-                      })()
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
-                        {match.user?.name?.[0]?.toUpperCase() || '?'}
-                      </div>
-                    )}
+                      }
+                      
+                      // Find cover photo or first photo
+                      const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
+                      const photoUrl = coverPhoto?.url
+                      const blurLevel = coverPhoto?.blurLevel ?? 20
+                      
+                      if (!photoUrl) {
+                        console.error('No photo URL found for match:', {
+                          matchId: match.id,
+                          userName: match.user.name,
+                          photos: match.user.photos,
+                          coverPhoto,
+                        })
+                        return (
+                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                            {match.user?.name?.[0]?.toUpperCase() || '?'}
+                          </div>
+                        )
+                      }
+                      
+                      // 使用与资料页面完全相同的样式
+                      return (
+                        <div
+                          className="w-full h-full rounded-full"
+                          style={{
+                            filter: `blur(${blurLevel}px)`,
+                            backgroundImage: `url(${photoUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                          }}
+                        />
+                      )
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-lg truncate text-pink-700">{match.user.name}</h3>

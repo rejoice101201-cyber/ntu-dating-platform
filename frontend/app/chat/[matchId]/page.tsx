@@ -120,6 +120,13 @@ export default function ChatPage() {
           if (otherUserData) {
             // Load full profile to get all photos with blur levels
             const profileResponse = await api.get(`/users/${otherUserData.id}`)
+            console.log('Loaded other user profile in chat:', {
+              userId: otherUserData.id,
+              userName: profileResponse.data.name,
+              photos: profileResponse.data.photos,
+              photosCount: profileResponse.data.photos?.length || 0,
+              unlockProgress: profileResponse.data.unlockProgress,
+            })
             setOtherUser(profileResponse.data)
             setUnlockProgress(profileResponse.data.unlockProgress)
           } else {
@@ -417,11 +424,14 @@ export default function ChatPage() {
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.id
-            // Find cover photo or first photo for other user
-            const senderPhoto = !isOwn && otherUser?.photos && otherUser.photos.length > 0 
-              ? (otherUser.photos.find((p: any) => p.isCover) || otherUser.photos[0])
-              : null
-            const blurLevel = senderPhoto?.blurLevel ?? 20
+            // Find cover photo or first photo for other user - 完全按照资料页面的方式
+            let senderPhoto = null
+            let blurLevel = 20
+            
+            if (!isOwn && otherUser?.photos && otherUser.photos.length > 0) {
+              senderPhoto = otherUser.photos.find((p: any) => p.isCover) || otherUser.photos[0]
+              blurLevel = senderPhoto?.blurLevel ?? 20
+            }
             
             return (
               <div
@@ -445,7 +455,7 @@ export default function ChatPage() {
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
+                      <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
                         {otherUser?.name?.[0]?.toUpperCase() || '?'}
                       </div>
                     )}
