@@ -263,31 +263,89 @@ export async function POST(request: NextRequest) {
 
     // 随机选择一个问题
     const question = allQuestions[Math.floor(Math.random() * allQuestions.length)];
+    
+    if (!question || !question.id) {
+      console.error('Selected question is invalid:', question);
+      return NextResponse.json(
+        { error: 'Failed to select a valid question' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('Selected question:', {
+      id: question.id,
+      content: question.content,
+      category: question.category,
+    });
 
     // 更新游戏会话的问题ID
-    const updatedSession = await prisma.gameSession.update({
-      where: { id: gameSession.id },
-      data: { questionId: question.id },
-    });
+    let updatedSession;
+    try {
+      updatedSession = await prisma.gameSession.update({
+        where: { id: gameSession.id },
+        data: { questionId: question.id },
+      });
+      console.log('Game session updated with questionId:', {
+        sessionId: updatedSession.id,
+        questionId: updatedSession.questionId,
+      });
+    } catch (updateError) {
+      console.error('Failed to update game session with questionId:', updateError);
+      // 即使更新失败，也返回游戏会话和题目，让前端可以处理
+      updatedSession = gameSession;
+    }
+
+    // 确保 questionId 被正确设置
+    if (!updatedSession.questionId) {
+      console.error('questionId was not set in updated session, attempting to set it again');
+      try {
+        updatedSession = await prisma.gameSession.update({
+          where: { id: gameSession.id },
+          data: { questionId: question.id },
+        });
+        console.log('Successfully set questionId on retry:', updatedSession.questionId);
+      } catch (retryError) {
+        console.error('Failed to set questionId on retry:', retryError);
+        // 即使更新失败，也手动设置 questionId 在返回对象中
+        updatedSession = { ...updatedSession, questionId: question.id };
+      }
+    }
 
     // 通过Pusher通知对方
     try {
       const pusher = getPusher();
+      const gameSessionForPusher = {
+        ...updatedSession,
+        questionId: updatedSession.questionId || question.id,
+        question,
+      };
+      console.log('Sending game state update via Pusher:', {
+        sessionId: gameSessionForPusher.id,
+        questionId: gameSessionForPusher.questionId,
+        hasQuestion: !!gameSessionForPusher.question,
+      });
       await pusher.trigger(`match-${matchId}`, 'game_state_update', {
-        gameSession: {
-          ...updatedSession,
-          question,
-        },
+        gameSession: gameSessionForPusher,
       });
     } catch (pusherError) {
       console.warn('Pusher not configured, game state not broadcast:', pusherError);
     }
 
+    const responseGameSession = {
+      ...updatedSession,
+      questionId: updatedSession.questionId || question.id,
+      question,
+    };
+    
+    console.log('Returning game session:', {
+      id: responseGameSession.id,
+      questionId: responseGameSession.questionId,
+      hasQuestion: !!responseGameSession.question,
+      questionContent: responseGameSession.question?.content,
+    });
+
     return NextResponse.json({
-      gameSession: {
-        ...updatedSession,
-        question,
-      },
+      gameSession: responseGameSession,
     });
   } catch (error) {
     console.error('Initiate game error:', error);
