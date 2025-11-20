@@ -50,7 +50,27 @@ export default function MatchesPage() {
       const response = await api.get('/matches')
       console.log('Matches response:', response.data)
       if (response.data && response.data.matches) {
-        setMatches(response.data.matches)
+        // Load full profile for each user to get correct blur levels
+        const matchesWithProfiles = await Promise.all(
+          response.data.matches.map(async (match: any) => {
+            try {
+              // Load full user profile to get photos with correct blur levels
+              const profileResponse = await api.get(`/users/${match.user.id}`)
+              return {
+                ...match,
+                user: {
+                  ...match.user,
+                  photos: profileResponse.data.photos || [],
+                },
+                unlockProgress: profileResponse.data.unlockProgress,
+              }
+            } catch (error) {
+              console.error(`Failed to load profile for user ${match.user.id}:`, error)
+              return match // Fallback to original match data
+            }
+          })
+        )
+        setMatches(matchesWithProfiles)
       } else {
         setMatches([])
       }
@@ -98,16 +118,25 @@ export default function MatchesPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 relative">
-                    {match.user?.photos && match.user.photos.length > 0 && match.user.photos[0]?.url ? (
-                      <div
-                        className="w-full h-full rounded-full"
-                        style={{
-                          filter: `blur(${match.user.photos[0].blurLevel || 20}px)`,
-                          backgroundImage: `url(${match.user.photos[0].url})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      />
+                    {match.user?.photos && match.user.photos.length > 0 ? (
+                      (() => {
+                        // Find cover photo or first photo
+                        const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
+                        const photoUrl = coverPhoto.url
+                        const blurLevel = coverPhoto.blurLevel || 20
+                        
+                        return (
+                          <div
+                            className="w-full h-full rounded-full"
+                            style={{
+                              filter: `blur(${blurLevel}px)`,
+                              backgroundImage: `url(${photoUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          />
+                        )
+                      })()
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
                         {match.user?.name?.[0]?.toUpperCase() || '?'}
