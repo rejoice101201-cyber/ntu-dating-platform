@@ -29,6 +29,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [pusher, setPusher] = useState<Pusher | null>(null)
   const [otherUser, setOtherUser] = useState<any>(null)
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
@@ -49,6 +50,11 @@ export default function ChatPage() {
 
     // Load messages first (even without Pusher)
     loadMessages(true)
+    
+    // Load current user's profile to get photos
+    if (user?.id) {
+      loadCurrentUserProfile(user.id)
+    }
     
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
@@ -241,6 +247,16 @@ export default function ChatPage() {
       setKeys(response.data.unlockProgress?.keys || 0)
     } catch (error) {
       console.error('Failed to load other user profile:', error)
+    }
+  }
+
+  const loadCurrentUserProfile = async (userId: string) => {
+    try {
+      const response = await api.get(`/users/${userId}`)
+      console.log('Loaded current user profile:', response.data)
+      setCurrentUserProfile(response.data)
+    } catch (error) {
+      console.error('Failed to load current user profile:', error)
     }
   }
 
@@ -611,12 +627,12 @@ export default function ChatPage() {
             // 游戏完成
             <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
               <div className="text-4xl mb-2">
-                {gameSession.winnerId === user?.id ? '🎉' : '😊'}
+                {gameSession.winnerId === user?.id ? '🎉' : '💪'}
               </div>
               <p className="font-bold text-lg mb-2">
                 {gameSession.winnerId === user?.id 
-                  ? '恭喜！你獲得一把鑰匙！' 
-                  : '對方獲得一把鑰匙'}
+                  ? '你獲得了鑰匙！' 
+                  : '再接再厲！'}
               </p>
               <p className="text-sm text-gray-600 mb-3">
                 正確答案：{gameSession.responderAnswer}
@@ -694,24 +710,53 @@ export default function ChatPage() {
                 {!isOwn && (
                   <button
                     onClick={() => otherUser?.id && router.push(`/profile/${otherUser.id}`)}
-                    className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 relative"
+                    className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative"
                   >
                     {senderPhoto?.url ? (
                       <div
                         className="w-full h-full rounded-full"
                         style={{
                           filter: `blur(${blurLevel}px)`,
-                          backgroundImage: `url(${senderPhoto.url})`,
+                          backgroundImage: senderPhoto.url ? `url(${senderPhoto.url})` : 'none',
                           backgroundSize: 'cover',
                           backgroundPosition: 'center',
+                          backgroundColor: senderPhoto.url ? 'transparent' : '#e5e7eb',
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                      <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold rounded-full">
                         {otherUser?.name?.[0]?.toUpperCase() || '?'}
                       </div>
                     )}
                   </button>
+                )}
+                
+                {/* Avatar for own messages */}
+                {isOwn && user && (
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative">
+                    {(() => {
+                      // Get current user's profile photo from loaded profile
+                      const coverPhoto = currentUserProfile?.photos?.find((p: any) => p.isCover) || currentUserProfile?.photos?.[0]
+                      const currentUserPhoto = coverPhoto?.url
+                      if (currentUserPhoto) {
+                        return (
+                          <div
+                            className="w-full h-full rounded-full"
+                            style={{
+                              backgroundImage: `url(${currentUserPhoto})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          />
+                        )
+                      }
+                      return (
+                        <div className="w-full h-full flex items-center justify-center bg-primary-200 text-primary-700 text-xs font-bold rounded-full">
+                          {user.name?.[0]?.toUpperCase() || '?'}
+                        </div>
+                      )
+                    })()}
+                  </div>
                 )}
                 
                 <div

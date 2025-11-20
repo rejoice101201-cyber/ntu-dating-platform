@@ -133,12 +133,12 @@ export default function MatchesPage() {
                 className="block bg-white rounded-2xl p-4 hover:shadow-lg transition-all border-2 border-pink-100 hover:border-pink-300"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-pink-100 rounded-full overflow-hidden flex-shrink-0 relative">
+                  <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 relative">
                     {(() => {
                       // 完全按照资料页面的方式显示照片
                       if (!match.user?.photos || match.user.photos.length === 0) {
                         return (
-                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold rounded-full">
                             {match.user?.name?.[0]?.toUpperCase() || '?'}
                           </div>
                         )
@@ -157,21 +157,22 @@ export default function MatchesPage() {
                           coverPhoto,
                         })
                         return (
-                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold rounded-full">
                             {match.user?.name?.[0]?.toUpperCase() || '?'}
                           </div>
                         )
                       }
                       
-                      // 使用与资料页面完全相同的样式
+                      // 使用与资料页面完全相同的样式（包括backgroundColor fallback）
                       return (
                         <div
                           className="w-full h-full rounded-full"
                           style={{
                             filter: `blur(${blurLevel}px)`,
-                            backgroundImage: `url(${photoUrl})`,
+                            backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
+                            backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
                           }}
                         />
                       )
