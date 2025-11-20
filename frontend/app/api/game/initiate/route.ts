@@ -54,20 +54,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 根据主题获取一个问题
-    const question = await prisma.question.findFirst({
+    // 根据主题获取一个问题（随机选择）
+    const allQuestions = await prisma.question.findMany({
       where: {
         category: topic,
         isActive: true,
       },
     });
 
-    if (!question) {
+    if (!allQuestions || allQuestions.length === 0) {
       return NextResponse.json(
-        { error: 'No question found for this topic' },
+        { error: `No question found for topic: ${topic}. Available categories: interest, personality, lifestyle, icebreaker` },
         { status: 404 }
       );
     }
+
+    // 随机选择一个问题
+    const question = allQuestions[Math.floor(Math.random() * allQuestions.length)];
 
     // 更新游戏会话的问题ID
     await prisma.gameSession.update({
