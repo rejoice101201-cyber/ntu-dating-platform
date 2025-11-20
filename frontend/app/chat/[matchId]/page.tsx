@@ -187,6 +187,8 @@ export default function ChatPage() {
   const loadOtherUserProfile = async (userId: string) => {
     try {
       const response = await api.get(`/users/${userId}`)
+      console.log('Loaded other user profile:', response.data)
+      setOtherUser(response.data)
       setUnlockProgress(response.data.unlockProgress)
     } catch (error) {
       console.error('Failed to load other user profile:', error)
@@ -415,10 +417,11 @@ export default function ChatPage() {
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.id
+            // Find cover photo or first photo for other user
             const senderPhoto = !isOwn && otherUser?.photos && otherUser.photos.length > 0 
-              ? otherUser.photos[0] 
+              ? (otherUser.photos.find((p: any) => p.isCover) || otherUser.photos[0])
               : null
-            const blurLevel = senderPhoto?.blurLevel || 0
+            const blurLevel = senderPhoto?.blurLevel ?? 20
             
             return (
               <div

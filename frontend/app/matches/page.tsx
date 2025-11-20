@@ -127,10 +127,17 @@ export default function MatchesPage() {
                       (() => {
                         // Find cover photo or first photo
                         const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
-                        const photoUrl = coverPhoto.url
-                        const blurLevel = coverPhoto.blurLevel ?? 20
+                        const photoUrl = coverPhoto?.url
+                        const blurLevel = coverPhoto?.blurLevel ?? 20
                         
-                        console.log('Match photo:', { photoUrl, blurLevel, photo: coverPhoto })
+                        if (!photoUrl) {
+                          console.error('No photo URL found:', { match, coverPhoto, photos: match.user.photos })
+                          return (
+                            <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
+                              {match.user?.name?.[0]?.toUpperCase() || '?'}
+                            </div>
+                          )
+                        }
                         
                         return (
                           <div
