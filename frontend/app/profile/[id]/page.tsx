@@ -9,15 +9,49 @@ import Link from 'next/link'
 interface User {
   id: string
   name: string
+  birthday?: string
+  gender?: string
   bio?: string
   location?: string
   height?: number
-  photos: Array<{ id: string; url: string; blurLevel: number }>
+  photos: Array<{ id: string; url: string; blurLevel: number; isCover?: boolean }>
   tags: Array<{ tag: { name: string; category: string } }>
   unlockProgress?: {
     unlockLevel: number
     qaCompleted: number
   }
+}
+
+// 计算年龄
+function calculateAge(birthday: string): number {
+  const today = new Date()
+  const birthDate = new Date(birthday)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return age
+}
+
+// 获取星座
+function getZodiacSign(birthday: string): string {
+  const date = new Date(birthday)
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return '牡羊座'
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return '金牛座'
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) return '雙子座'
+  if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) return '巨蟹座'
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return '獅子座'
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return '處女座'
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) return '天秤座'
+  if ((month === 10 && day >= 24) || (month === 11 && day <= 22)) return '天蠍座'
+  if ((month === 11 && day >= 23) || (month === 12 && day <= 21)) return '射手座'
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return '摩羯座'
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return '水瓶座'
+  return '雙魚座'
 }
 
 export default function ProfilePage() {
@@ -29,15 +63,10 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [questions, setQuestions] = useState<any[]>([])
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [datingNote, setDatingNote] = useState('')
 
   useEffect(() => {
     loadProfile()
-    if (!isOwnProfile) {
-      loadQuestions()
-    }
   }, [userId])
 
   const loadProfile = async () => {
@@ -51,231 +80,223 @@ export default function ProfilePage() {
     }
   }
 
-  const loadQuestions = async () => {
-    try {
-      const response = await api.get('/qa/questions?limit=5')
-      const questionsData = response.data.questions || []
-      setQuestions(questionsData)
-      if (questionsData.length > 0) {
-        setSelectedQuestions(questionsData.slice(0, 3).map((q: any) => q.id))
-      }
-    } catch (error) {
-      console.error('Failed to load questions:', error)
-      setQuestions([])
+  // 按分类组织标签
+  const tagsByCategory = profile?.tags.reduce((acc, ut) => {
+    const category = ut.tag.category
+    if (!acc[category]) {
+      acc[category] = []
     }
-  }
+    acc[category].push(ut.tag.name)
+    return acc
+  }, {} as Record<string, string[]>) || {}
 
-  const handlePlayQA = async () => {
-    if (!profile || selectedQuestions.length === 0) return
-
-    try {
-      const answerArray = selectedQuestions.map(qId => answers[qId] || '')
-      const response = await api.post(`/qa/play/${userId}`, {
-        questionIds: selectedQuestions,
-        answers: answerArray,
-      })
-
-      alert(`匹配度: ${response.data.matchPercentage}%！解鎖進度: ${response.data.unlockProgress.unlockLevel}%`)
-      loadProfile()
-    } catch (error: any) {
-      if (error.response?.data?.error?.includes('energy')) {
-        alert('體力不足！')
-      }
-    }
-  }
+  // 获取封面照片
+  const coverPhoto = profile?.photos.find(p => p.isCover) || profile?.photos[0]
+  const photoUrl = coverPhoto?.url || ''
+  const blurLevel = coverPhoto?.blurLevel || 0
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>載入中...</p>
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <p className="text-gray-500">載入中...</p>
       </div>
     )
   }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>用戶不存在</p>
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <p className="text-gray-500">用戶不存在</p>
       </div>
     )
   }
 
+  const age = profile.birthday ? calculateAge(profile.birthday) : null
+  const zodiacSign = profile.birthday ? getZodiacSign(profile.birthday) : null
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center">
-        <button
-          onClick={() => router.back()}
-          className="text-gray-600 hover:text-gray-800 mr-3"
-        >
-          ←
-        </button>
-        <h1 className="text-xl font-bold">{profile.name}</h1>
-      </div>
-
-      {/* Photos */}
-      <div className="grid grid-cols-2 gap-2 p-4">
-        {profile.photos.map((photo) => {
-          // Convert relative URL to absolute URL
-          const photoUrl = photo.url.startsWith('http') 
-            ? photo.url 
-            : photo.url; // Vercel Blob URLs are already absolute
-          
-          return (
-          <div
-            key={photo.id}
-            className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden"
+    <div className="min-h-screen bg-white">
+      {/* PIKABU Header Banner */}
+      <div className="bg-yellow-400 rounded-b-3xl pb-4 relative">
+        <div className="flex items-center justify-between px-4 pt-12 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🐕</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'cursive' }}>
+            PIKABU
+          </h1>
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold"
           >
-            <div
-              className="w-full h-full"
-              style={{
-                filter: `blur(${photo.blurLevel}px)`,
-                backgroundImage: `url(${photoUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
-            />
-            {photo.blurLevel > 0 && !isOwnProfile && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <span className="text-white text-sm">需要解鎖</span>
-              </div>
-            )}
-          </div>
-        );
-        })}
+            ✕
+          </button>
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="bg-white p-4 space-y-4">
-        {profile.bio && (
-          <div>
-            <h2 className="font-semibold mb-2">自我介紹</h2>
-            <p className="text-gray-700">{profile.bio}</p>
+      {/* Profile Picture Section */}
+      <div className="flex flex-col items-center -mt-8 px-4">
+        {/* Main Profile Picture */}
+        <div className="relative">
+          <div
+            className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
+            style={{
+              filter: `blur(${blurLevel}px)`,
+              backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
+            }}
+          />
+          {/* 柴犬头像（小） */}
+          <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-full bg-yellow-100 border-2 border-white flex items-center justify-center">
+            <span className="text-2xl">🐕</span>
           </div>
-        )}
+        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {profile.location && (
-            <div>
-              <span className="text-gray-600">地區: </span>
-              <span>{profile.location}</span>
-            </div>
+        {/* Name */}
+        <h2 className="text-2xl font-bold mt-4">{profile.name}</h2>
+
+        {/* Basic Info Tags */}
+        <div className="flex flex-wrap gap-2 mt-3 justify-center">
+          {profile.gender && (
+            <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+              {profile.gender === 'female' ? '♀' : profile.gender === 'male' ? '♂' : '⚧'} {age || ''}
+            </span>
           )}
-          {profile.height && (
-            <div>
-              <span className="text-gray-600">身高: </span>
-              <span>{profile.height} cm</span>
-            </div>
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+            學生
+          </span>
+          {profile.location && (
+            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+              {profile.location}
+            </span>
+          )}
+          {zodiacSign && (
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+              {zodiacSign}
+            </span>
           )}
         </div>
 
-        {/* Tags */}
-        {profile.tags.length > 0 && (
+        {/* Bio Introduction */}
+        {profile.bio && (
+          <div className="mt-4 px-4 text-center">
+            <p className="text-gray-700 text-sm">{profile.bio}</p>
+            <span className="text-2xl mt-2 inline-block">🤔</span>
+          </div>
+        )}
+      </div>
+
+      {/* Content Sections */}
+      <div className="px-4 mt-6 space-y-6 pb-20">
+        {/* 個性 (Personality) */}
+        {tagsByCategory['personality'] && tagsByCategory['personality'].length > 0 && (
           <div>
-            <h2 className="font-semibold mb-2">標籤</h2>
+            <h3 className="text-lg font-bold mb-2">個性</h3>
             <div className="flex flex-wrap gap-2">
-              {profile.tags.map((ut, idx) => (
+              {tagsByCategory['personality'].map((tag, idx) => (
                 <span
                   key={idx}
-                  className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"
+                  className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm"
                 >
-                  {ut.tag.name}
+                  #{tag}
                 </span>
               ))}
             </div>
           </div>
         )}
 
-        {/* Unlock Progress */}
-        {!isOwnProfile && profile.unlockProgress && (
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2">解鎖進度</h3>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div
-                className="bg-primary-500 h-2 rounded-full transition-all"
-                style={{ width: `${profile.unlockProgress.unlockLevel}%` }}
-              />
+        {/* 興趣 (Interests) */}
+        {tagsByCategory['interest'] && tagsByCategory['interest'].length > 0 && (
+          <div>
+            <h3 className="text-lg font-bold mb-2">興趣</h3>
+            <div className="flex flex-wrap gap-2">
+              {tagsByCategory['interest'].map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                >
+                  #{tag}
+                </span>
+              ))}
             </div>
-            <p className="text-sm text-gray-600">
-              已完成 {profile.unlockProgress.qaCompleted} 個問答
-            </p>
           </div>
         )}
 
-        {/* Q&A Game */}
-        {!isOwnProfile && (
-          <div className="border-t pt-4 mt-4">
-            {questions.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500 mb-2">載入問題中...</p>
-                <button
-                  onClick={loadQuestions}
-                  className="text-primary-500 hover:underline"
+        {/* 外貌 (Appearance) */}
+        {tagsByCategory['appearance'] && tagsByCategory['appearance'].length > 0 && (
+          <div>
+            <h3 className="text-lg font-bold mb-2">外貌</h3>
+            <div className="flex flex-wrap gap-2">
+              {tagsByCategory['appearance'].map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm"
                 >
-                  重新載入
-                </button>
-              </div>
-            ) : (
-              <>
-            <h3 className="font-semibold mb-4">🐕 問答遊戲 - 解鎖照片</h3>
-            <p className="text-sm text-gray-600 mb-4">回答問題來解鎖對方的照片，匹配度越高解鎖越多！</p>
-            <div className="space-y-4">
-              {selectedQuestions.map((qId) => {
-                const question = questions.find((q) => q.id === qId)
-                if (!question) return null
-
-                return (
-                  <div key={qId} className="border rounded-lg p-3">
-                    <p className="font-medium mb-2">{question.content}</p>
-                    {question.type === 'multiple_choice' && question.options ? (
-                      <div className="space-y-2">
-                        {JSON.parse(question.options).map((opt: string, idx: number) => (
-                          <label key={idx} className="flex items-center">
-                            <input
-                              type="radio"
-                              name={`q-${qId}`}
-                              value={opt}
-                              onChange={(e) =>
-                                setAnswers({ ...answers, [qId]: e.target.value })
-                              }
-                              className="mr-2"
-                            />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={answers[qId] || ''}
-                        onChange={(e) =>
-                          setAnswers({ ...answers, [qId]: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border rounded-lg"
-                        placeholder="輸入答案"
-                      />
-                    )}
-                  </div>
-                )
-              })}
-              <button
-                onClick={handlePlayQA}
-                className="w-full bg-primary-500 text-white py-2 rounded-lg hover:bg-primary-600 transition-colors"
-              >
-                提交答案並解鎖
-              </button>
+                  #{tag}
+                </span>
+              ))}
             </div>
-            </>
-            )}
+          </div>
+        )}
+
+        {/* 感情 (Relationship) */}
+        {tagsByCategory['lifestyle'] && tagsByCategory['lifestyle'].length > 0 && (
+          <div>
+            <h3 className="text-lg font-bold mb-2">感情</h3>
+            <div className="flex flex-wrap gap-2">
+              {tagsByCategory['lifestyle'].map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 自我介紹 (Self-introduction) */}
+        {profile.bio && (
+          <div>
+            <h3 className="text-lg font-bold mb-2">自我介紹</h3>
+            <p className="text-gray-700 text-sm leading-relaxed">{profile.bio}</p>
+          </div>
+        )}
+
+        {/* 出沒地區 (Frequent Locations) */}
+        {profile.location && (
+          <div>
+            <h3 className="text-lg font-bold mb-2">出沒地區</h3>
+            <p className="text-gray-700 text-sm">{profile.location}</p>
+          </div>
+        )}
+
+        {/* 交友筆記 (Dating Notes) - 只有自己看得到 */}
+        {isOwnProfile && (
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-bold mb-2">交友筆記</h3>
+            <div className="relative">
+              <input
+                type="text"
+                value={datingNote}
+                onChange={(e) => setDatingNote(e.target.value)}
+                placeholder="你可以在這裡作筆記,只有自己看得到。"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+              <span className="absolute right-3 top-3 text-gray-400">✏️</span>
+            </div>
           </div>
         )}
 
         {/* Actions */}
         {!isOwnProfile && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-6">
             <Link
               href={`/chat/${profile.id}`}
-              className="flex-1 bg-primary-500 text-white py-2 rounded-lg text-center hover:bg-primary-600 transition-colors"
+              className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg text-center font-bold hover:bg-yellow-500 transition-colors"
             >
               開始聊天
             </Link>
@@ -285,4 +306,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
