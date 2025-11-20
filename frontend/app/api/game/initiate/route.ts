@@ -127,7 +127,10 @@ async function initializeQuestions() {
     },
   ];
 
-  // 只创建不存在的问题
+  // 确保问题存在且激活
+  let createdCount = 0;
+  let updatedCount = 0;
+  
   for (const question of questions) {
     const existing = await prisma.question.findFirst({
       where: {
@@ -140,8 +143,22 @@ async function initializeQuestions() {
       await prisma.question.create({
         data: question,
       });
+      createdCount++;
+    } else {
+      // 更新现有问题确保激活
+      await prisma.question.update({
+        where: { id: existing.id },
+        data: { 
+          isActive: true,
+          type: question.type,
+          options: question.options,
+        },
+      });
+      updatedCount++;
     }
   }
+  
+  console.log(`Initialized questions: ${createdCount} created, ${updatedCount} updated, total: ${questions.length}`);
 }
 
 // 发起游戏 - 选择主题
@@ -204,10 +221,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log(`Found ${allQuestions.length} questions for topic: ${topic}`);
+
     // 如果没有问题，自动初始化问题
     if (!allQuestions || allQuestions.length === 0) {
       console.log(`No questions found for topic: ${topic}, initializing...`)
-      await initializeQuestions()
+      try {
+        await initializeQuestions()
+        console.log(`Questions initialized for topic: ${topic}`)
+      } catch (initError) {
+        console.error('Failed to initialize questions:', initError)
+      }
+      
       // 重新查询
       allQuestions = await prisma.question.findMany({
         where: {
@@ -215,11 +240,23 @@ export async function POST(request: NextRequest) {
           isActive: true,
         },
       });
+      console.log(`After initialization, found ${allQuestions.length} questions for topic: ${topic}`)
     }
 
+    // 如果还是没有问题，尝试查询所有类别看看数据库里有什么
     if (!allQuestions || allQuestions.length === 0) {
+      const allCategories = await prisma.question.groupBy({
+        by: ['category'],
+        _count: {
+          id: true,
+        },
+      });
+      console.error('Available question categories:', allCategories);
+      
       return NextResponse.json(
-        { error: `No question found for topic: ${topic} after initialization. Please contact support.` },
+        { 
+          error: `No question found for topic: ${topic} after initialization. Available categories: ${allCategories.map(c => c.category).join(', ')}` 
+        },
         { status: 404 }
       );
     }

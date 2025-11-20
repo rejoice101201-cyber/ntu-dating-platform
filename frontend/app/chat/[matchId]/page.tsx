@@ -286,17 +286,32 @@ export default function ChatPage() {
   // 发起游戏
   const initiateGame = async (topic: string) => {
     try {
+      console.log('Initiating game with topic:', topic, 'matchId:', matchId)
       const response = await api.post('/game/initiate', {
         matchId,
         topic,
       })
+      console.log('Game initiated successfully:', response.data)
+      
+      if (!response.data.gameSession || !response.data.gameSession.question) {
+        console.error('Game session created but no question assigned:', response.data)
+        alert('遊戲已發起，但沒有找到題目。請稍後再試或聯繫客服。')
+        return
+      }
+      
       setGameSession(response.data.gameSession)
       setGameTopic(topic)
       setShowQAGame(true)
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to initiate game:', error)
-      alert(error.response?.data?.error || '發起遊戲失敗')
+      const errorMessage = error.response?.data?.error || '發起遊戲失敗'
+      console.error('Error details:', {
+        message: errorMessage,
+        status: error.response?.status,
+        data: error.response?.data,
+      })
+      alert(`發起遊戲失敗：${errorMessage}`)
     }
   }
 
