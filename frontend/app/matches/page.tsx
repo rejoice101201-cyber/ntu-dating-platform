@@ -104,7 +104,7 @@ export default function MatchesPage() {
                         alt={match.user.name}
                         className="w-full h-full object-cover"
                         style={{
-                          filter: `blur(${match.user.photos[0].blurLevel || 90}px)`,
+                          filter: `blur(${match.user.photos[0].blurLevel || 20}px)`,
                         }}
                         onError={(e) => {
                           const photoUrl = match.user?.photos?.[0]?.url;

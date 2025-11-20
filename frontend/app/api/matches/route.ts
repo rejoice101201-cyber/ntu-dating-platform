@@ -60,13 +60,14 @@ export async function GET(request: NextRequest) {
       });
 
       // Apply blur to photos based on unlock progress
-      // Map unlock level to blur stages: 0% → 90px, 10% → 70px, 30% → 50px, 50% → 10px, 100% → 0px
+      // Map unlock level to blur stages: 0% → 20px, 10% → 15px, 30% → 10px, 50% → 5px, 100% → 0px
+      // Using smaller blur values to maintain color visibility
       const getBlurLevel = (unlockLevel: number): number => {
         if (unlockLevel >= 100) return 0;
-        if (unlockLevel >= 50) return 10;
-        if (unlockLevel >= 30) return 50;
-        if (unlockLevel >= 10) return 70;
-        return 90; // 0-10%
+        if (unlockLevel >= 50) return 5;
+        if (unlockLevel >= 30) return 10;
+        if (unlockLevel >= 10) return 15;
+        return 20; // 0-10% - initial blur, still shows color
       };
 
       const photosWithBlur = (otherUser.photos || []).map((photo: any) => {
