@@ -432,15 +432,13 @@ export default function ChatPage() {
                     className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 relative"
                   >
                     {senderPhoto?.url ? (
-                      <img
-                        src={senderPhoto.url}
-                        alt={otherUser?.name || 'User'}
-                        className="w-full h-full object-cover"
+                      <div
+                        className="w-full h-full rounded-full"
                         style={{
                           filter: `blur(${blurLevel}px)`,
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
+                          backgroundImage: `url(${senderPhoto.url})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                         }}
                       />
                     ) : (

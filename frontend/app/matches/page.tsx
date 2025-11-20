@@ -99,17 +99,13 @@ export default function MatchesPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 relative">
                     {match.user?.photos && match.user.photos.length > 0 && match.user.photos[0]?.url ? (
-                      <img
-                        src={match.user.photos[0].url}
-                        alt={match.user.name}
-                        className="w-full h-full object-cover"
+                      <div
+                        className="w-full h-full rounded-full"
                         style={{
                           filter: `blur(${match.user.photos[0].blurLevel || 20}px)`,
-                        }}
-                        onError={(e) => {
-                          const photoUrl = match.user?.photos?.[0]?.url;
-                          console.error('Failed to load image:', photoUrl || 'unknown');
-                          (e.target as HTMLImageElement).style.display = 'none';
+                          backgroundImage: `url(${match.user.photos[0].url})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
                         }}
                       />
                     ) : (
