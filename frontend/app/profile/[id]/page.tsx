@@ -68,10 +68,14 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [datingNote, setDatingNote] = useState('')
+  const [matchId, setMatchId] = useState<string | null>(null)
 
   useEffect(() => {
     loadProfile()
-  }, [userId])
+    if (!isOwnProfile) {
+      checkMatch()
+    }
+  }, [userId, isOwnProfile])
 
   const loadProfile = async () => {
     try {
@@ -81,6 +85,23 @@ export default function ProfilePage() {
       console.error('Failed to load profile:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkMatch = async () => {
+    if (!currentUser?.id) return
+    
+    try {
+      const response = await api.get('/matches')
+      const matches = response.data.matches || []
+      const match = matches.find((m: any) => 
+        m.user?.id === userId || m.otherUser?.id === userId
+      )
+      if (match) {
+        setMatchId(match.id)
+      }
+    } catch (error) {
+      console.error('Failed to check match:', error)
     }
   }
 
@@ -120,15 +141,12 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* PIKABU Header Banner */}
+      {/* Header */}
       <div className="bg-yellow-400 rounded-b-3xl pb-4 relative">
         <div className="flex items-center justify-between px-4 pt-12 pb-2">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🐕</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: 'cursive' }}>
-            PIKABU
-          </h1>
           <button
             onClick={() => router.back()}
             className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold"
@@ -335,12 +353,18 @@ export default function ProfilePage() {
         {/* Actions */}
         {!isOwnProfile && (
           <div className="flex gap-2 mt-6">
-            <Link
-              href={`/chat/${profile.id}`}
-              className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg text-center font-bold hover:bg-yellow-500 transition-colors"
-            >
-              開始聊天
-            </Link>
+            {matchId ? (
+              <Link
+                href={`/chat/${matchId}`}
+                className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg text-center font-bold hover:bg-yellow-500 transition-colors"
+              >
+                開始聊天
+              </Link>
+            ) : (
+              <div className="flex-1 bg-gray-200 text-gray-600 py-3 rounded-lg text-center font-bold">
+                需要先配對才能聊天
+              </div>
+            )}
           </div>
         )}
       </div>
