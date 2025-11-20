@@ -32,6 +32,10 @@ interface RegisterData {
   gender: 'male' | 'female' | 'other';
   location?: string;
   height?: number;
+  weight?: number;
+  occupation?: string;
+  school?: string;
+  bloodType?: string;
 }
 
 export const useAuthStore = create<AuthState>()(
