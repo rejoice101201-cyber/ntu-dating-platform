@@ -71,7 +71,17 @@ export default function ChatPage() {
         channel.bind('game_state_update', (data: any) => {
           console.log('Game state update received:', data)
           if (data.gameSession) {
+            console.log('Updating game session:', {
+              id: data.gameSession.id,
+              status: data.gameSession.status,
+              hasQuestion: !!data.gameSession.question,
+              questionContent: data.gameSession.question?.content,
+            })
             setGameSession(data.gameSession)
+            // 如果有游戏会话且状态不是completed，自动打开游戏面板
+            if (data.gameSession.status !== 'completed') {
+              setShowQAGame(true)
+            }
             // 如果游戏完成，重新加载解锁进度
             if (data.gameSession.status === 'completed' && otherUser?.id) {
               loadOtherUserProfile(otherUser.id)
@@ -239,10 +249,16 @@ export default function ChatPage() {
     try {
       const response = await api.get(`/game/active/${matchId}`)
       if (response.data.gameSession) {
-        console.log('Found active game session:', response.data.gameSession)
+        console.log('Found active game session:', {
+          id: response.data.gameSession.id,
+          status: response.data.gameSession.status,
+          hasQuestion: !!response.data.gameSession.question,
+          questionContent: response.data.gameSession.question?.content,
+          questionId: response.data.gameSession.questionId,
+        })
         setGameSession(response.data.gameSession)
-        // 如果游戏面板未打开，自动打开
-        if (!showQAGame) {
+        // 如果游戏面板未打开且游戏未完成，自动打开
+        if (!showQAGame && response.data.gameSession.status !== 'completed') {
           setShowQAGame(true)
         }
       } else {
@@ -505,7 +521,7 @@ export default function ChatPage() {
             // 回答者：回答问题
             <div className="space-y-3 bg-white rounded-lg p-4 border-2 border-purple-200">
               <p className="text-sm text-gray-600 mb-2">對方選擇了主題：<span className="font-semibold">{gameSession.topic}</span></p>
-              {gameSession.question && (
+              {gameSession.question ? (
                 <>
                   <p className="font-semibold text-lg mb-3">{gameSession.question.content}</p>
                   {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
@@ -541,6 +557,16 @@ export default function ChatPage() {
                     提交答案
                   </button>
                 </>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 mb-2">載入題目中...</p>
+                  <button
+                    onClick={checkActiveGameSession}
+                    className="text-primary-500 hover:underline text-sm"
+                  >
+                    重新載入
+                  </button>
+                </div>
               )}
             </div>
           ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
