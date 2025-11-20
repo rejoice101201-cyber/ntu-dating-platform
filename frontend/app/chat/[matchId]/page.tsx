@@ -231,6 +231,87 @@ export default function ChatPage() {
     }
   }
 
+  // 发起游戏
+  const initiateGame = async (topic: string) => {
+    try {
+      const response = await api.post('/game/initiate', {
+        matchId,
+        topic,
+      })
+      setGameSession(response.data.gameSession)
+      setGameTopic(topic)
+    } catch (error: any) {
+      console.error('Failed to initiate game:', error)
+      alert(error.response?.data?.error || '發起遊戲失敗')
+    }
+  }
+
+  // 回答问题（回答者）
+  const submitAnswer = async () => {
+    if (!gameSession || !gameAnswer) return
+    
+    try {
+      const response = await api.post('/game/answer', {
+        gameSessionId: gameSession.id,
+        answer: gameAnswer,
+      })
+      setGameSession(response.data.gameSession)
+      alert('答案已提交！等待對方猜測...')
+    } catch (error: any) {
+      console.error('Failed to submit answer:', error)
+      alert(error.response?.data?.error || '提交答案失敗')
+    }
+  }
+
+  // 猜测答案（发起者）
+  const submitGuess = async () => {
+    if (!gameSession || !gameGuess) return
+    
+    try {
+      const response = await api.post('/game/guess', {
+        gameSessionId: gameSession.id,
+        guess: gameGuess,
+      })
+      setGameSession(response.data.gameSession)
+      if (response.data.isCorrect) {
+        alert('🎉 猜對了！你獲得一把鑰匙！')
+      } else {
+        alert('😅 猜錯了，對方獲得一把鑰匙')
+      }
+      // 重新加载解锁进度
+      if (otherUser?.id) {
+        await loadOtherUserProfile(otherUser.id)
+      }
+    } catch (error: any) {
+      console.error('Failed to submit guess:', error)
+      alert(error.response?.data?.error || '提交猜測失敗')
+    }
+  }
+
+  // 使用钥匙解锁照片
+  const useKeyToUnlock = async () => {
+    if (!otherUser?.id || keys < 1) {
+      alert('鑰匙不足！')
+      return
+    }
+    
+    try {
+      const response = await api.post('/game/unlock', {
+        targetUserId: otherUser.id,
+      })
+      setUnlockProgress(response.data.unlockProgress)
+      setKeys(response.data.unlockProgress.keys)
+      alert('🎉 使用一把鑰匙，解鎖進度 +20%！')
+      // 重新加载用户资料以更新照片模糊级别
+      if (otherUser?.id) {
+        await loadOtherUserProfile(otherUser.id)
+      }
+    } catch (error: any) {
+      console.error('Failed to unlock:', error)
+      alert(error.response?.data?.error || '解鎖失敗')
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 relative">
       {/* Header */}
