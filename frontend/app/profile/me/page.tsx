@@ -253,51 +253,37 @@ export default function MyProfilePage() {
             <div className="space-y-4">
               <div>
                 <h2 className="font-semibold mb-2">姓名</h2>
-                <p>{profile?.name}</p>
+                <p>{profile?.name || '未填寫'}</p>
               </div>
-              {profile?.bio && (
-                <div>
-                    <h2 className="font-semibold mb-2">自我介紹</h2>
-                  <p className="text-gray-700">{profile.bio}</p>
-                </div>
-              )}
+              <div>
+                <h2 className="font-semibold mb-2">自我介紹</h2>
+                <p className="text-gray-700">{profile?.bio || '未填寫'}</p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                {profile?.location && (
-                  <div>
-                    <h2 className="font-semibold mb-2">地區</h2>
-                    <p>{profile.location}</p>
-                  </div>
-                )}
-                {profile?.height && (
-                  <div>
-                    <h2 className="font-semibold mb-2">身高</h2>
-                    <p>{profile.height} cm</p>
-                  </div>
-                )}
-                {profile?.weight && (
-                  <div>
-                    <h2 className="font-semibold mb-2">體重</h2>
-                    <p>{profile.weight} kg</p>
-                  </div>
-                )}
-                {profile?.occupation && (
-                  <div>
-                    <h2 className="font-semibold mb-2">職業</h2>
-                    <p>{profile.occupation}</p>
-                  </div>
-                )}
-                {profile?.school && (
-                  <div>
-                    <h2 className="font-semibold mb-2">學校</h2>
-                    <p>{profile.school}</p>
-                  </div>
-                )}
-                {profile?.bloodType && (
-                  <div>
-                    <h2 className="font-semibold mb-2">血型</h2>
-                    <p>{profile.bloodType}</p>
-                  </div>
-                )}
+                <div>
+                  <h2 className="font-semibold mb-2">地區</h2>
+                  <p>{profile?.location || '未填寫'}</p>
+                </div>
+                <div>
+                  <h2 className="font-semibold mb-2">身高</h2>
+                  <p>{profile?.height ? `${profile.height} cm` : '未填寫'}</p>
+                </div>
+                <div>
+                  <h2 className="font-semibold mb-2">體重</h2>
+                  <p>{profile?.weight ? `${profile.weight} kg` : '未填寫'}</p>
+                </div>
+                <div>
+                  <h2 className="font-semibold mb-2">職業</h2>
+                  <p>{profile?.occupation || '未填寫'}</p>
+                </div>
+                <div>
+                  <h2 className="font-semibold mb-2">學校</h2>
+                  <p>{profile?.school || '未填寫'}</p>
+                </div>
+                <div>
+                  <h2 className="font-semibold mb-2">血型</h2>
+                  <p>{profile?.bloodType || '未填寫'}</p>
+                </div>
               </div>
             </div>
           )}
