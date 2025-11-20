@@ -16,6 +16,10 @@ export default function MyProfilePage() {
     bio: '',
     location: '',
     height: '',
+    weight: '',
+    occupation: '',
+    school: '',
+    bloodType: '',
   })
 
   useEffect(() => {
@@ -35,6 +39,10 @@ export default function MyProfilePage() {
         bio: response.data.bio || '',
         location: response.data.location || '',
         height: response.data.height?.toString() || '',
+        weight: response.data.weight?.toString() || '',
+        occupation: response.data.occupation || '',
+        school: response.data.school || '',
+        bloodType: response.data.bloodType || '',
       })
     } catch (error) {
       console.error('Failed to load profile:', error)
@@ -48,6 +56,10 @@ export default function MyProfilePage() {
       await api.put('/users/me', {
         ...formData,
         height: formData.height ? parseInt(formData.height) : undefined,
+        weight: formData.weight ? parseInt(formData.weight) : undefined,
+        occupation: formData.occupation || undefined,
+        school: formData.school || undefined,
+        bloodType: formData.bloodType || undefined,
       })
       await loadProfile()
       setEditing(false)
@@ -118,8 +130,8 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto py-8">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="max-w-2xl mx-auto py-8 px-4">
         <div className="bg-white rounded-lg p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">我的資料</h1>
@@ -191,6 +203,51 @@ export default function MyProfilePage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">體重 (kg)</label>
+                  <input
+                    type="number"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">血型</label>
+                  <select
+                    value={formData.bloodType}
+                    onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  >
+                    <option value="">請選擇</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="O">O</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">職業</label>
+                  <input
+                    type="text"
+                    value={formData.occupation}
+                    onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">學校</label>
+                  <input
+                    type="text"
+                    value={formData.school}
+                    onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -215,6 +272,30 @@ export default function MyProfilePage() {
                   <div>
                     <h2 className="font-semibold mb-2">身高</h2>
                     <p>{profile.height} cm</p>
+                  </div>
+                )}
+                {profile?.weight && (
+                  <div>
+                    <h2 className="font-semibold mb-2">體重</h2>
+                    <p>{profile.weight} kg</p>
+                  </div>
+                )}
+                {profile?.occupation && (
+                  <div>
+                    <h2 className="font-semibold mb-2">職業</h2>
+                    <p>{profile.occupation}</p>
+                  </div>
+                )}
+                {profile?.school && (
+                  <div>
+                    <h2 className="font-semibold mb-2">學校</h2>
+                    <p>{profile.school}</p>
+                  </div>
+                )}
+                {profile?.bloodType && (
+                  <div>
+                    <h2 className="font-semibold mb-2">血型</h2>
+                    <p>{profile.bloodType}</p>
                   </div>
                 )}
               </div>
