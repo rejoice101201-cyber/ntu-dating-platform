@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth';
 
 // 添加所有类别的问题（用于初始化数据库）
+// 这个端点可以被调用以确保所有题目都存在
 export async function POST(request: NextRequest) {
+  // 可选：需要认证（如果需要的话）
+  // const authResult = await requireAuth(request);
+  // if (authResult instanceof Response) {
+  //   return authResult;
+  // }
   try {
     const questions = [
       // Interest 类别
@@ -126,8 +133,10 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // 使用 findFirst + create 的方式来避免重复创建
+    // 使用 findFirst + create/update 的方式来避免重复创建
     const createdQuestions = [];
+    const updatedQuestions = [];
+    
     for (const question of questions) {
       const existing = await prisma.question.findFirst({
         where: {
@@ -145,15 +154,34 @@ export async function POST(request: NextRequest) {
         // 如果已存在，更新它以确保 isActive 为 true
         await prisma.question.update({
           where: { id: existing.id },
-          data: { isActive: true },
+          data: { 
+            isActive: true,
+            type: question.type,
+            options: question.options,
+          },
         });
+        updatedQuestions.push(existing);
       }
     }
+
+    // 返回每个类别的统计
+    const categoryStats = await prisma.question.groupBy({
+      by: ['category'],
+      where: { isActive: true },
+      _count: {
+        id: true,
+      },
+    });
 
     return NextResponse.json({
       message: 'Questions seeded successfully',
       created: createdQuestions.length,
+      updated: updatedQuestions.length,
       total: questions.length,
+      categoryStats: categoryStats.map(c => ({
+        category: c.category,
+        count: c._count.id,
+      })),
     });
   } catch (error) {
     console.error('Seed questions error:', error);
