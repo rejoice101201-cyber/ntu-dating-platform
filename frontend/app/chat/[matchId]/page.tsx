@@ -251,8 +251,14 @@ export default function ChatPage() {
           <button
             onClick={() => {
               setShowQAGame(!showQAGame)
+              // 如果关闭游戏面板，重置游戏状态
               if (!showQAGame) {
-                checkGameSession()
+                // 可以在这里检查是否有进行中的游戏
+              } else {
+                // 关闭时重置
+                setGameSession(null)
+                setGameAnswer('')
+                setGameGuess('')
               }
             }}
             className="text-2xl hover:scale-110 transition-transform"
