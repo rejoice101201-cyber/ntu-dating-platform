@@ -315,14 +315,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 出沒地區 (Frequent Locations) */}
-        {profile.location && (
-          <div>
-            <h3 className="text-lg font-bold mb-2">出沒地區</h3>
-            <p className="text-gray-700 text-sm">{profile.location}</p>
-          </div>
-        )}
-
         {/* 交友筆記 (Dating Notes) - 只有自己看得到 */}
         {isOwnProfile && (
           <div className="border-t pt-4 mt-4">
