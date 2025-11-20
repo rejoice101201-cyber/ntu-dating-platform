@@ -31,12 +31,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100">
+      <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border-4 border-pink-200">
         <div className="text-center mb-8">
-          <h1 className="text-4xl mb-2">🐕</h1>
-          <h2 className="text-2xl font-bold text-gray-800">歡迎回來</h2>
-          <p className="text-gray-600 mt-2">登入你的帳戶</p>
+          <h1 className="text-6xl mb-3 animate-bounce">🐕</h1>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">歡迎回來</h2>
+          <p className="text-pink-600 mt-3 text-lg font-semibold">登入你的帳戶</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

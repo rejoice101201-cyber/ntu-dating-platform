@@ -94,36 +94,43 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
       <div className="max-w-2xl mx-auto py-8">
-        <h1 className="text-2xl font-bold px-4 mb-4">🐕 我的配對</h1>
+        <h1 className="text-3xl font-bold px-4 mb-6 text-center">
+          <span className="text-4xl">🐕</span>
+          <span className="ml-2 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">我的配對</span>
+        </h1>
 
         {matches.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">還沒有配對，去探索一下吧！</p>
+            <div className="text-6xl mb-4">🐾</div>
+            <p className="text-pink-600 text-lg font-semibold mb-2">還沒有配對</p>
+            <p className="text-gray-600 mb-6">去探索一下吧！</p>
             <Link
               href="/discover"
-              className="mt-4 inline-block bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-600"
+              className="mt-4 inline-block bg-gradient-to-r from-pink-400 to-purple-400 text-white px-8 py-3 rounded-full hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl font-bold text-lg"
             >
-              開始探索
+              🎈 開始探索
             </Link>
           </div>
         ) : (
-          <div className="space-y-2 px-4">
+          <div className="space-y-3 px-4">
             {matches.map((match) => (
               <Link
                 key={match.id}
                 href={`/chat/${match.id}`}
-                className="block bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                className="block bg-white rounded-2xl p-4 hover:shadow-lg transition-all border-2 border-pink-100 hover:border-pink-300"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 relative">
+                  <div className="w-16 h-16 bg-pink-100 rounded-full overflow-hidden flex-shrink-0 relative">
                     {match.user?.photos && match.user.photos.length > 0 ? (
                       (() => {
                         // Find cover photo or first photo
                         const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
                         const photoUrl = coverPhoto.url
-                        const blurLevel = coverPhoto.blurLevel || 20
+                        const blurLevel = coverPhoto.blurLevel ?? 20
+                        
+                        console.log('Match photo:', { photoUrl, blurLevel, photo: coverPhoto })
                         
                         return (
                           <div
@@ -138,19 +145,20 @@ export default function MatchesPage() {
                         )
                       })()
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
+                      <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold">
                         {match.user?.name?.[0]?.toUpperCase() || '?'}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{match.user.name}</h3>
+                    <h3 className="font-bold text-lg truncate text-pink-700">{match.user.name}</h3>
                     {match.lastMessage && (
-                      <p className="text-sm text-gray-600 truncate">
+                      <p className="text-sm text-gray-600 truncate mt-1">
                         {match.lastMessage.content}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-pink-400 mt-2 flex items-center gap-1">
+                      <span>💕</span>
                       {new Date(match.matchedAt).toLocaleDateString('zh-TW')}
                     </p>
                   </div>
