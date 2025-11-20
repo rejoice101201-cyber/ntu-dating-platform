@@ -33,10 +33,12 @@ export default function ChatPage() {
   const [error, setError] = useState<string | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showQAGame, setShowQAGame] = useState(false)
-  const [questions, setQuestions] = useState<any[]>([])
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [gameSession, setGameSession] = useState<any>(null)
+  const [gameTopic, setGameTopic] = useState<string>('')
+  const [gameAnswer, setGameAnswer] = useState<string>('')
+  const [gameGuess, setGameGuess] = useState<string>('')
   const [unlockProgress, setUnlockProgress] = useState<any>(null)
+  const [keys, setKeys] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -285,12 +287,12 @@ export default function ChatPage() {
           <button
             onClick={() => {
               setShowQAGame(!showQAGame)
-              if (!showQAGame && questions.length === 0) {
-                loadQuestions()
+              if (!showQAGame) {
+                checkGameSession()
               }
             }}
-            className="text-xl"
-            title="問答遊戲解鎖照片"
+            className="text-2xl hover:scale-110 transition-transform"
+            title="默契問答遊戲"
           >
             🎮
           </button>
@@ -306,85 +308,186 @@ export default function ChatPage() {
 
       {/* Q&A Game Panel */}
       {showQAGame && otherUser && (
-        <div className="bg-white border-b p-4 max-h-96 overflow-y-auto">
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 border-b-4 border-pink-200 p-4 max-h-96 overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-semibold">🐕 問答遊戲 - 解鎖照片</h3>
+            <h3 className="font-bold text-lg bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+              🎮 默契問答遊戲
+            </h3>
             <button
-              onClick={() => setShowQAGame(false)}
-              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setShowQAGame(false)
+                setGameSession(null)
+                setGameAnswer('')
+                setGameGuess('')
+              }}
+              className="text-gray-500 hover:text-gray-700 text-xl"
             >
               ✕
             </button>
           </div>
+          
           {unlockProgress && (
-            <div className="mb-3">
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div className="mb-3 space-y-2 bg-white rounded-lg p-3 border-2 border-pink-200">
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
                 <div
-                  className="bg-primary-500 h-2 rounded-full transition-all"
+                  className="bg-gradient-to-r from-pink-400 to-purple-400 h-3 rounded-full transition-all"
                   style={{ width: `${unlockProgress.unlockLevel}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-600">解鎖進度: {unlockProgress.unlockLevel}%</p>
+              <div className="flex justify-between items-center">
+                <p className="text-sm font-semibold text-gray-700">解鎖進度: {unlockProgress.unlockLevel}%</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-yellow-600 font-bold">🔑 {keys} 把鑰匙</span>
+                  {keys > 0 && (
+                    <button
+                      onClick={useKeyToUnlock}
+                      className="text-xs bg-gradient-to-r from-pink-400 to-purple-400 text-white px-3 py-1 rounded-full hover:from-pink-500 hover:to-purple-500 transition-all shadow-md"
+                    >
+                      使用鑰匙解鎖
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-          {questions.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-gray-500 mb-2">載入問題中...</p>
+
+          {!gameSession ? (
+            // 选择主题发起游戏
+            <div className="space-y-3">
+              <p className="text-gray-700 font-semibold mb-3">選擇一個主題來發起遊戲：</p>
+              <div className="grid grid-cols-2 gap-3">
+                {['interest', 'personality', 'lifestyle', 'icebreaker'].map((topic) => (
+                  <button
+                    key={topic}
+                    onClick={() => initiateGame(topic)}
+                    className="bg-white border-2 border-pink-200 rounded-xl p-4 hover:border-pink-400 hover:shadow-lg transition-all text-left"
+                  >
+                    <div className="text-2xl mb-1">
+                      {topic === 'interest' && '🎨'}
+                      {topic === 'personality' && '🌟'}
+                      {topic === 'lifestyle' && '🏠'}
+                      {topic === 'icebreaker' && '💬'}
+                    </div>
+                    <div className="font-semibold text-sm">
+                      {topic === 'interest' && '興趣'}
+                      {topic === 'personality' && '個性'}
+                      {topic === 'lifestyle' && '生活方式'}
+                      {topic === 'icebreaker' && '破冰'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : gameSession.status === 'waiting_answer' && gameSession.responderId === user?.id ? (
+            // 回答者：回答问题
+            <div className="space-y-3 bg-white rounded-lg p-4 border-2 border-purple-200">
+              <p className="text-sm text-gray-600 mb-2">對方選擇了主題：<span className="font-semibold">{gameSession.topic}</span></p>
+              {gameSession.question && (
+                <>
+                  <p className="font-semibold text-lg mb-3">{gameSession.question.content}</p>
+                  {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
+                    <div className="space-y-2">
+                      {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
+                        <label key={idx} className="flex items-center p-3 bg-pink-50 rounded-lg hover:bg-pink-100 cursor-pointer border-2 border-transparent hover:border-pink-300 transition-all">
+                          <input
+                            type="radio"
+                            name="gameAnswer"
+                            value={opt}
+                            checked={gameAnswer === opt}
+                            onChange={(e) => setGameAnswer(e.target.value)}
+                            className="mr-3"
+                          />
+                          <span className="font-medium">{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={gameAnswer}
+                      onChange={(e) => setGameAnswer(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                      placeholder="輸入你的答案"
+                    />
+                  )}
+                  <button
+                    onClick={submitAnswer}
+                    disabled={!gameAnswer}
+                    className="w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white py-3 rounded-full font-bold hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    提交答案
+                  </button>
+                </>
+              )}
+            </div>
+          ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
+            // 发起者：猜测答案
+            <div className="space-y-3 bg-white rounded-lg p-4 border-2 border-purple-200">
+              <p className="text-sm text-gray-600 mb-2">對方已回答，現在輪到你猜測答案！</p>
+              <p className="font-semibold text-lg mb-3">{gameSession.question?.content}</p>
+              {gameSession.question?.type === 'multiple_choice' && gameSession.question?.options ? (
+                <div className="space-y-2">
+                  {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
+                    <label key={idx} className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 cursor-pointer border-2 border-transparent hover:border-purple-300 transition-all">
+                      <input
+                        type="radio"
+                        name="gameGuess"
+                        value={opt}
+                        checked={gameGuess === opt}
+                        onChange={(e) => setGameGuess(e.target.value)}
+                        className="mr-3"
+                      />
+                      <span className="font-medium">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={gameGuess}
+                  onChange={(e) => setGameGuess(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none"
+                  placeholder="猜測對方的答案"
+                />
+              )}
               <button
-                onClick={loadQuestions}
-                className="text-primary-500 hover:underline text-sm"
+                onClick={submitGuess}
+                disabled={!gameGuess}
+                className="w-full bg-gradient-to-r from-purple-400 to-pink-400 text-white py-3 rounded-full font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                重新載入
+                提交猜測
+              </button>
+            </div>
+          ) : gameSession.status === 'completed' ? (
+            // 游戏完成
+            <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+              <div className="text-4xl mb-2">
+                {gameSession.winnerId === user?.id ? '🎉' : '😊'}
+              </div>
+              <p className="font-bold text-lg mb-2">
+                {gameSession.winnerId === user?.id 
+                  ? '恭喜！你獲得一把鑰匙！' 
+                  : '對方獲得一把鑰匙'}
+              </p>
+              <p className="text-sm text-gray-600 mb-3">
+                正確答案：{gameSession.responderAnswer}
+              </p>
+              <button
+                onClick={() => {
+                  setGameSession(null)
+                  setGameAnswer('')
+                  setGameGuess('')
+                }}
+                className="bg-gradient-to-r from-pink-400 to-purple-400 text-white px-6 py-2 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
+              >
+                再玩一次
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {selectedQuestions.map((qId) => {
-                const question = questions.find((q) => q.id === qId)
-                if (!question) return null
-
-                return (
-                  <div key={qId} className="border rounded-lg p-3 bg-gray-50">
-                    <p className="font-medium mb-2 text-sm">{question.content}</p>
-                    {question.type === 'multiple_choice' && question.options ? (
-                      <div className="space-y-1">
-                        {JSON.parse(question.options).map((opt: string, idx: number) => (
-                          <label key={idx} className="flex items-center text-sm">
-                            <input
-                              type="radio"
-                              name={`q-${qId}`}
-                              value={opt}
-                              checked={answers[qId] === opt}
-                              onChange={(e) =>
-                                setAnswers({ ...answers, [qId]: e.target.value })
-                              }
-                              className="mr-2"
-                            />
-                            {opt}
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <input
-                        type="text"
-                        value={answers[qId] || ''}
-                        onChange={(e) =>
-                          setAnswers({ ...answers, [qId]: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border rounded-lg text-sm"
-                        placeholder="輸入答案"
-                      />
-                    )}
-                  </div>
-                )
-              })}
-              <button
-                onClick={handlePlayQA}
-                disabled={selectedQuestions.some(qId => !answers[qId])}
-                className="w-full bg-primary-500 text-white py-2 rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                提交答案並解鎖
-              </button>
+            // 等待对方操作
+            <div className="bg-white rounded-lg p-4 border-2 border-yellow-200 text-center">
+              <div className="text-3xl mb-2">⏳</div>
+              <p className="font-semibold">等待對方操作...</p>
             </div>
           )}
         </div>
