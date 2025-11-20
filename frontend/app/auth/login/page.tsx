@@ -79,9 +79,9 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-500 text-white py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white py-4 rounded-full font-bold text-lg hover:from-pink-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
           >
-            {loading ? '登入中...' : '登入'}
+            {loading ? '登入中... 🐾' : '✨ 登入 ✨'}
           </button>
         </form>
 
