@@ -126,18 +126,7 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // 使用 upsert 来避免重复创建
-    for (const question of questions) {
-      await prisma.question.upsert({
-        where: {
-          id: '', // 这里需要根据内容来查找，但Prisma不支持，所以我们先检查是否存在
-        },
-        create: question,
-        update: question,
-      });
-    }
-
-    // 由于 Prisma 不支持基于内容的唯一约束，我们使用 findFirst + create 的方式
+    // 使用 findFirst + create 的方式来避免重复创建
     const createdQuestions = [];
     for (const question of questions) {
       const existing = await prisma.question.findFirst({
@@ -152,6 +141,12 @@ export async function POST(request: NextRequest) {
           data: question,
         });
         createdQuestions.push(created);
+      } else {
+        // 如果已存在，更新它以确保 isActive 为 true
+        await prisma.question.update({
+          where: { id: existing.id },
+          data: { isActive: true },
+        });
       }
     }
 
