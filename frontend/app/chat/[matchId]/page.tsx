@@ -124,13 +124,14 @@ export default function ChatPage() {
             const profileResponse = await api.get(`/users/${otherUserData.id}`)
             console.log('Loaded other user profile in chat:', {
               userId: otherUserData.id,
-              userName: profileResponse.data.name,
+              userName: otherUserData.name,
               photos: profileResponse.data.photos,
               photosCount: profileResponse.data.photos?.length || 0,
               unlockProgress: profileResponse.data.unlockProgress,
             })
             setOtherUser(profileResponse.data)
             setUnlockProgress(profileResponse.data.unlockProgress)
+            setKeys(profileResponse.data.unlockProgress?.keys || 0)
           } else {
             setError('找不到配對用戶資訊')
           }
@@ -199,46 +200,9 @@ export default function ChatPage() {
       console.log('Loaded other user profile:', response.data)
       setOtherUser(response.data)
       setUnlockProgress(response.data.unlockProgress)
+      setKeys(response.data.unlockProgress?.keys || 0)
     } catch (error) {
       console.error('Failed to load other user profile:', error)
-    }
-  }
-
-  const loadQuestions = async () => {
-    try {
-      const response = await api.get('/qa/questions?limit=5')
-      const questionsData = response.data.questions || []
-      setQuestions(questionsData)
-      if (questionsData.length > 0) {
-        setSelectedQuestions(questionsData.slice(0, 3).map((q: any) => q.id))
-      }
-    } catch (error) {
-      console.error('Failed to load questions:', error)
-      setQuestions([])
-    }
-  }
-
-  const handlePlayQA = async () => {
-    if (!otherUser?.id || selectedQuestions.length === 0) return
-
-    try {
-      const answerArray = selectedQuestions.map(qId => answers[qId] || '')
-      const response = await api.post(`/qa/play/${otherUser.id}`, {
-        questionIds: selectedQuestions,
-        answers: answerArray,
-      })
-
-      alert(`匹配度: ${response.data.matchPercentage}%！解鎖進度: ${response.data.unlockProgress.unlockLevel}%`)
-      setShowQAGame(false)
-      setAnswers({})
-      // Reload profile to update unlock progress
-      await loadOtherUserProfile(otherUser.id)
-    } catch (error: any) {
-      if (error.response?.data?.error?.includes('energy')) {
-        alert('體力不足！')
-      } else {
-        alert('問答遊戲失敗，請重試')
-      }
     }
   }
 
