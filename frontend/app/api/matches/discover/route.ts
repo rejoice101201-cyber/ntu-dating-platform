@@ -94,17 +94,47 @@ export async function GET(request: NextRequest) {
       skip: offset,
     });
 
-    // Calculate match score based on common tags
-    const scoredRecommendations = recommendations.map((user: any) => {
+    // Map unlock level to blur stages: 0% → 90px, 10% → 70px, 30% → 50px, 50% → 10px, 100% → 0px
+    const getBlurLevel = (unlockLevel: number): number => {
+      if (unlockLevel >= 100) return 0;
+      if (unlockLevel >= 50) return 10;
+      if (unlockLevel >= 30) return 50;
+      if (unlockLevel >= 10) return 70;
+      return 90; // 0-10%
+    };
+
+    // Calculate match score based on common tags and apply blur to photos
+    const scoredRecommendations = await Promise.all(recommendations.map(async (user: any) => {
       const commonTags = user.tags.filter((ut: any) => userTagIds.includes(ut.tagId));
       const matchScore = (commonTags.length / Math.max(userTagIds.length, user.tags.length)) * 100;
 
+      // Get unlock progress for this user
+      const unlockProgress = await prisma.unlockProgress.findUnique({
+        where: {
+          userId_targetUserId: {
+            userId: authUser.id,
+            targetUserId: user.id,
+          },
+        },
+      });
+
+      // Apply blur to photos based on unlock progress
+      const photosWithBlur = (user.photos || []).map((photo: any) => {
+        const progress = unlockProgress?.unlockLevel || 0;
+        const effectiveBlur = getBlurLevel(progress);
+        return {
+          ...photo,
+          blurLevel: effectiveBlur,
+        };
+      });
+
       return {
         ...user,
+        photos: photosWithBlur,
         matchScore: Math.round(matchScore),
         commonTags: commonTags.map((ut: any) => ut.tag),
       };
-    });
+    }));
 
     // Sort by match score
     scoredRecommendations.sort((a: any, b: any) => b.matchScore - a.matchScore);
