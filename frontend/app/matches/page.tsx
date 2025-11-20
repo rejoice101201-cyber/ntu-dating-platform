@@ -11,7 +11,11 @@ interface Match {
   user: {
     id: string
     name: string
-    photos?: Array<{ url: string }>
+    photos?: Array<{ url: string; blurLevel?: number }>
+  }
+  unlockProgress?: {
+    unlockLevel: number
+    qaCompleted: number
   }
   matchedAt: string
   createdAt?: string
@@ -93,18 +97,28 @@ export default function MatchesPage() {
                 className="block bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full overflow-hidden flex-shrink-0 relative">
                     {match.user?.photos && match.user.photos.length > 0 && match.user.photos[0]?.url ? (
-                      <img
-                        src={match.user.photos[0].url}
-                        alt={match.user.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const photoUrl = match.user?.photos?.[0]?.url;
-                          console.error('Failed to load image:', photoUrl || 'unknown');
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                      <>
+                        <img
+                          src={match.user.photos[0].url}
+                          alt={match.user.name}
+                          className="w-full h-full object-cover"
+                          style={{
+                            filter: `blur(${match.user.photos[0].blurLevel || 100}px)`,
+                          }}
+                          onError={(e) => {
+                            const photoUrl = match.user?.photos?.[0]?.url;
+                            console.error('Failed to load image:', photoUrl || 'unknown');
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        {(match.user.photos[0].blurLevel || 100) > 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <span className="text-white text-xs">解鎖中</span>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
                         {match.user?.name?.[0]?.toUpperCase() || '?'}

@@ -46,19 +46,44 @@ export async function GET(request: NextRequest) {
     });
 
     // Format matches to always show the other user
-    const formattedMatches = matches.map((match: any) => {
+    const formattedMatches = await Promise.all(matches.map(async (match: any) => {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
+      
+      // Get unlock progress for this match
+      const unlockProgress = await prisma.unlockProgress.findUnique({
+        where: {
+          userId_targetUserId: {
+            userId: authUser.id,
+            targetUserId: otherUser.id,
+          },
+        },
+      });
+
+      // Apply blur to photos based on unlock progress
+      const photosWithBlur = (otherUser.photos || []).map((photo: any) => {
+        const progress = unlockProgress?.unlockLevel || 0;
+        const effectiveBlur = Math.max(0, (photo.blurLevel || 100) - progress);
+        return {
+          ...photo,
+          blurLevel: effectiveBlur,
+        };
+      });
+
       return {
         id: match.id,
         user: {
           id: otherUser.id,
           name: otherUser.name,
-          photos: otherUser.photos || [], // Ensure photos is always an array
+          photos: photosWithBlur,
         },
+        unlockProgress: unlockProgress ? {
+          unlockLevel: unlockProgress.unlockLevel,
+          qaCompleted: unlockProgress.qaCompleted,
+        } : null,
         createdAt: match.createdAt,
         matchedAt: match.matchedAt,
       };
-    });
+    }));
 
     console.log('Formatted matches:', formattedMatches.map((m: any) => ({
       id: m.id,

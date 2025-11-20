@@ -118,9 +118,10 @@ export default function ChatPage() {
           // Use 'user' instead of 'otherUser' based on API response structure
           const otherUserData = match.user || match.otherUser
           if (otherUserData) {
-            setOtherUser(otherUserData)
-            // Load other user's profile to get unlock progress
-            loadOtherUserProfile(otherUserData.id)
+            // Load full profile to get all photos with blur levels
+            const profileResponse = await api.get(`/users/${otherUserData.id}`)
+            setOtherUser(profileResponse.data)
+            setUnlockProgress(profileResponse.data.unlockProgress)
           } else {
             setError('找不到配對用戶資訊')
           }
@@ -414,11 +415,49 @@ export default function ChatPage() {
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.id
+            const senderPhoto = !isOwn && otherUser?.photos && otherUser.photos.length > 0 
+              ? otherUser.photos[0] 
+              : null
+            const blurLevel = senderPhoto?.blurLevel || 0
+            
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} gap-2`}
               >
+                {/* Avatar for other user's messages */}
+                {!isOwn && (
+                  <button
+                    onClick={() => otherUser?.id && router.push(`/profile/${otherUser.id}`)}
+                    className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 relative"
+                  >
+                    {senderPhoto?.url ? (
+                      <>
+                        <img
+                          src={senderPhoto.url}
+                          alt={otherUser?.name || 'User'}
+                          className="w-full h-full object-cover"
+                          style={{
+                            filter: `blur(${blurLevel}px)`,
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        {blurLevel > 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <span className="text-white text-xs">🔒</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
+                        {otherUser?.name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                  </button>
+                )}
+                
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
                     isOwn
