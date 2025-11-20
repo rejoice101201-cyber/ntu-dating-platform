@@ -8,6 +8,10 @@ const updateSchema = z.object({
   bio: z.string().optional(),
   location: z.string().optional(),
   height: z.number().optional(),
+  weight: z.number().optional(),
+  occupation: z.string().optional(),
+  school: z.string().optional(),
+  bloodType: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -76,6 +80,10 @@ export async function PUT(request: NextRequest) {
         bio: true,
         location: true,
         height: true,
+        weight: true,
+        occupation: true,
+        school: true,
+        bloodType: true,
         birthday: true,
         gender: true,
         energy: true,

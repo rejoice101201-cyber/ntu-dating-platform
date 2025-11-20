@@ -20,6 +20,10 @@ model User {
   gender           String // "male", "female", "other"
   location         String?
   height           Int? // in cm
+  weight           Int? // in kg
+  occupation       String? // 職業
+  school           String? // 學校
+  bloodType        String? // 血型 (A, B, AB, O)
   bio              String?
   energy           Int      @default(100) // 体力值
   energyMax        Int      @default(100)

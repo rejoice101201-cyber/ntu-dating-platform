@@ -12,6 +12,10 @@ const registerSchema = z.object({
   gender: z.enum(['male', 'female', 'other']),
   location: z.string().optional(),
   height: z.number().optional(),
+  weight: z.number().optional(),
+  occupation: z.string().optional(),
+  school: z.string().optional(),
+  bloodType: z.string().optional(),
 });
 
 // Handle OPTIONS for CORS
@@ -58,6 +62,10 @@ export async function POST(request: NextRequest) {
         gender: data.gender,
         location: data.location,
         height: data.height,
+        weight: data.weight,
+        occupation: data.occupation,
+        school: data.school,
+        bloodType: data.bloodType,
       },
       select: {
         id: true,
