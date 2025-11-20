@@ -61,4 +61,12 @@ export async function GET(
     );
   }
 }
+  } catch (error) {
+    console.error('Get active game session error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get active game session' },
+      { status: 500 }
+    );
+  }
+}
 

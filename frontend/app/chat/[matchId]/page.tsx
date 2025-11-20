@@ -293,18 +293,7 @@ export default function ChatPage() {
       setGameSession(response.data.gameSession)
       setGameTopic(topic)
       setShowQAGame(true)
-      
-      // 通过Pusher通知对方（如果可用）
-      if (pusher) {
-        try {
-          const channel = pusher.subscribe(`match-${matchId}`)
-          await channel.trigger('client-game_state_update', {
-            gameSession: response.data.gameSession,
-          })
-        } catch (e) {
-          console.warn('Failed to notify via Pusher:', e)
-        }
-      }
+      // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to initiate game:', error)
       alert(error.response?.data?.error || '發起遊戲失敗')
@@ -322,18 +311,7 @@ export default function ChatPage() {
       })
       setGameSession(response.data.gameSession)
       alert('答案已提交！等待對方猜測...')
-      
-      // 通过Pusher通知对方（如果可用）
-      if (pusher) {
-        try {
-          const channel = pusher.subscribe(`match-${matchId}`)
-          await channel.trigger('client-game_state_update', {
-            gameSession: response.data.gameSession,
-          })
-        } catch (e) {
-          console.warn('Failed to notify via Pusher:', e)
-        }
-      }
+      // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit answer:', error)
       alert(error.response?.data?.error || '提交答案失敗')
@@ -359,18 +337,7 @@ export default function ChatPage() {
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
       }
-      
-      // 通过Pusher通知对方（如果可用）
-      if (pusher) {
-        try {
-          const channel = pusher.subscribe(`match-${matchId}`)
-          await channel.trigger('client-game_state_update', {
-            gameSession: response.data.gameSession,
-          })
-        } catch (e) {
-          console.warn('Failed to notify via Pusher:', e)
-        }
-      }
+      // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit guess:', error)
       alert(error.response?.data?.error || '提交猜測失敗')
