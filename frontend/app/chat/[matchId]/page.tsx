@@ -432,24 +432,17 @@ export default function ChatPage() {
                     className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-200 relative"
                   >
                     {senderPhoto?.url ? (
-                      <>
-                        <img
-                          src={senderPhoto.url}
-                          alt={otherUser?.name || 'User'}
-                          className="w-full h-full object-cover"
-                          style={{
-                            filter: `blur(${blurLevel}px)`,
-                          }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        {blurLevel > 0 && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                            <span className="text-white text-xs">🔒</span>
-                          </div>
-                        )}
-                      </>
+                      <img
+                        src={senderPhoto.url}
+                        alt={otherUser?.name || 'User'}
+                        className="w-full h-full object-cover"
+                        style={{
+                          filter: `blur(${blurLevel}px)`,
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500 text-xs">
                         {otherUser?.name?.[0]?.toUpperCase() || '?'}

@@ -52,13 +52,22 @@ export async function GET(
     }
 
     // Apply blur to photos based on unlock progress
+    // Map unlock level to blur stages: 0% → 90px, 10% → 70px, 30% → 50px, 50% → 10px, 100% → 0px
+    const getBlurLevel = (unlockLevel: number): number => {
+      if (unlockLevel >= 100) return 0;
+      if (unlockLevel >= 50) return 10;
+      if (unlockLevel >= 30) return 50;
+      if (unlockLevel >= 10) return 70;
+      return 90; // 0-10%
+    };
+
     const photos = user.photos.map((photo: any) => {
       if (userId === authUser.id) {
         return { ...photo, blurLevel: 0 }; // Own photos are never blurred
       }
 
       const progress = unlockProgress?.unlockLevel || 0;
-      const effectiveBlur = Math.max(0, photo.blurLevel - progress);
+      const effectiveBlur = getBlurLevel(progress);
       
       return {
         ...photo,
