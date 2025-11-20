@@ -73,6 +73,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [datingNote, setDatingNote] = useState('')
   const [matchId, setMatchId] = useState<string | null>(urlMatchId || null)
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
+  const [unlockProgress, setUnlockProgress] = useState<any>(null)
+  const [keys, setKeys] = useState(0)
 
   useEffect(() => {
     loadProfile()
@@ -90,10 +93,35 @@ export default function ProfilePage() {
     try {
       const response = await api.get(`/users/${userId}`)
       setProfile(response.data)
+      if (!isOwnProfile && response.data.unlockProgress) {
+        setUnlockProgress(response.data.unlockProgress)
+        setKeys(response.data.unlockProgress.keys || 0)
+      }
     } catch (error) {
       console.error('Failed to load profile:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const useKeyToUnlock = async () => {
+    if (!profile?.id || keys < 1) {
+      alert('鑰匙不足！')
+      return
+    }
+
+    try {
+      const response = await api.post('/game/unlock', {
+        targetUserId: profile.id,
+      })
+      setUnlockProgress(response.data.unlockProgress)
+      setKeys(response.data.unlockProgress.keys)
+      // 重新加载资料以更新模糊度
+      await loadProfile()
+      alert('解鎖成功！')
+    } catch (error: any) {
+      console.error('Failed to unlock:', error)
+      alert(error.response?.data?.error || '解鎖失敗')
     }
   }
 
@@ -177,16 +205,34 @@ export default function ProfilePage() {
       <div className="flex flex-col items-center -mt-8 px-4">
         {/* Main Profile Picture */}
         <div className="relative">
-          <div
-            className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
-            style={{
-              filter: `blur(${blurLevel}px)`,
-              backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
-            }}
-          />
+          {!isOwnProfile ? (
+            <button
+              onClick={() => setShowUnlockModal(true)}
+              className="cursor-pointer"
+            >
+              <div
+                className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
+                style={{
+                  filter: `blur(${blurLevel}px)`,
+                  backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
+                }}
+              />
+            </button>
+          ) : (
+            <div
+              className="w-32 h-32 rounded-full border-4 border-white shadow-lg"
+              style={{
+                filter: `blur(${blurLevel}px)`,
+                backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
+              }}
+            />
+          )}
           {/* 柴犬头像（小） */}
           <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-full bg-yellow-100 border-2 border-white flex items-center justify-center">
             <span className="text-2xl">🐕</span>
@@ -385,6 +431,55 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Unlock Modal */}
+      {showUnlockModal && !isOwnProfile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2">🔑</div>
+              <h2 className="text-2xl font-bold mb-2">解鎖照片</h2>
+              <p className="text-gray-600">使用鑰匙來解鎖對方的照片</p>
+            </div>
+
+            {unlockProgress && (
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">解鎖進度</span>
+                  <span className="text-sm font-semibold">{unlockProgress.unlockLevel}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-yellow-400 h-3 rounded-full transition-all"
+                    style={{ width: `${unlockProgress.unlockLevel}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="text-center mb-6">
+              <div className="text-3xl mb-2">🔑</div>
+              <p className="text-2xl font-bold text-yellow-600">{keys} 把鑰匙</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUnlockModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={useKeyToUnlock}
+                disabled={keys < 1}
+                className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                使用鑰匙解鎖
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
