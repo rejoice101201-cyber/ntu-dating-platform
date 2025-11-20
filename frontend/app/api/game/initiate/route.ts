@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getPusher } from '@/lib/pusher';
 
 // 初始化问题的辅助函数
 async function initializeQuestions() {
@@ -227,14 +228,27 @@ export async function POST(request: NextRequest) {
     const question = allQuestions[Math.floor(Math.random() * allQuestions.length)];
 
     // 更新游戏会话的问题ID
-    await prisma.gameSession.update({
+    const updatedSession = await prisma.gameSession.update({
       where: { id: gameSession.id },
       data: { questionId: question.id },
     });
 
+    // 通过Pusher通知对方
+    try {
+      const pusher = getPusher();
+      await pusher.trigger(`match-${matchId}`, 'game_state_update', {
+        gameSession: {
+          ...updatedSession,
+          question,
+        },
+      });
+    } catch (pusherError) {
+      console.warn('Pusher not configured, game state not broadcast:', pusherError);
+    }
+
     return NextResponse.json({
       gameSession: {
-        ...gameSession,
+        ...updatedSession,
         question,
       },
     });

@@ -49,6 +49,9 @@ export default function ChatPage() {
 
     // Load messages first (even without Pusher)
     loadMessages(true)
+    
+    // 检查是否有活跃的游戏会话
+    checkActiveGameSession()
 
     // Initialize Pusher if environment variables are set
     if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
@@ -62,6 +65,18 @@ export default function ChatPage() {
         
         channel.bind('new_message', (message: Message) => {
           setMessages(prev => [...prev, message])
+        })
+        
+        // 监听游戏状态更新
+        channel.bind('game_state_update', (data: any) => {
+          console.log('Game state update received:', data)
+          if (data.gameSession) {
+            setGameSession(data.gameSession)
+            // 如果游戏完成，重新加载解锁进度
+            if (data.gameSession.status === 'completed' && otherUser?.id) {
+              loadOtherUserProfile(otherUser.id)
+            }
+          }
         })
 
         // Also subscribe to user channel for notifications
@@ -85,10 +100,11 @@ export default function ChatPage() {
       }
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
-      // Set up polling to check for new messages periodically (only after initial load)
+      // Set up polling to check for new messages and game state periodically
       const pollInterval = setInterval(() => {
         if (!isInitialLoad) {
           loadMessages(false) // Don't show loading spinner on polling
+          checkActiveGameSession() // 检查游戏状态
         }
       }, 5000) // Poll every 5 seconds
 
@@ -218,6 +234,30 @@ export default function ChatPage() {
     }
   }
 
+  // 检查活跃的游戏会话
+  const checkActiveGameSession = async () => {
+    try {
+      const response = await api.get(`/game/active/${matchId}`)
+      if (response.data.gameSession) {
+        console.log('Found active game session:', response.data.gameSession)
+        setGameSession(response.data.gameSession)
+        // 如果游戏面板未打开，自动打开
+        if (!showQAGame) {
+          setShowQAGame(true)
+        }
+      } else {
+        // 如果没有活跃的游戏会话，清除状态
+        if (gameSession && gameSession.status === 'completed') {
+          setGameSession(null)
+          setGameAnswer('')
+          setGameGuess('')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check active game session:', error)
+    }
+  }
+
   const getOpeningLines = async () => {
     if (!otherUser?.id) {
       console.error('Other user not loaded yet')
@@ -252,6 +292,19 @@ export default function ChatPage() {
       })
       setGameSession(response.data.gameSession)
       setGameTopic(topic)
+      setShowQAGame(true)
+      
+      // 通过Pusher通知对方（如果可用）
+      if (pusher) {
+        try {
+          const channel = pusher.subscribe(`match-${matchId}`)
+          await channel.trigger('client-game_state_update', {
+            gameSession: response.data.gameSession,
+          })
+        } catch (e) {
+          console.warn('Failed to notify via Pusher:', e)
+        }
+      }
     } catch (error: any) {
       console.error('Failed to initiate game:', error)
       alert(error.response?.data?.error || '發起遊戲失敗')
@@ -269,6 +322,18 @@ export default function ChatPage() {
       })
       setGameSession(response.data.gameSession)
       alert('答案已提交！等待對方猜測...')
+      
+      // 通过Pusher通知对方（如果可用）
+      if (pusher) {
+        try {
+          const channel = pusher.subscribe(`match-${matchId}`)
+          await channel.trigger('client-game_state_update', {
+            gameSession: response.data.gameSession,
+          })
+        } catch (e) {
+          console.warn('Failed to notify via Pusher:', e)
+        }
+      }
     } catch (error: any) {
       console.error('Failed to submit answer:', error)
       alert(error.response?.data?.error || '提交答案失敗')
@@ -293,6 +358,18 @@ export default function ChatPage() {
       // 重新加载解锁进度
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
+      }
+      
+      // 通过Pusher通知对方（如果可用）
+      if (pusher) {
+        try {
+          const channel = pusher.subscribe(`match-${matchId}`)
+          await channel.trigger('client-game_state_update', {
+            gameSession: response.data.gameSession,
+          })
+        } catch (e) {
+          console.warn('Failed to notify via Pusher:', e)
+        }
       }
     } catch (error: any) {
       console.error('Failed to submit guess:', error)
@@ -342,13 +419,14 @@ export default function ChatPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setShowQAGame(!showQAGame)
-              // 如果关闭游戏面板，重置游戏状态
+            onClick={async () => {
               if (!showQAGame) {
-                // 可以在这里检查是否有进行中的游戏
-              } else {
-                // 关闭时重置
+                // 打开游戏面板时，先检查是否有活跃的游戏会话
+                await checkActiveGameSession()
+              }
+              setShowQAGame(!showQAGame)
+              // 如果关闭游戏面板且游戏已完成，重置游戏状态
+              if (showQAGame && gameSession?.status === 'completed') {
                 setGameSession(null)
                 setGameAnswer('')
                 setGameGuess('')
