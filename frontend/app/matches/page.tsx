@@ -187,7 +187,24 @@ export default function MatchesPage() {
                     )}
                     <p className="text-xs text-pink-400 mt-2 flex items-center gap-1">
                       <span>💕</span>
-                      {new Date(match.matchedAt).toLocaleDateString('zh-TW')}
+                      {(() => {
+                        // Use matchedAt if available, otherwise use createdAt
+                        const dateToShow = match.matchedAt || match.createdAt
+                        if (dateToShow) {
+                          const date = new Date(dateToShow)
+                          // Check if date is valid (not 1970/1/1 or invalid)
+                          const timestamp = date.getTime()
+                          if (timestamp > 0 && !isNaN(timestamp) && timestamp > 86400000) {
+                            // 86400000 = 1 day in ms, ensures it's not 1970/1/1
+                            return date.toLocaleDateString('zh-TW', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          }
+                        }
+                        return '配對中'
+                      })()}
                     </p>
                   </div>
                 </div>

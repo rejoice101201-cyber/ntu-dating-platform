@@ -78,11 +78,15 @@ export async function POST(request: NextRequest) {
               matchedUserId: targetUserId,
             },
           },
-          update: { status: 'matched' },
+          update: { 
+            status: 'matched',
+            matchedAt: new Date(), // Set matchedAt when updating to matched
+          },
           create: {
             userId: authUser.id,
             matchedUserId: targetUserId,
             status: 'matched',
+            matchedAt: new Date(), // Set matchedAt when creating match
           },
         });
       }
