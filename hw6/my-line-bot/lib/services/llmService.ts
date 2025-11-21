@@ -57,9 +57,10 @@ async function callGeminiREST(modelName: string, prompt: string): Promise<LLMRes
   }
 
   try {
-    // 嘗試使用 v1 API（穩定版本），如果失敗再嘗試 v1beta
-    // 根據故障排除指南，需要確認使用的 API 版本
-    const apiVersions = ['v1', 'v1beta'];
+    // 根據診斷腳本測試結果，v1beta 是唯一可用的 API 版本
+    // v1 版本的所有模型都返回 404
+    // 優先使用 v1beta，如果失敗再嘗試 v1（雖然不太可能成功）
+    const apiVersions = ['v1beta', 'v1'];
     let lastError: any = null;
     
     for (const apiVersion of apiVersions) {
@@ -86,19 +87,49 @@ async function callGeminiREST(modelName: string, prompt: string): Promise<LLMRes
           const errorData = await response.json().catch(() => ({}));
           const status = response.status;
           const errorMessage = errorData.error?.message || response.statusText;
+          const errorCode = errorData.error?.code || errorData.error?.status;
           
-          // 如果是 404，嘗試下一個 API 版本
+          // 如果是 404，嘗試下一個 API 版本或模型
           if (status === 404) {
-            console.warn(`模型 ${modelName} 在 ${apiVersion} 不可用 (404)，嘗試下一個 API 版本...`);
-            lastError = { status, error: 'MODEL_NOT_FOUND' };
+            console.warn(`模型 ${modelName} 在 ${apiVersion} 不可用 (404)`);
+            console.warn('可能原因：模型名稱不正確、API 版本不匹配、或區域限制');
+            lastError = { status, error: 'MODEL_NOT_FOUND', details: errorData };
             continue;
           }
           
           if (status === 429) {
+            // 429 表示配額用盡，但模型存在
+            // 可以嘗試其他模型（如果有的話）
+            console.warn(`模型 ${modelName} 配額用盡 (429)，嘗試下一個模型...`);
+            if (apiVersion === 'v1beta' && modelName.includes('2.5')) {
+              // 如果是 2.5 系列配額用盡，繼續嘗試其他模型
+              lastError = { status, error: 'RATE_LIMIT', message: '配額用盡' };
+              continue;
+            }
             return {
               success: false,
               error: 'RATE_LIMIT',
               message: '系統目前使用量較高，請稍後再試。如需緊急協助，請致電 02-2778-7178',
+            };
+          }
+          
+          // 處理 400 FAILED_PRECONDITION（根據官方文件）
+          if (status === 400 && errorCode === 'FAILED_PRECONDITION') {
+            console.error('⚠️  根據官方文件，可能需要啟用付費計劃');
+            return {
+              success: false,
+              error: 'BILLING_REQUIRED',
+              message: 'Gemini API 免費層級在您的地區不可用，請在 Google AI Studio 中啟用付費計劃。參考：https://ai.google.dev/gemini-api/docs/troubleshooting?hl=zh-tw#check-api',
+            };
+          }
+          
+          // 處理 403 PERMISSION_DENIED（根據官方文件）
+          if (status === 403 && errorCode === 'PERMISSION_DENIED') {
+            console.error('⚠️  API Key 權限不足');
+            return {
+              success: false,
+              error: 'PERMISSION_DENIED',
+              message: 'API Key 沒有必要的權限，請檢查 Google Cloud Console 中的 API 啟用狀態。參考：https://ai.google.dev/gemini-api/docs/troubleshooting?hl=zh-tw#check-api',
             };
           }
 
@@ -156,16 +187,15 @@ export async function generateResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
   // 嘗試的模型列表（按優先順序）
-  // 根據故障排除指南，需要確認模型名稱是否在 models page 上列出
-  // 嘗試不同的模型名稱格式
+  // 根據診斷腳本測試結果，已確認可用的模型
   const modelsToTry = [
-    'gemini-1.5-flash',  // 最常見的模型名稱
-    'gemini-1.5-pro',
-    'gemini-1.0-pro',
-    'gemini-pro',
-    'gemini-1.5-flash-latest',  // 帶 -latest 後綴
-    'gemini-1.5-pro-latest',
-    'gemini-1.0-pro-latest',
+    'gemini-2.0-flash-exp',  // ✅ 已確認可用（v1beta）
+    'gemini-2.5-pro',        // 存在但可能配額用盡（429）
+    'gemini-2.5-flash',      // 存在但可能配額用盡（429）
+    'gemini-1.5-flash',      // 備用
+    'gemini-1.5-pro',        // 備用
+    'gemini-1.0-pro',        // 備用
+    'gemini-pro',            // 備用
   ];
 
   // 構建對話歷史
