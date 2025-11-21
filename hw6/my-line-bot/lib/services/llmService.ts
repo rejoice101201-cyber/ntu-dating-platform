@@ -45,7 +45,7 @@ const SYSTEM_PROMPT = `你是「木木日安醫學美容診所（復興館）」
 
 export interface LLMResponse {
   success: boolean;
-  message?: string;
+  message?: string | null;
   error?: string;
 }
 
