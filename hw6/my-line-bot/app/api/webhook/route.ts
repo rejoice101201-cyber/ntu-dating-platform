@@ -145,16 +145,33 @@ async function handleTextMessage(event: WebhookEvent) {
         }
       }
     } else {
-      // LLM 失敗，降級到腳本回應
+      // LLM 失敗，使用友善的降級回應
+      let fallbackText = llmResponse.message;
+      
+      // 如果 LLM 返回 null，使用通用友善回應
+      if (!fallbackText) {
+        fallbackText = `您好！我是木木日安的智能客服助手。
+
+關於您的問題，我目前無法提供詳細的 AI 回應，但我可以協助您：
+
+• 了解診所資訊（地址、電話、營業時間）
+• 了解服務項目
+• 預約相關問題
+
+如需更詳細的協助，請致電 02-2778-7178 與我們聯繫，我們的工作人員會很樂意為您服務！
+
+木木日安祝福您！💙`;
+      }
+      
       const fallbackMessage: TextMessage = {
         type: 'text',
-        text: llmResponse.message || '抱歉，系統暫時無法處理您的問題。請致電 02-2778-7178 與我們聯繫。',
+        text: fallbackText,
       };
       await replyMessage(replyToken, fallbackMessage);
       
       if (dbAvailable && conversation) {
         try {
-          await saveMessage(conversation.id, lineUserId, 'text', fallbackMessage.text, 'assistant');
+          await saveMessage(conversation.id, lineUserId, 'text', fallbackText, 'assistant');
         } catch (saveError) {
           console.warn('儲存降級回應失敗:', saveError);
         }

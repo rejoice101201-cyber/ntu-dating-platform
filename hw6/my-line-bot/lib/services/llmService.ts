@@ -92,11 +92,11 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
 
     // 處理 404 錯誤（模型不存在）
     if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')) {
-      console.error('Gemini 模型不存在，請檢查模型名稱');
+      console.error('Gemini 模型不存在，請檢查模型名稱:', error);
       return {
         success: false,
         error: 'MODEL_NOT_FOUND',
-        message: '抱歉，AI 服務暫時無法使用。如需協助，請致電 02-2778-7178 與我們聯繫。',
+        message: null, // 返回 null 讓 webhook 使用通用回應
       };
     }
 
@@ -118,11 +118,12 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
       };
     }
 
-    // 其他錯誤
+    // 其他錯誤（API Key 錯誤、網路問題等）
+    console.error('LLM API 未知錯誤:', error?.status, error?.message);
     return {
       success: false,
       error: 'UNKNOWN',
-      message: '抱歉，系統暫時無法處理您的問題。請致電 02-2778-7178 與我們聯繫。',
+      message: null, // 返回 null 讓 webhook 使用通用回應
     };
   }
 }
