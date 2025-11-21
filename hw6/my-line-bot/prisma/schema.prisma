@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id            String    @id @default(uuid())
+  lineUserId    String    @db.VarChar(255)
+  startedAt     DateTime  @default(now())
+  lastMessageAt DateTime  @updatedAt
+  status        String    @default("active") // 'active', 'ended'
+  metadata      Json?     // 儲存使用者資訊、對話狀態等
+  messages      Message[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([lineUserId])
+  @@index([lastMessageAt])
+  @@index([status])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lineUserId     String       @db.VarChar(255)
+  messageType    String       // 'text', 'image', 'sticker', 'postback'
+  content        String       @db.Text
+  role           String       // 'user', 'assistant', 'system'
+  lineMessageId String?       @unique
+  timestamp      DateTime     @default(now())
+  metadata       Json?        // 儲存 Line 原始事件資料
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([lineUserId])
+  @@index([timestamp])
+  @@index([role])
+  @@map("messages")
+}
+
+model RateLimit {
+  id             String   @id @default(uuid())
+  lineUserId     String   @db.VarChar(255)
+  windowStart    DateTime
+  requestCount   Int      @default(0)
+  lastRequestAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([lineUserId, windowStart])
+  @@unique([lineUserId, windowStart])
+  @@map("rate_limits")
+}
