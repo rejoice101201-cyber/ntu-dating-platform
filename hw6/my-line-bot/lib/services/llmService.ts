@@ -57,54 +57,86 @@ async function callGeminiREST(modelName: string, prompt: string): Promise<LLMRes
   }
 
   try {
-    // 使用 REST API v1beta
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+    // 嘗試使用 v1 API（穩定版本），如果失敗再嘗試 v1beta
+    // 根據故障排除指南，需要確認使用的 API 版本
+    const apiVersions = ['v1', 'v1beta'];
+    let lastError: any = null;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      }),
-      // 設定超時
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const status = response.status;
-      const errorMessage = errorData.error?.message || response.statusText;
-      
-      if (status === 404) {
-        return { success: false, error: 'MODEL_NOT_FOUND', message: null };
-      }
-      
-      if (status === 429) {
-        return {
-          success: false,
-          error: 'RATE_LIMIT',
-          message: '系統目前使用量較高，請稍後再試。如需緊急協助，請致電 02-2778-7178',
-        };
-      }
-
-      console.error(`Gemini API 錯誤 (${status}):`, errorMessage);
-      return { success: false, error: 'API_ERROR', message: null };
-    }
-
-    const data = await response.json();
+    for (const apiVersion of apiVersions) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${API_KEY}`;
     
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-      const text = data.candidates[0].content.parts[0].text;
-      return { success: true, message: text };
-    }
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }]
+          }),
+          // 設定超時
+          signal: AbortSignal.timeout(5000),
+        });
 
-    return { success: false, error: 'INVALID_RESPONSE', message: null };
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const status = response.status;
+          const errorMessage = errorData.error?.message || response.statusText;
+          
+          // 如果是 404，嘗試下一個 API 版本
+          if (status === 404) {
+            console.warn(`模型 ${modelName} 在 ${apiVersion} 不可用 (404)，嘗試下一個 API 版本...`);
+            lastError = { status, error: 'MODEL_NOT_FOUND' };
+            continue;
+          }
+          
+          if (status === 429) {
+            return {
+              success: false,
+              error: 'RATE_LIMIT',
+              message: '系統目前使用量較高，請稍後再試。如需緊急協助，請致電 02-2778-7178',
+            };
+          }
+
+          console.error(`Gemini API 錯誤 (${status}):`, errorMessage);
+          lastError = { status, error: 'API_ERROR', message: errorMessage };
+          continue;
+        }
+
+        const data = await response.json();
+        
+        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          const text = data.candidates[0].content.parts[0].text;
+          console.log(`✅ 使用模型 ${modelName} (${apiVersion}) 成功`);
+          return { success: true, message: text };
+        }
+
+        lastError = { error: 'INVALID_RESPONSE' };
+        continue;
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+          return {
+            success: false,
+            error: 'TIMEOUT',
+            message: '回應時間過長，請稍後再試。如需協助，請致電 02-2778-7178',
+          };
+        }
+        lastError = fetchError;
+        continue;
+      }
+    }
+    
+    // 所有 API 版本都失敗
+    if (lastError?.error === 'MODEL_NOT_FOUND') {
+      return { success: false, error: 'MODEL_NOT_FOUND', message: null };
+    }
+    
+    console.error('Gemini REST API 所有版本都失敗:', lastError);
+    return { success: false, error: 'API_ERROR', message: null };
   } catch (error: any) {
     if (error.name === 'AbortError' || error.message?.includes('timeout')) {
       return {
@@ -124,15 +156,16 @@ export async function generateResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
   // 嘗試的模型列表（按優先順序）
-  // 使用 REST API 方式，嘗試不同的模型名稱
+  // 根據故障排除指南，需要確認模型名稱是否在 models page 上列出
+  // 嘗試不同的模型名稱格式
   const modelsToTry = [
-    'gemini-1.5-flash-latest',  // 最新版本
-    'gemini-1.5-pro-latest',
-    'gemini-1.5-flash',
+    'gemini-1.5-flash',  // 最常見的模型名稱
     'gemini-1.5-pro',
-    'gemini-1.0-pro-latest',
     'gemini-1.0-pro',
     'gemini-pro',
+    'gemini-1.5-flash-latest',  // 帶 -latest 後綴
+    'gemini-1.5-pro-latest',
+    'gemini-1.0-pro-latest',
   ];
 
   // 構建對話歷史
