@@ -45,7 +45,7 @@ const SYSTEM_PROMPT = `你是「木木日安醫學美容診所（復興館）」
 
 export interface LLMResponse {
   success: boolean;
-  message?: string | null;
+  message?: string | null; // 允許 message 為 null
   error?: string;
 }
 
@@ -53,21 +53,25 @@ export async function generateResponse(
   userMessage: string,
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
-  try {
-    // 使用正確的模型名稱
-    // 根據 @google/generative-ai 0.24.1，正確的模型名稱應該是：
-    // - gemini-pro (舊版，可能已停用)
-    // - 或使用完整版本號
-    // 先嘗試最常見的模型名稱
-    let model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  // 嘗試的模型列表（按優先順序）
+  // 根據 Google AI Studio，常見的模型名稱包括：
+  const modelsToTry = [
+    'gemini-1.5-flash-latest',  // 最新版本（最可能可用）
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.0-pro-latest',
+    'gemini-1.0-pro',
+    'gemini-pro',
+  ];
 
-    // 構建對話歷史
-    const historyText = conversationHistory
-      .slice(-3) // 只取最近 3 輪
-      .map((msg) => `${msg.role === 'user' ? '使用者' : '助手'}: ${msg.content}`)
-      .join('\n');
+  // 構建對話歷史
+  const historyText = conversationHistory
+    .slice(-3) // 只取最近 3 輪
+    .map((msg) => `${msg.role === 'user' ? '使用者' : '助手'}: ${msg.content}`)
+    .join('\n');
 
-    const prompt = `${SYSTEM_PROMPT}
+  const prompt = `${SYSTEM_PROMPT}
 
 使用者問題：${userMessage}
 
@@ -77,95 +81,64 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
 如果問題涉及預約、改期、取消，請提醒相關政策。
 如果問題涉及具體症狀，請建議預約看診。`;
 
-    // 設定超時（5 秒）
-    const timeoutPromise = new Promise<LLMResponse>((_, reject) => {
-      setTimeout(() => reject(new Error('LLM API timeout')), 5000);
-    });
+  // 嘗試每個模型
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`嘗試使用模型: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
 
-    const apiPromise = model.generateContent(prompt).then((result) => {
-      const response = result.response;
-      const text = response.text() || '抱歉，我無法產生回應。';
-      return { success: true, message: text };
-    }).catch(async (error) => {
-      // 如果模型不存在，嘗試其他模型
-      if (error?.status === 404 || error?.message?.includes('not found')) {
-        console.warn('gemini-1.5-flash-latest 不可用，嘗試其他模型...');
-        
-        // 嘗試 fallback 模型列表
-        // 根據 Google AI Studio，可用的模型可能是：
-        const fallbackModels = [
-          'gemini-1.5-flash-002',
-          'gemini-1.5-pro-002', 
-          'gemini-1.0-pro-002',
-          'gemini-1.0-pro',
-          'gemini-pro',
-        ];
-        
-        for (const fallbackModelName of fallbackModels) {
-          try {
-            console.warn(`嘗試模型: ${fallbackModelName}`);
-            const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
-            const result = await fallbackModel.generateContent(prompt);
-            const response = result.response;
-            const text = response.text() || '抱歉，我無法產生回應。';
-            console.log(`✅ 成功使用模型: ${fallbackModelName}`);
-            return { success: true, message: text };
-          } catch (fallbackError: any) {
-            if (fallbackError?.status === 404) {
-              console.warn(`${fallbackModelName} 也不可用，繼續嘗試...`);
-              continue;
-            }
-            throw fallbackError;
-          }
-        }
-        
-        // 所有模型都不可用
-        throw new Error('所有 Gemini 模型都不可用');
+      // 設定超時（5 秒）
+      const timeoutPromise = new Promise<LLMResponse>((_, reject) => {
+        setTimeout(() => reject(new Error('LLM API timeout')), 5000);
+      });
+
+      const apiPromise = model.generateContent(prompt).then((result) => {
+        const response = result.response;
+        const text = response.text() || '抱歉，我無法產生回應。';
+        console.log(`✅ 使用模型 ${modelName} 成功`);
+        return { success: true, message: text };
+      });
+
+      const result = await Promise.race([apiPromise, timeoutPromise]);
+      return result; // 成功，返回結果
+
+    } catch (error: any) {
+      // 如果是 404 錯誤（模型不存在），嘗試下一個模型
+      if (error?.status === 404 || error?.message?.includes('not found') || error?.message?.includes('404')) {
+        console.warn(`模型 ${modelName} 不可用 (404)，嘗試下一個模型...`);
+        continue; // 繼續嘗試下一個模型
       }
-      throw error;
-    });
 
-    const result = await Promise.race([apiPromise, timeoutPromise]);
+      // 如果是其他錯誤（429, timeout 等），直接返回錯誤
+      console.error(`模型 ${modelName} 錯誤:`, error);
 
-    return result;
-  } catch (error: any) {
-    console.error('LLM API 錯誤:', error);
+      if (error?.status === 429 || error?.message?.includes('429')) {
+        return {
+          success: false,
+          error: 'RATE_LIMIT',
+          message: '系統目前使用量較高，請稍後再試。如需緊急協助，請致電 02-2778-7178',
+        };
+      }
 
-    // 處理 404 錯誤（模型不存在）
-    if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')) {
-      console.error('Gemini 模型不存在，請檢查模型名稱:', error);
-      return {
-        success: false,
-        error: 'MODEL_NOT_FOUND',
-        message: null, // 返回 null 讓 webhook 使用通用回應
-      };
+      if (error?.message?.includes('timeout')) {
+        return {
+          success: false,
+          error: 'TIMEOUT',
+          message: '回應時間過長，請稍後再試。如需協助，請致電 02-2778-7178',
+        };
+      }
+
+      // 其他錯誤也繼續嘗試下一個模型
+      console.warn(`模型 ${modelName} 發生錯誤，嘗試下一個模型...`);
+      continue;
     }
-
-    // 處理 429 錯誤（速率限制）
-    if (error?.status === 429 || error?.message?.includes('429')) {
-      return {
-        success: false,
-        error: 'RATE_LIMIT',
-        message: '系統目前使用量較高，請稍後再試。如需緊急協助，請致電 02-2778-7178',
-      };
-    }
-
-    // 處理超時
-    if (error?.message?.includes('timeout')) {
-      return {
-        success: false,
-        error: 'TIMEOUT',
-        message: '回應時間過長，請稍後再試。如需協助，請致電 02-2778-7178',
-      };
-    }
-
-    // 其他錯誤（API Key 錯誤、網路問題等）
-    console.error('LLM API 未知錯誤:', error?.status, error?.message);
-    return {
-      success: false,
-      error: 'UNKNOWN',
-      message: null, // 返回 null 讓 webhook 使用通用回應
-    };
   }
-}
 
+  // 所有模型都失敗
+  console.error('所有 Gemini 模型都無法使用。');
+  return {
+    success: false,
+    error: 'MODEL_NOT_FOUND',
+    message: null, // 返回 null 讓 webhook 使用通用回應
+  };
+}
