@@ -54,7 +54,8 @@ export async function generateResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // 使用 gemini-1.5-flash（更快、更便宜）或 gemini-1.5-pro（更強）
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // 構建對話歷史
     const historyText = conversationHistory
@@ -88,6 +89,16 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
     return result;
   } catch (error: any) {
     console.error('LLM API 錯誤:', error);
+
+    // 處理 404 錯誤（模型不存在）
+    if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('not found')) {
+      console.error('Gemini 模型不存在，請檢查模型名稱');
+      return {
+        success: false,
+        error: 'MODEL_NOT_FOUND',
+        message: '抱歉，AI 服務暫時無法使用。如需協助，請致電 02-2778-7178 與我們聯繫。',
+      };
+    }
 
     // 處理 429 錯誤（速率限制）
     if (error?.status === 429 || error?.message?.includes('429')) {
