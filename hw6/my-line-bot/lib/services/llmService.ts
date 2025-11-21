@@ -83,16 +83,34 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
       const response = result.response;
       const text = response.text() || '抱歉，我無法產生回應。';
       return { success: true, message: text };
-    }).catch((error) => {
+    }).catch(async (error) => {
       // 如果模型不存在，嘗試其他模型
       if (error?.status === 404 || error?.message?.includes('not found')) {
-        console.warn('gemini-1.5-flash-latest 不可用，嘗試 gemini-1.5-pro-latest');
-        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
-        return fallbackModel.generateContent(prompt).then((result) => {
-          const response = result.response;
-          const text = response.text() || '抱歉，我無法產生回應。';
-          return { success: true, message: text };
-        });
+        console.warn('gemini-1.5-flash-latest 不可用，嘗試其他模型...');
+        
+        // 嘗試 fallback 模型列表
+        const fallbackModels = ['gemini-1.5-pro-latest', 'gemini-1.0-pro-latest', 'gemini-pro'];
+        
+        for (const fallbackModelName of fallbackModels) {
+          try {
+            console.warn(`嘗試模型: ${fallbackModelName}`);
+            const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+            const result = await fallbackModel.generateContent(prompt);
+            const response = result.response;
+            const text = response.text() || '抱歉，我無法產生回應。';
+            console.log(`✅ 成功使用模型: ${fallbackModelName}`);
+            return { success: true, message: text };
+          } catch (fallbackError: any) {
+            if (fallbackError?.status === 404) {
+              console.warn(`${fallbackModelName} 也不可用，繼續嘗試...`);
+              continue;
+            }
+            throw fallbackError;
+          }
+        }
+        
+        // 所有模型都不可用
+        throw new Error('所有 Gemini 模型都不可用');
       }
       throw error;
     });
