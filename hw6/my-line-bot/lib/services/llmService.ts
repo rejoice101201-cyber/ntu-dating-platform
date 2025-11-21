@@ -54,9 +54,12 @@ export async function generateResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
   try {
-    // 使用正確的模型名稱（根據 Google Gemini API 文檔）
-    // 先嘗試 gemini-1.5-flash（不帶 -latest），如果失敗會嘗試其他模型
-    let model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // 使用正確的模型名稱
+    // 根據 @google/generative-ai 0.24.1，正確的模型名稱應該是：
+    // - gemini-pro (舊版，可能已停用)
+    // - 或使用完整版本號
+    // 先嘗試最常見的模型名稱
+    let model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // 構建對話歷史
     const historyText = conversationHistory
@@ -88,8 +91,15 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
       if (error?.status === 404 || error?.message?.includes('not found')) {
         console.warn('gemini-1.5-flash-latest 不可用，嘗試其他模型...');
         
-        // 嘗試 fallback 模型列表（不帶 -latest 後綴）
-        const fallbackModels = ['gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro'];
+        // 嘗試 fallback 模型列表
+        // 根據 Google AI Studio，可用的模型可能是：
+        const fallbackModels = [
+          'gemini-1.5-flash-002',
+          'gemini-1.5-pro-002', 
+          'gemini-1.0-pro-002',
+          'gemini-1.0-pro',
+          'gemini-pro',
+        ];
         
         for (const fallbackModelName of fallbackModels) {
           try {
