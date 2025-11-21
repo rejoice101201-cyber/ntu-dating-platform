@@ -54,8 +54,9 @@ export async function generateResponse(
   conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<LLMResponse> {
   try {
-    // 使用 gemini-1.5-flash（更快、更便宜）或 gemini-1.5-pro（更強）
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // 使用正確的模型名稱（根據 Google Gemini API 文檔）
+    // 嘗試 gemini-1.5-flash-latest，如果失敗會降級處理
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
     // 構建對話歷史
     const historyText = conversationHistory
@@ -82,6 +83,18 @@ ${historyText ? `對話歷史（最近 3 輪）：\n${historyText}\n` : ''}
       const response = result.response;
       const text = response.text() || '抱歉，我無法產生回應。';
       return { success: true, message: text };
+    }).catch((error) => {
+      // 如果模型不存在，嘗試其他模型
+      if (error?.status === 404 || error?.message?.includes('not found')) {
+        console.warn('gemini-1.5-flash-latest 不可用，嘗試 gemini-1.5-pro-latest');
+        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro-latest' });
+        return fallbackModel.generateContent(prompt).then((result) => {
+          const response = result.response;
+          const text = response.text() || '抱歉，我無法產生回應。';
+          return { success: true, message: text };
+        });
+      }
+      throw error;
     });
 
     const result = await Promise.race([apiPromise, timeoutPromise]);
