@@ -32,6 +32,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'messages' | 'conversations'>('messages');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // 篩選條件
   const [filters, setFilters] = useState({
@@ -56,7 +58,7 @@ export default function AdminPage() {
     }
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (): Promise<Message[]> => {
     try {
       const params = new URLSearchParams({
         limit: '50',
@@ -67,13 +69,14 @@ export default function AdminPage() {
       });
       const res = await fetch(`/api/admin/messages?${params}`);
       const data = await res.json();
-      setMessages(data.messages || []);
+      return data.messages || [];
     } catch (error) {
       console.error('取得訊息失敗:', error);
+      return [];
     }
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (): Promise<Conversation[]> => {
     try {
       const params = new URLSearchParams({
         limit: '20',
@@ -83,41 +86,122 @@ export default function AdminPage() {
       });
       const res = await fetch(`/api/admin/conversations?${params}`);
       const data = await res.json();
-      setConversations(data.conversations || []);
+      return data.conversations || [];
     } catch (error) {
       console.error('取得對話失敗:', error);
+      return [];
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = async (): Promise<any> => {
     try {
       const res = await fetch('/api/admin/stats');
       const data = await res.json();
-      setStats(data);
+      return data;
     } catch (error) {
       console.error('取得統計失敗:', error);
+      return null;
     }
   };
 
-  const fetchAll = async () => {
-    setLoading(true);
-    await Promise.all([fetchMessages(), fetchConversations(), fetchStats()]);
-    setLoading(false);
+  // 數據比較邏輯
+  const hasNewMessages = (old: Message[], new_: Message[]): boolean => {
+    if (new_.length === 0) return false;
+    if (old.length === 0) return true;
+    // 比較最新的訊息 ID 和時間戳
+    return new_[0].id !== old[0].id || 
+           new_[0].timestamp !== old[0].timestamp;
   };
 
+  const hasNewConversations = (old: Conversation[], new_: Conversation[]): boolean => {
+    if (new_.length === 0) return false;
+    if (old.length === 0) return true;
+    // 比較最新的對話最後更新時間
+    return new_[0].lastMessageAt !== old[0].lastMessageAt ||
+           new_[0].id !== old[0].id;
+  };
+
+  const hasStatsChanged = (old: any, new_: any): boolean => {
+    if (!old || !new_) return true;
+    return old.totalMessages !== new_.totalMessages ||
+           old.recentMessages !== new_.recentMessages ||
+           old.activeConversations !== new_.activeConversations ||
+           old.totalConversations !== new_.totalConversations;
+  };
+
+  // 初始載入（顯示 loading）
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [messagesData, conversationsData, statsData] = await Promise.all([
+        fetchMessages(),
+        fetchConversations(),
+        fetchStats()
+      ]);
+      setMessages(messagesData);
+      setConversations(conversationsData);
+      setStats(statsData);
+      setLastUpdateTime(new Date());
+    } catch (error) {
+      console.error('載入數據失敗:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 背景靜默刷新（不顯示 loading）
+  const fetchAllSilent = async () => {
+    if (isUpdating) return; // 防止重複請求
+    setIsUpdating(true);
+    try {
+      const [messagesData, conversationsData, statsData] = await Promise.all([
+        fetchMessages(),
+        fetchConversations(),
+        fetchStats()
+      ]);
+      
+      // 只在有新數據時才更新
+      if (hasNewMessages(messages, messagesData)) {
+        setMessages(messagesData);
+      }
+      if (hasNewConversations(conversations, conversationsData)) {
+        setConversations(conversationsData);
+      }
+      if (hasStatsChanged(stats, statsData)) {
+        setStats(statsData);
+      }
+      
+      setLastUpdateTime(new Date());
+    } catch (error) {
+      // 靜默處理錯誤，不影響使用者
+      console.error('背景更新失敗:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // 初始載入
   useEffect(() => {
     fetchAll();
   }, []);
 
+  // 自動背景刷新
   useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(fetchAll, 5000); // 每 5 秒更新一次
-      return () => clearInterval(interval);
-    }
+    if (!autoRefresh) return;
+    
+    const interval = setInterval(() => {
+      fetchAllSilent();
+    }, 5000); // 每 5 秒背景更新一次
+    
+    return () => clearInterval(interval);
   }, [autoRefresh, filters]);
 
+  // 篩選條件變更時重新載入（顯示 loading）
   useEffect(() => {
-    fetchAll();
+    if (messages.length > 0 || conversations.length > 0) {
+      // 只有在已經有數據時才重新載入（避免初始載入時重複請求）
+      fetchAll();
+    }
   }, [filters]);
 
   return (
@@ -182,11 +266,23 @@ export default function AdminPage() {
                 />
                 <span className="text-sm">自動更新（5秒）</span>
               </label>
+              {isUpdating && (
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  <span className="animate-spin">⟳</span>
+                  更新中...
+                </span>
+              )}
+              {lastUpdateTime && (
+                <span className="text-xs text-gray-400">
+                  最後更新: {lastUpdateTime.toLocaleTimeString('zh-TW')}
+                </span>
+              )}
               <button
                 onClick={fetchAll}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                disabled={loading}
               >
-                手動更新
+                {loading ? '載入中...' : '手動更新'}
               </button>
             </div>
           </div>
