@@ -23,9 +23,13 @@ Rich Menu 是顯示在 Line Bot 聊天室底部的選單，提供快速訪問常
 
 您可以選擇以下方式之一：
 
-1. **使用圖片 URL**（推薦）：
+1. **使用 Vercel 部署的圖片 URL**（推薦，最簡單）：
+   - 圖片已放在 `public/richmenu-compressed.jpg`
+   - 部署到 Vercel 後，可以直接使用：`https://your-app.vercel.app/richmenu-compressed.jpg`
+   - 例如：`https://hw6-bot.vercel.app/richmenu-compressed.jpg`
+
+2. **使用其他圖片 URL**：
    - 將圖片上傳到圖床服務（如 Imgur、Cloudinary 等）
-   - 或上傳到您的 Vercel 專案的 `public` 資料夾
    - 取得圖片的公開 URL
 
 2. **使用本地檔案**：
@@ -36,19 +40,23 @@ Rich Menu 是顯示在 Line Bot 聊天室底部的選單，提供快速訪問常
 
 #### 方法 1：使用腳本（推薦）
 
-1. 安裝依賴（如果還沒有）：
+1. 使用部署後的圖片 URL（最簡單，推薦給同學使用）：
    ```bash
-   npm install tsx --save-dev
+   # 替換為您的 Vercel 部署 URL
+   RICH_MENU_IMAGE_URL=https://hw6-bot.vercel.app/richmenu-compressed.jpg npm run create-rich-menu
    ```
 
-2. 使用圖片 URL 創建：
+2. 或使用本地圖片：
    ```bash
-   RICH_MENU_IMAGE_URL=https://example.com/richmenu.png npm run create-rich-menu
+   RICH_MENU_IMAGE_PATH=./public/richmenu-compressed.jpg npm run create-rich-menu
    ```
 
-3. 或使用本地圖片：
+3. 如果需要壓縮自己的圖片：
    ```bash
-   RICH_MENU_IMAGE_PATH=./richmenu.png npm run create-rich-menu
+   # 先壓縮圖片
+   node scripts/compressImage.js
+   # 然後使用壓縮後的圖片
+   RICH_MENU_IMAGE_PATH=./public/richmenu-compressed.jpg npm run create-rich-menu
    ```
 
 4. 可選參數：
@@ -172,15 +180,28 @@ curl -X DELETE https://hw6-bot.vercel.app/api/admin/richmenu/richmenu-xxx
 2. **檢查環境變數**：
    - 確保 `LINE_CHANNEL_ACCESS_TOKEN` 和 `LINE_CHANNEL_SECRET` 已正確設定
 
-## 快速開始
+## 快速開始（給同學評分使用）
 
-如果您已經有 Rich Menu 圖片，最快的方式是：
+**最簡單的方式**：直接使用已部署的圖片 URL
 
 ```bash
-# 1. 將圖片上傳到圖床，取得 URL
-# 2. 執行以下命令（替換為您的圖片 URL）
-RICH_MENU_IMAGE_URL=https://your-image-url.com/richmenu.png npm run create-rich-menu
+# 替換為您的 Vercel 部署 URL
+RICH_MENU_IMAGE_URL=https://hw6-bot.vercel.app/richmenu-compressed.jpg \
+RICH_MENU_LOCALE=zh-TW \
+RICH_MENU_SET_DEFAULT=true \
+npm run create-rich-menu
+```
+
+**或者使用本地圖片**（如果已經下載專案）：
+
+```bash
+RICH_MENU_IMAGE_PATH=./public/richmenu-compressed.jpg \
+RICH_MENU_LOCALE=zh-TW \
+RICH_MENU_SET_DEFAULT=true \
+npm run create-rich-menu
 ```
 
 完成後，在 Line 中重新開啟與 Bot 的聊天，就能看到 Rich Menu 了！
+
+**注意**：圖片 `public/richmenu-compressed.jpg` 已經包含在專案中，部署到 Vercel 後會自動可訪問。
 
