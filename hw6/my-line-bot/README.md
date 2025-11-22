@@ -71,9 +71,15 @@ git push -u origin main
 
 1. 前往您的 Channel 設定
 2. 進入 "Messaging API" 分頁
-3. 在 "Webhook URL" 欄位填入：`https://your-domain.vercel.app/api/webhook`
+3. 在 "Webhook URL" 欄位填入：`https://hw6-bot.vercel.app/api/webhooks/line`
+   - **注意**：路徑是 `/api/webhooks/line`（webhooks 是複數）
 4. 啟用 Webhook
 5. 驗證 Webhook（點擊 "Verify" 按鈕）
+
+**重要提醒**：
+- Webhook URL 必須是 HTTPS
+- 路徑必須是 `/api/webhooks/line`（不是 `/api/webhook/line`）
+- 如果驗證失敗，請檢查 Vercel 部署狀態和環境變數設定
 
 ## 專案結構
 
