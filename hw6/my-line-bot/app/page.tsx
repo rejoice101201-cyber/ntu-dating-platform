@@ -1,8 +1,6 @@
 export default function Home() {
-  // 取得正確的 webhook URL
-  const webhookUrl = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}/api/webhooks/line`
-    : 'https://hw6-bot.vercel.app/api/webhooks/line';
+  // 使用 production URL
+  const webhookUrl = 'https://hw6-bot.vercel.app/api/webhooks/line';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
