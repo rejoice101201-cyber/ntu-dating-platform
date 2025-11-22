@@ -14,6 +14,7 @@ import {
   getConversationHistory,
   updateConversationState,
 } from '../services/conversationService';
+import { richMenuService } from '../services/richMenuService';
 
 /**
  * 處理 Line 事件
@@ -77,6 +78,20 @@ async function sendWelcomeMessage(
   try {
     const welcomeMessage = createWelcomeMessage(locale);
     await context.reply([welcomeMessage as any]);
+
+    // 嘗試連結 Rich Menu 到用戶
+    try {
+      // 先取得預設 Rich Menu ID，如果沒有則跳過
+      const defaultRichMenuId = await richMenuService.getDefaultRichMenuId();
+      if (defaultRichMenuId) {
+        await richMenuService.linkRichMenuToUser(userId, defaultRichMenuId);
+        console.log('✅ [Welcome] Rich Menu 已連結到用戶');
+      } else {
+        console.log('ℹ️ [Welcome] 沒有預設 Rich Menu，跳過連結');
+      }
+    } catch (richMenuError) {
+      console.warn('⚠️ [Welcome] 連結 Rich Menu 失敗（不影響歡迎訊息）:', richMenuError);
+    }
 
     // 儲存到資料庫
     try {
@@ -535,7 +550,7 @@ Best regards from Mumu Ri'an! 💙`);
 }
 
 /**
- * 處理 Postback 事件
+ * 處理 Postback 事件（包括 Rich Menu 按鈕點擊）
  */
 async function handlePostbackEvent(
   context: LineContext,
@@ -543,30 +558,281 @@ async function handlePostbackEvent(
   locale: SupportedLocale
 ): Promise<void> {
   const postbackData = context.event.postback?.data || '';
+  const displayText = context.event.postback?.displayText;
 
   // 解析 postback data
   const params = new URLSearchParams(postbackData);
   const action = params.get('action');
   const type = params.get('type');
 
-  // 根據 action 處理不同的按鈕點擊
-  // 這裡可以擴展處理 Rich Menu 的 postback
-  console.log('Postback received:', { action, type, postbackData });
+  console.log('📱 [Postback] 收到 Postback 事件:', { action, type, postbackData, displayText });
 
   // 儲存到資料庫
+  let conversation: any = null;
   try {
-    const conversation = await getOrCreateConversation(userId);
-    await saveMessage(
+    conversation = await getOrCreateConversation(userId);
+    await saveEventWithMetadata(
       conversation.id,
       userId,
       'postback',
-      `點擊：${postbackData}`,
+      displayText || `點擊：${postbackData}`,
       'user',
-      undefined,
-      { action, type, postbackData }
+      {
+        lineMessageId: context.event.message?.id,
+        eventType: 'postback',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        postbackData,
+        action,
+        type,
+        rawEvent: context.event,
+      }
     );
   } catch (dbError) {
-    console.warn('儲存 Postback 失敗:', dbError);
+    console.warn('⚠️ [Postback] 儲存 Postback 失敗:', dbError);
+  }
+
+  // 根據 action 處理不同的按鈕點擊
+  if (action === 'appointment') {
+    await handleAppointmentPostback(context, userId, locale, type || '', conversation);
+  } else if (action === 'clinic_info') {
+    await sendSectionTextMessage(context, 'clinic_info', locale);
+    if (conversation) {
+      try {
+        const content = getSectionContent(locale, 'clinic_info');
+        const responseText = [content.title, ...content.body].join('\n\n');
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          responseText,
+          'assistant',
+          {
+            eventType: 'rich_menu_response',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            postbackAction: action,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存回應失敗:', e);
+      }
+    }
+  } else if (action === 'refer_friend') {
+    await handleReferFriend(context, userId, locale, conversation);
+  } else if (action === 'edit_profile') {
+    await handleEditProfile(context, userId, locale, conversation);
+  } else if (action === 'products') {
+    await handleProducts(context, userId, locale, conversation);
+  } else {
+    // 未知的 action，發送預設回應
+    console.warn('⚠️ [Postback] 未知的 action:', action);
+    const fallbackText = locale === 'zh-TW'
+      ? '感謝您的點擊！如需協助，請致電 02-2778-7178'
+      : 'Thank you for clicking! For assistance, please call 02-2778-7178';
+    await context.sendText(fallbackText);
+  }
+}
+
+/**
+ * 處理預約相關的 Postback
+ */
+async function handleAppointmentPostback(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale,
+  appointmentType: string,
+  conversation: any
+): Promise<void> {
+  console.log('📅 [Appointment] 處理預約 Postback:', { appointmentType, locale });
+
+  let responseText = '';
+  
+  if (appointmentType === 'medical_aesthetics') {
+    responseText = locale === 'zh-TW'
+      ? '📅 醫美查詢預約\n\n木木日安目前預約方式為電話預約，請直接致電 02-2778-7178\n\n營業時間：\n週一至週五：09:00-18:00\n週六：09:00-12:00\n\n我們的工作人員會為您安排最適合的看診時間。'
+      : '📅 Medical Aesthetics Appointment\n\nMumu Ri\'an currently accepts phone appointments. Please call 02-2778-7178 directly.\n\nBusiness Hours:\nMonday to Friday: 09:00-18:00\nSaturday: 09:00-12:00\n\nOur staff will arrange the most suitable appointment time for you.';
+  } else if (appointmentType === 'peel') {
+    responseText = locale === 'zh-TW'
+      ? '📅 果酸線上預約\n\n木木日安目前預約方式為電話預約，請直接致電 02-2778-7178\n\n營業時間：\n週一至週五：09:00-18:00\n週六：09:00-12:00\n\n我們的工作人員會為您安排最適合的看診時間。'
+      : '📅 Peel Online Appointment\n\nMumu Ri\'an currently accepts phone appointments. Please call 02-2778-7178 directly.\n\nBusiness Hours:\nMonday to Friday: 09:00-18:00\nSaturday: 09:00-12:00\n\nOur staff will arrange the most suitable appointment time for you.';
+  } else if (appointmentType === 'acne') {
+    responseText = locale === 'zh-TW'
+      ? '📅 青春痘特別門診線上預約\n\n木木日安目前預約方式為電話預約，請直接致電 02-2778-7178\n\n營業時間：\n週一至週五：09:00-18:00\n週六：09:00-12:00\n\n我們的工作人員會為您安排最適合的看診時間。'
+      : '📅 Acne Special Clinic Online Appointment\n\nMumu Ri\'an currently accepts phone appointments. Please call 02-2778-7178 directly.\n\nBusiness Hours:\nMonday to Friday: 09:00-18:00\nSaturday: 09:00-12:00\n\nOur staff will arrange the most suitable appointment time for you.';
+  } else if (appointmentType === 'insurance') {
+    responseText = locale === 'zh-TW'
+      ? '📅 健保掛號\n\n木木日安目前預約方式為電話預約，請直接致電 02-2778-7178\n\n營業時間：\n週一至週五：09:00-18:00\n週六：09:00-12:00\n\n我們的工作人員會為您安排最適合的看診時間。'
+      : '📅 Health Insurance Registration\n\nMumu Ri\'an currently accepts phone appointments. Please call 02-2778-7178 directly.\n\nBusiness Hours:\nMonday to Friday: 09:00-18:00\nSaturday: 09:00-12:00\n\nOur staff will arrange the most suitable appointment time for you.';
+  } else {
+    // 使用通用的預約訊息
+    await sendSectionTextMessage(context, 'appointment', locale);
+    if (conversation) {
+      try {
+        const content = getSectionContent(locale, 'appointment');
+        responseText = [content.title, ...content.body].join('\n\n');
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          responseText,
+          'assistant',
+          {
+            eventType: 'rich_menu_response',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            postbackAction: 'appointment',
+            appointmentType,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存回應失敗:', e);
+      }
+    }
+    return;
+  }
+
+  // 發送回應
+  await context.sendText(responseText);
+
+  // 儲存回應到資料庫
+  if (conversation) {
+    try {
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        'text',
+        responseText,
+        'assistant',
+        {
+          eventType: 'rich_menu_response',
+          source: { type: 'user', userId },
+          processingStatus: 'success',
+          postbackAction: 'appointment',
+          appointmentType,
+        }
+      );
+    } catch (e) {
+      console.warn('儲存回應失敗:', e);
+    }
+  }
+}
+
+/**
+ * 處理推薦好友功能
+ */
+async function handleReferFriend(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('👥 [ReferFriend] 處理推薦好友');
+  
+  const responseText = locale === 'zh-TW'
+    ? '👥 推薦好友\n\n感謝您對木木日安的支持！\n\n推薦好友加入我們的官方帳號，一起體驗優質的醫學美容服務。\n\n您可以分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務。\n\n木木日安祝福您！💙'
+    : '👥 Refer Friend\n\nThank you for your support of Mumu Ri\'an!\n\nRecommend our official account to your friends and family to experience our quality medical beauty services.\n\nYou can share our official account with your loved ones so they can also enjoy professional dermatology services.\n\nBest regards from Mumu Ri\'an! 💙';
+
+  await context.sendText(responseText);
+
+  if (conversation) {
+    try {
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        'text',
+        responseText,
+        'assistant',
+        {
+          eventType: 'rich_menu_response',
+          source: { type: 'user', userId },
+          processingStatus: 'success',
+          postbackAction: 'refer_friend',
+        }
+      );
+    } catch (e) {
+      console.warn('儲存回應失敗:', e);
+    }
+  }
+}
+
+/**
+ * 處理修改資料功能
+ */
+async function handleEditProfile(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('✏️ [EditProfile] 處理修改資料');
+  
+  const responseText = locale === 'zh-TW'
+    ? '✏️ 修改資料\n\n目前資料修改功能正在開發中。\n\n如需更新您的個人資料，請致電 02-2778-7178 與我們聯繫，我們的工作人員會協助您處理。\n\n感謝您的理解！'
+    : '✏️ Edit Profile\n\nThe profile editing feature is currently under development.\n\nIf you need to update your personal information, please call 02-2778-7178 to contact us, and our staff will assist you.\n\nThank you for your understanding!';
+
+  await context.sendText(responseText);
+
+  if (conversation) {
+    try {
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        'text',
+        responseText,
+        'assistant',
+        {
+          eventType: 'rich_menu_response',
+          source: { type: 'user', userId },
+          processingStatus: 'success',
+          postbackAction: 'edit_profile',
+        }
+      );
+    } catch (e) {
+      console.warn('儲存回應失敗:', e);
+    }
+  }
+}
+
+/**
+ * 處理嚴選產品功能
+ */
+async function handleProducts(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('🛍️ [Products] 處理嚴選產品');
+  
+  const responseText = locale === 'zh-TW'
+    ? '🛍️ 嚴選產品\n\n木木日安提供多種嚴選的醫學美容產品，包括：\n\n• 專業保養品\n• 術後修護產品\n• 皮膚保養諮詢\n\n如需了解詳細產品資訊，請致電 02-2778-7178 或預約看診，讓我們的專業團隊為您推薦最適合的產品。\n\n木木日安祝福您！💙'
+    : '🛍️ Selected Products\n\nMumu Ri\'an offers a variety of carefully selected medical beauty products, including:\n\n• Professional skincare products\n• Post-treatment repair products\n• Skin care consultation\n\nFor detailed product information, please call 02-2778-7178 or schedule an appointment, and our professional team will recommend the most suitable products for you.\n\nBest regards from Mumu Ri\'an! 💙';
+
+  await context.sendText(responseText);
+
+  if (conversation) {
+    try {
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        'text',
+        responseText,
+        'assistant',
+        {
+          eventType: 'rich_menu_response',
+          source: { type: 'user', userId },
+          processingStatus: 'success',
+          postbackAction: 'products',
+        }
+      );
+    } catch (e) {
+      console.warn('儲存回應失敗:', e);
+    }
   }
 }
 
