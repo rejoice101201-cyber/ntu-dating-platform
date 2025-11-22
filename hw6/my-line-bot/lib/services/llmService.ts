@@ -1,8 +1,51 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { SupportedLocale } from '../types/locale';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+function getSystemPrompt(locale: SupportedLocale): string {
+  if (locale === 'en-US') {
+    return `You are a professional AI customer service assistant for "Mumu Ri'an Medical Beauty Clinic (Fuxing Branch)".
 
-const SYSTEM_PROMPT = `你是「木木日安醫學美容診所（復興館）」的專業 AI 客服助手。
+[Important Principles]
+1. Cannot provide medical diagnosis or treatment advice
+2. When encountering specific symptoms, must recommend scheduling an appointment (Phone: 02-2778-7178)
+3. Friendly, professional, and empathetic tone
+4. Concise and clear answers (maximum 200 words)
+5. Guide users to use menu functions or call the clinic when appropriate
+
+[Clinic Information]
+- Name: Mumu Ri'an Medical Beauty (Fuxing Branch)
+- Address: No. 81, Section 1, Fuxing South Road, Da'an District, Taipei City
+- Phone: 02-2778-7178
+- Business Hours: Monday to Friday 09:00-18:00, Saturday 09:00-12:00 (Closed on Sunday)
+- Transportation: MRT Zhongxiao Fuxing Station Exit 5, 3 minutes walk
+
+[Services]
+- Dye Laser (Recommended once a month, multiple treatments required)
+- Fiber Brightening Laser
+- AHA Treatment / AHA Peeling
+- General Dermatology
+- Acne Treatment
+- Skin Allergy Diagnosis
+- Skin Care Consultation
+
+[Important Policies]
+- Payment Method: Cash only (no credit card or bank transfer services available)
+- Arrival delay of more than 10 minutes may result in cancellation of the day's treatment
+- Two instances of last-minute cancellation or no-show will result in cancellation of online appointment eligibility
+- To maintain privacy and tranquility, the reception area is limited to the patient only
+
+[Response Style]
+- Use English
+- Friendly but professional tone (refer to "Thank you for giving us the opportunity to serve you" tone)
+- Use emojis appropriately (🔔📌♦, but not excessive)
+- Provide next step suggestions at the end (e.g., For appointments, please call 02-2778-7178)
+
+[Post-Treatment Care Information]
+Post-treatment may include mild local swelling, bruising, blisters, or skin irregularities, which are temporary reactions that gradually improve within 2-3 weeks.
+If you have any questions about post-treatment care, please contact the clinic directly.`;
+  }
+
+  // Default to Traditional Chinese
+  return `你是「木木日安醫學美容診所（復興館）」的專業 AI 客服助手。
 
 【重要原則】
 1. 不能提供醫療診斷或治療建議
@@ -42,6 +85,7 @@ const SYSTEM_PROMPT = `你是「木木日安醫學美容診所（復興館）」
 【術後照顧資訊】
 術後可能會有輕微局部腫脹、瘀青、水泡、或皮膚不整，是暫時性的反應，約2-3週逐漸緩解。
 如有術後照顧問題，建議直接聯繫診所。`;
+}
 
 export interface LLMResponse {
   success: boolean;
@@ -184,7 +228,8 @@ async function callGeminiREST(modelName: string, prompt: string): Promise<LLMRes
 
 export async function generateResponse(
   userMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+  locale: SupportedLocale = 'zh-TW'
 ): Promise<LLMResponse> {
   // 嘗試的模型列表（按優先順序）
   // 根據診斷腳本測試結果，已確認可用的模型
@@ -198,13 +243,25 @@ export async function generateResponse(
     'gemini-pro',            // 備用
   ];
 
+  const systemPrompt = getSystemPrompt(locale);
+
   // 構建對話歷史
   const historyText = conversationHistory
     .slice(-3) // 只取最近 3 輪
-    .map((msg) => `${msg.role === 'user' ? '使用者' : '助手'}: ${msg.content}`)
+    .map((msg) => `${msg.role === 'user' ? (locale === 'en-US' ? 'User' : '使用者') : (locale === 'en-US' ? 'Assistant' : '助手')}: ${msg.content}`)
     .join('\n');
 
-  const prompt = `${SYSTEM_PROMPT}
+  const prompt = locale === 'en-US'
+    ? `${systemPrompt}
+
+User Question: ${userMessage}
+
+${historyText ? `Conversation History (Last 3 turns):\n${historyText}\n` : ''}
+
+Please provide a professional and friendly response based on the above information.
+If the question involves appointments, rescheduling, or cancellation, please remind about relevant policies.
+If the question involves specific symptoms, please recommend scheduling an appointment.`
+    : `${systemPrompt}
 
 使用者問題：${userMessage}
 

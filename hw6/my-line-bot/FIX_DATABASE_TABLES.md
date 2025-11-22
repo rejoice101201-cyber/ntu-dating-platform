@@ -78,3 +78,4 @@ npm run db:migrate
 3. **手動執行 migration**：
    - 在本地執行 `npm run db:push`（需要正確的 DATABASE_URL）
 
+

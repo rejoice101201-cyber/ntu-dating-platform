@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bottender dev",
+    "dev:next": "next dev",
     "build": "prisma generate && (prisma db push --skip-generate --accept-data-loss || true) && next build",
-    "start": "next start",
+    "start": "bottender start",
+    "start:next": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -15,7 +17,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@line/bot-sdk": "^10.5.0",
+    "bottender": "^1.5.5",
     "@prisma/client": "^6.19.0",
     "next": "16.0.3",
     "openai": "^6.9.1",

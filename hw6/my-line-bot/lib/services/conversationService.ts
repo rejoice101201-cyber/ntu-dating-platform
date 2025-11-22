@@ -29,6 +29,7 @@ export async function getOrCreateConversation(lineUserId: string) {
         status: 'active',
         metadata: {
           state: 'idle',
+          locale: 'zh-TW', // 預設語系
         },
       },
     });

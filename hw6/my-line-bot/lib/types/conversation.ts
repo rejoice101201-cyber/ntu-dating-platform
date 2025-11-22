@@ -16,6 +16,7 @@ export type ConversationState =
 
 export interface ConversationMetadata {
   state?: ConversationState;
+  locale?: 'zh-TW' | 'en-US';
   userName?: string;
   phone?: string;
   appointmentDate?: string;
