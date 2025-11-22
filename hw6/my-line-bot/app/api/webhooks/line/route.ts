@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
     timestamp,
     method: req.method,
     path: '/api/webhooks/line',
+    url: req.url,
   });
 
   // Line 要求必須返回 200，即使發生錯誤也要返回 200
@@ -18,10 +19,7 @@ export async function POST(req: NextRequest) {
     const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || process.env.CHANNEL_ACCESS_TOKEN;
 
     if (!channelSecret || !accessToken) {
-      console.error('❌ 缺少必要的環境變數:');
-      console.error('   需要設定: LINE_CHANNEL_SECRET 或 CHANNEL_SECRET');
-      console.error('   需要設定: LINE_CHANNEL_ACCESS_TOKEN 或 CHANNEL_ACCESS_TOKEN');
-      // 仍然返回 200，避免 Line 重試
+      console.error(`❌ [Webhook Request ${requestId}] 缺少必要的環境變數`);
       return NextResponse.json({ error: 'Configuration error' }, { status: 200 });
     }
 
@@ -29,7 +27,7 @@ export async function POST(req: NextRequest) {
     const bot = getBot();
     
     if (!bot) {
-      console.error('❌ Bot 實例初始化失敗');
+      console.error(`❌ [Webhook Request ${requestId}] Bot 實例初始化失敗`);
       return NextResponse.json({ error: 'Bot initialization failed' }, { status: 200 });
     }
     
@@ -41,13 +39,14 @@ export async function POST(req: NextRequest) {
       console.log(`📥 [Webhook Request ${requestId}] Received body:`, {
         events: bodyJson.events?.length || 0,
         destination: bodyJson.destination,
+        eventTypes: bodyJson.events?.map((e: any) => e.type),
       });
     } catch (parseError) {
       console.error(`❌ [Webhook Request ${requestId}] JSON 解析錯誤:`, parseError);
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 200 });
     }
-    
-    // 建立請求上下文
+
+    // 建立請求上下文（Bottender 1.5.5 需要手動構建）
     const requestContext = {
       method: req.method,
       path: '/api/webhooks/line',
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
     const requestHandler = bot.createRequestHandler();
 
     if (!requestHandler) {
-      console.error('❌ Request handler 無法建立');
+      console.error(`❌ [Webhook Request ${requestId}] Request handler 無法建立`);
       return NextResponse.json({ error: 'Handler creation failed' }, { status: 200 });
     }
 
@@ -96,4 +95,3 @@ export async function GET() {
     { status: 200 }
   );
 }
-

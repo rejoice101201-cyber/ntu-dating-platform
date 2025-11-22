@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 200 });
     }
     
-    // 建立請求上下文
+    // 建立請求上下文（Bottender 1.5.5 需要手動構建）
     const requestContext = {
       method: req.method,
       path: '/api/webhook/line',
