@@ -10,22 +10,35 @@ export async function sendSectionTextMessage(
   section: SectionId,
   locale: SupportedLocale
 ): Promise<void> {
-  const content = getSectionContent(locale, section);
-  const messageLines = [content.title, ...content.body];
-  const quickReply = buildQuickReply(locale);
+  try {
+    console.log(`📤 [Send Message] 準備發送 ${section} 章節訊息`);
+    const content = getSectionContent(locale, section);
+    const messageLines = [content.title, ...content.body];
+    const quickReply = buildQuickReply(locale);
 
-  const message: any = {
-    type: 'text',
-    text: messageLines.join('\n\n'),
-  };
-  
-  if (quickReply && quickReply.length > 0) {
-    message.quickReply = {
-      items: quickReply,
+    const message: any = {
+      type: 'text',
+      text: messageLines.join('\n\n'),
     };
+    
+    if (quickReply && quickReply.length > 0) {
+      message.quickReply = {
+        items: quickReply,
+      };
+    }
+    
+    console.log(`📤 [Send Message] 發送訊息內容（前100字符）:`, message.text.substring(0, 100));
+    await context.reply([message]);
+    console.log(`✅ [Send Message] ${section} 章節訊息已成功發送`);
+  } catch (error: any) {
+    console.error(`❌ [Send Message] 發送 ${section} 章節訊息失敗:`, error);
+    console.error(`❌ [Send Message] 錯誤詳情:`, {
+      message: error?.message,
+      stack: error?.stack?.substring(0, 500),
+    });
+    // 重新拋出錯誤，讓上層處理
+    throw error;
   }
-  
-  await context.reply([message]);
 }
 
 /**

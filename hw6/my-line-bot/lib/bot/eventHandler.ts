@@ -223,22 +223,40 @@ async function handleTextMessage(
   }
 
   // 匹配章節
+  console.log('🔍 [Text Message] 開始匹配章節...');
   const section = resolveSectionFromText(text, locale);
   const matchedSection = matchSectionFromText(text, locale);
+  console.log('🔍 [Text Message] 匹配結果:', { section, matchedSection, text: text?.substring(0, 50) });
 
   // 如果沒有匹配到任何章節，直接使用 LLM
   if (!matchedSection) {
     console.log('💬 [Text Message] 未匹配到章節，使用 LLM 處理');
-    await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
+    try {
+      await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
+    } catch (llmError: any) {
+      console.error('❌ [Text Message] LLM 處理失敗:', llmError);
+      // 即使 LLM 失敗，也要發送一個基本的回覆
+      const fallbackText = locale === 'zh-TW'
+        ? '抱歉，我目前無法處理您的問題。請稍後再試，或致電 02-2778-7178 與我們聯繫。'
+        : 'Sorry, I cannot process your question at the moment. Please try again later or call 02-2778-7178.';
+      try {
+        await context.sendText(fallbackText);
+        console.log('✅ [Text Message] 已發送降級回覆');
+      } catch (sendError) {
+        console.error('❌ [Text Message] 發送降級回覆也失敗:', sendError);
+      }
+    }
     return;
   }
 
   // 如果是 schedule 章節，發送 Carousel
   if (section === 'schedule') {
     console.log('📋 [Schedule] 發送 schedule 章節訊息和 Carousel');
-    await sendSectionTextMessage(context, section, locale);
-    const carousel = createCarouselTemplate(locale);
-    await context.reply([carousel as any]);
+    try {
+      await sendSectionTextMessage(context, section, locale);
+      const carousel = createCarouselTemplate(locale);
+      await context.reply([carousel as any]);
+      console.log('✅ [Schedule] Schedule 訊息和 Carousel 已成功發送');
     
     if (dbAvailable && conversation) {
       try {
@@ -272,6 +290,23 @@ async function handleTextMessage(
     } else {
       console.warn('⚠️ [Database] 資料庫不可用，無法儲存 schedule 回應');
     }
+    } catch (scheduleError: any) {
+      console.error('❌ [Schedule] 發送 schedule 訊息失敗:', scheduleError);
+      console.error('❌ [Schedule] 錯誤詳情:', {
+        message: scheduleError?.message,
+        stack: scheduleError?.stack?.substring(0, 500),
+      });
+      // 嘗試發送一個簡單的回覆
+      try {
+        const fallbackText = locale === 'zh-TW'
+          ? '抱歉，系統暫時無法回應。請稍後再試，或致電 02-2778-7178。'
+          : 'Sorry, the system is temporarily unavailable. Please try again later or call 02-2778-7178.';
+        await context.sendText(fallbackText);
+        console.log('✅ [Schedule] 已發送降級回覆');
+      } catch (fallbackError) {
+        console.error('❌ [Schedule] 發送降級回覆也失敗:', fallbackError);
+      }
+    }
     return;
   }
 
@@ -279,6 +314,7 @@ async function handleTextMessage(
   try {
     console.log(`📋 [Section] 發送 ${section} 章節訊息`);
     await sendSectionTextMessage(context, section, locale);
+    console.log(`✅ [Section] ${section} 章節訊息已成功發送`);
 
     if (dbAvailable && conversation) {
       try {
@@ -315,11 +351,29 @@ async function handleTextMessage(
     } else {
       console.warn('⚠️ [Database] 資料庫不可用，無法儲存章節回應');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [Section] 發送章節訊息錯誤:', error);
+    console.error('❌ [Section] 錯誤詳情:', {
+      message: error?.message,
+      stack: error?.stack?.substring(0, 500),
+    });
     
-    // 如果腳本無法處理，使用 LLM
-    await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
+    // 如果腳本無法處理，嘗試使用 LLM
+    try {
+      await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
+    } catch (llmError: any) {
+      console.error('❌ [Section] LLM 處理也失敗:', llmError);
+      // 最後的降級回覆
+      try {
+        const fallbackText = locale === 'zh-TW'
+          ? '抱歉，系統暫時無法處理您的問題。請稍後再試，或致電 02-2778-7178 與我們聯繫。'
+          : 'Sorry, the system cannot process your question at the moment. Please try again later or call 02-2778-7178.';
+        await context.sendText(fallbackText);
+        console.log('✅ [Section] 已發送最終降級回覆');
+      } catch (fallbackError) {
+        console.error('❌ [Section] 發送最終降級回覆也失敗:', fallbackError);
+      }
+    }
   }
 }
 
