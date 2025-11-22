@@ -10,10 +10,26 @@
  * RICH_MENU_IMAGE_URL=https://example.com/richmenu.png npm run create-rich-menu
  */
 
+// 載入環境變數（必須在最前面）
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// 載入 .env.local（優先）
+const envLocalPath = path.resolve(process.cwd(), '.env.local');
+dotenv.config({ path: envLocalPath, override: false });
+// 也載入 .env（如果存在）
+dotenv.config({ override: false });
+
+// 確認環境變數已載入
+if (!process.env.CHANNEL_ACCESS_TOKEN && !process.env.LINE_CHANNEL_ACCESS_TOKEN) {
+  console.error('❌ 錯誤：無法載入環境變數');
+  console.error('   請確認 .env.local 檔案存在且包含 CHANNEL_ACCESS_TOKEN 和 CHANNEL_SECRET');
+  process.exit(1);
+}
+
 import { richMenuService } from '../lib/services/richMenuService';
 import { createRichMenuConfig } from '../lib/bot/richMenuConfig';
 import * as fs from 'fs';
-import * as path from 'path';
 
 async function createRichMenu() {
   try {

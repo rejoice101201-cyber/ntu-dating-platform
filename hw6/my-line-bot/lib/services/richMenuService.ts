@@ -8,10 +8,21 @@ export class RichMenuService {
   private client: Client;
 
   constructor() {
-    const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || process.env.CHANNEL_ACCESS_TOKEN || '';
-    const channelSecret = process.env.LINE_CHANNEL_SECRET || process.env.CHANNEL_SECRET || '';
+    // 支援多種環境變數名稱
+    const channelAccessToken = 
+      process.env.LINE_CHANNEL_ACCESS_TOKEN || 
+      process.env.CHANNEL_ACCESS_TOKEN || 
+      '';
+    const channelSecret = 
+      process.env.LINE_CHANNEL_SECRET || 
+      process.env.CHANNEL_SECRET || 
+      '';
 
     if (!channelAccessToken || !channelSecret) {
+      console.error('❌ 缺少必要的環境變數：');
+      console.error('   需要以下其中一組：');
+      console.error('   - LINE_CHANNEL_ACCESS_TOKEN 和 LINE_CHANNEL_SECRET');
+      console.error('   - CHANNEL_ACCESS_TOKEN 和 CHANNEL_SECRET');
       throw new Error('LINE_CHANNEL_ACCESS_TOKEN and LINE_CHANNEL_SECRET are required');
     }
 
@@ -219,6 +230,20 @@ export class RichMenuService {
   }
 }
 
-// 導出單例實例
-export const richMenuService = new RichMenuService();
+// 導出單例實例（延遲初始化）
+let _richMenuServiceInstance: RichMenuService | null = null;
+
+export function getRichMenuService(): RichMenuService {
+  if (!_richMenuServiceInstance) {
+    _richMenuServiceInstance = new RichMenuService();
+  }
+  return _richMenuServiceInstance;
+}
+
+// 為了向後兼容，也導出一個 getter
+export const richMenuService = new Proxy({} as RichMenuService, {
+  get(_target, prop) {
+    return getRichMenuService()[prop as keyof RichMenuService];
+  }
+});
 
