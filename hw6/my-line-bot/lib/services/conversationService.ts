@@ -1,5 +1,5 @@
 import { prisma } from '../db/prisma';
-import type { ConversationState, ConversationMetadata } from '../types/conversation';
+import type { ConversationState, ConversationMetadata, MessageMetadata } from '../types/conversation';
 
 /**
  * 取得或建立對話
@@ -39,7 +39,7 @@ export async function getOrCreateConversation(lineUserId: string) {
 }
 
 /**
- * 儲存訊息
+ * 儲存訊息（增強版，支援完整 metadata）
  */
 export async function saveMessage(
   conversationId: string,
@@ -48,7 +48,7 @@ export async function saveMessage(
   content: string,
   role: 'user' | 'assistant' | 'system',
   lineMessageId?: string,
-  metadata?: any
+  metadata?: MessageMetadata | any
 ) {
   const message = await prisma.message.create({
     data: {
@@ -58,7 +58,7 @@ export async function saveMessage(
       content,
       role,
       lineMessageId,
-      metadata,
+      metadata: metadata || {},
     },
   });
 
@@ -71,6 +71,74 @@ export async function saveMessage(
   });
 
   return message;
+}
+
+/**
+ * 儲存事件並包含完整的 metadata
+ */
+export async function saveEventWithMetadata(
+  conversationId: string,
+  lineUserId: string,
+  messageType: string,
+  content: string,
+  role: 'user' | 'assistant' | 'system',
+  options: {
+    lineMessageId?: string;
+    eventType?: string;
+    source?: {
+      type: string;
+      userId: string;
+      groupId?: string;
+      roomId?: string;
+    };
+    replyToken?: string;
+    processingTime?: number;
+    processingStatus?: 'success' | 'error' | 'timeout';
+    errorLog?: {
+      message: string;
+      stack?: string;
+      timestamp: string;
+    };
+    llmDetails?: {
+      model?: string;
+      latency?: number;
+      tokens?: {
+        input?: number;
+        output?: number;
+      };
+      success?: boolean;
+      error?: string;
+    };
+    rawEvent?: any;
+    [key: string]: any;
+  } = {}
+): Promise<any> {
+  const metadata: MessageMetadata = {
+    eventType: options.eventType,
+    source: options.source,
+    replyToken: options.replyToken,
+    processingTime: options.processingTime,
+    processingStatus: options.processingStatus || 'success',
+    errorLog: options.errorLog,
+    llmDetails: options.llmDetails,
+    rawEvent: options.rawEvent,
+    ...Object.fromEntries(
+      Object.entries(options).filter(([key]) => 
+        !['lineMessageId', 'eventType', 'source', 'replyToken', 'processingTime', 
+          'processingStatus', 'errorLog', 'llmDetails', 'rawEvent'].includes(key)
+      )
+    ),
+  };
+
+  return saveMessage(
+    conversationId,
+    lineUserId,
+    messageType,
+    content,
+    role,
+    options.lineMessageId,
+    metadata
+  );
 }
 
 /**

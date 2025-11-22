@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import getBot from '../../../../bot';
 
 export async function POST(req: NextRequest) {
+  const requestId = Math.random().toString(36).substring(7);
+  const timestamp = new Date().toISOString();
+  
+  console.log(`\n🔵 [Webhook Request ${requestId}]`, {
+    timestamp,
+    method: req.method,
+    path: '/api/webhooks/line',
+  });
+
   // Line 要求必須返回 200，即使發生錯誤也要返回 200
   try {
     // 檢查環境變數（支援兩種命名方式）
@@ -29,8 +38,12 @@ export async function POST(req: NextRequest) {
     
     try {
       bodyJson = JSON.parse(body || '{}');
+      console.log(`📥 [Webhook Request ${requestId}] Received body:`, {
+        events: bodyJson.events?.length || 0,
+        destination: bodyJson.destination,
+      });
     } catch (parseError) {
-      console.error('❌ JSON 解析錯誤:', parseError);
+      console.error(`❌ [Webhook Request ${requestId}] JSON 解析錯誤:`, parseError);
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 200 });
     }
     
@@ -57,12 +70,14 @@ export async function POST(req: NextRequest) {
     // 處理請求（Bottender 會自動處理回應）
     await requestHandler(bodyJson, requestContext);
 
+    console.log(`✅ [Webhook Request ${requestId}] Successfully processed`);
+    
     // 成功處理，返回 200
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
     // 即使發生錯誤，也要返回 200（Line 要求）
-    console.error('❌ Webhook 處理錯誤:', error);
-    console.error('錯誤堆疊:', error?.stack);
+    console.error(`❌ [Webhook Request ${requestId}] Webhook 處理錯誤:`, error);
+    console.error(`❌ [Webhook Request ${requestId}] 錯誤堆疊:`, error?.stack);
     
     // 返回 200 而不是 500，避免 Line 重試
     return NextResponse.json({ 

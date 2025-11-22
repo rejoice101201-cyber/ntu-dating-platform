@@ -9,6 +9,7 @@ import { checkRateLimit } from '../services/rateLimitService';
 import {
   getOrCreateConversation,
   saveMessage,
+  saveEventWithMetadata,
   getConversationHistory,
   updateConversationState,
 } from '../services/conversationService';
@@ -17,9 +18,22 @@ import {
  * 處理 Line 事件
  */
 export async function handleLineEvent(context: LineContext): Promise<void> {
+  const startTime = Date.now();
   const userId = context.event.source?.userId;
+  const eventType = context.event.type;
+  const timestamp = new Date().toISOString();
+  
+  // 詳細日誌記錄
+  console.log('📨 [Webhook Event]', {
+    timestamp,
+    eventType,
+    userId: userId?.substring(0, 20) + '...',
+    hasText: context.event.isText,
+    text: context.event.isText ? context.event.text?.substring(0, 50) : undefined,
+  });
+
   if (!userId) {
-    console.error('No user ID in event');
+    console.error('❌ [Webhook Event] No user ID in event');
     return;
   }
 
@@ -93,7 +107,16 @@ async function handleTextMessage(
   text: string | undefined,
   locale: SupportedLocale
 ): Promise<void> {
+  const startTime = Date.now();
+  console.log('💬 [Text Message]', {
+    userId: userId.substring(0, 20) + '...',
+    text: text?.substring(0, 100),
+    locale,
+    timestamp: new Date().toISOString(),
+  });
+
   if (!text) {
+    console.warn('⚠️ [Text Message] Empty text, returning');
     return;
   }
 
@@ -138,15 +161,28 @@ async function handleTextMessage(
     conversation = await getOrCreateConversation(userId);
     dbAvailable = true;
 
-    // 儲存使用者訊息
-    await saveMessage(
+    // 儲存使用者訊息（包含完整 metadata）
+    const messageStartTime = Date.now();
+    await saveEventWithMetadata(
       conversation.id,
       userId,
       'text',
       text,
       'user',
-      context.event.message?.id,
-      context.event
+      {
+        lineMessageId: context.event.message?.id,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+          groupId: context.event.source?.type === 'group' ? (context.event.source as any).groupId : undefined,
+          roomId: context.event.source?.type === 'room' ? (context.event.source as any).roomId : undefined,
+        },
+        replyToken: context.event.replyToken,
+        processingTime: Date.now() - messageStartTime,
+        processingStatus: 'success',
+        rawEvent: context.event,
+      }
     );
   } catch (dbError) {
     console.warn('資料庫連接失敗，將使用降級模式:', dbError);
@@ -187,7 +223,21 @@ async function handleTextMessage(
     
     if (dbAvailable && conversation) {
       try {
-        await saveMessage(conversation.id, userId, 'template', '更多資訊 Carousel', 'assistant');
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'template',
+          '更多資訊 Carousel',
+          'assistant',
+          {
+            eventType: 'carousel',
+            source: {
+              type: context.event.source?.type || 'user',
+              userId,
+            },
+            processingStatus: 'success',
+          }
+        );
         await updateConversationState(conversation.id, 'menu_selection');
       } catch (saveError) {
         console.warn('儲存回應失敗:', saveError);
@@ -204,7 +254,22 @@ async function handleTextMessage(
       try {
         const content = getSectionContent(locale, section);
         const responseText = [content.title, ...content.body].join('\n\n');
-        await saveMessage(conversation.id, userId, 'text', responseText, 'assistant');
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          responseText,
+          'assistant',
+          {
+            eventType: 'section_response',
+            source: {
+              type: context.event.source?.type || 'user',
+              userId,
+            },
+            processingStatus: 'success',
+            sectionId: section,
+          }
+        );
         await updateConversationState(conversation.id, section as any);
       } catch (saveError) {
         console.warn('儲存回應失敗:', saveError);
@@ -229,6 +294,7 @@ async function handleLLMResponse(
   conversation: any,
   dbAvailable: boolean
 ): Promise<void> {
+  const llmStartTime = Date.now();
   try {
     let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
     if (dbAvailable && conversation) {
@@ -240,13 +306,35 @@ async function handleLLMResponse(
     }
 
     const llmResponse = await generateResponse(text, conversationHistory, locale);
+    const llmLatency = llmResponse.latency || (Date.now() - llmStartTime);
 
     if (llmResponse.success && llmResponse.message) {
       await context.sendText(llmResponse.message);
 
       if (dbAvailable && conversation) {
         try {
-          await saveMessage(conversation.id, userId, 'text', llmResponse.message, 'assistant');
+          await saveEventWithMetadata(
+            conversation.id,
+            userId,
+            'text',
+            llmResponse.message,
+            'assistant',
+            {
+              eventType: 'llm_response',
+              source: {
+                type: context.event.source?.type || 'user',
+                userId,
+              },
+              processingTime: llmLatency,
+              processingStatus: 'success',
+              llmDetails: {
+                model: llmResponse.model || 'unknown',
+                latency: llmResponse.latency || llmLatency,
+                tokens: llmResponse.tokens,
+                success: true,
+              },
+            }
+          );
           await updateConversationState(conversation.id, 'symptom_consultation');
         } catch (saveError) {
           console.warn('儲存 LLM 回應失敗:', saveError);
@@ -282,18 +370,73 @@ Best regards from Mumu Ri'an! 💙`);
 
       if (dbAvailable && conversation) {
         try {
-          await saveMessage(conversation.id, userId, 'text', fallbackText, 'assistant');
+          await saveEventWithMetadata(
+            conversation.id,
+            userId,
+            'text',
+            fallbackText,
+            'assistant',
+            {
+              eventType: 'llm_fallback',
+              source: {
+                type: context.event.source?.type || 'user',
+                userId,
+              },
+              processingTime: llmLatency,
+              processingStatus: 'error',
+              llmDetails: {
+                model: llmResponse.model,
+                latency: llmResponse.latency || llmLatency,
+                success: false,
+                error: llmResponse.error || 'LLM response failed',
+              },
+            }
+          );
         } catch (saveError) {
           console.warn('儲存降級回應失敗:', saveError);
         }
       }
     }
-  } catch (llmError) {
+  } catch (llmError: any) {
+    const llmLatency = Date.now() - llmStartTime;
     console.error('LLM 處理錯誤:', llmError);
     const errorText = locale === 'zh-TW'
       ? '抱歉，系統暫時無法處理您的問題。請致電 02-2778-7178 與我們聯繫。'
       : 'Sorry, the system is temporarily unable to process your question. Please call 02-2778-7178 to contact us.';
     await context.sendText(errorText);
+    
+    // 儲存錯誤記錄
+    if (dbAvailable && conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          errorText,
+          'assistant',
+          {
+            eventType: 'llm_error',
+            source: {
+              type: context.event.source?.type || 'user',
+              userId,
+            },
+            processingTime: llmLatency,
+            processingStatus: 'error',
+            errorLog: {
+              message: llmError?.message || 'Unknown LLM error',
+              stack: llmError?.stack,
+              timestamp: new Date().toISOString(),
+            },
+            llmDetails: {
+              success: false,
+              error: llmError?.message || 'Unknown error',
+            },
+          }
+        );
+      } catch (saveError) {
+        console.warn('儲存錯誤記錄失敗:', saveError);
+      }
+    }
   }
 }
 
@@ -341,32 +484,95 @@ async function handleOtherMessage(
   userId: string,
   locale: SupportedLocale
 ): Promise<void> {
+  const startTime = Date.now();
   const messageType = context.event.message?.type || 'unknown';
   const messageText = locale === 'zh-TW'
     ? '抱歉，我目前只能處理文字訊息。如需協助，請用文字描述您的問題。'
     : 'Sorry, I can only process text messages at the moment. Please describe your question in text.';
 
+  console.log('📎 [Other Message]', {
+    userId: userId.substring(0, 20) + '...',
+    messageType,
+    timestamp: new Date().toISOString(),
+  });
+
   try {
     await context.sendText(messageText);
+    const processingTime = Date.now() - startTime;
 
     // 儲存到資料庫
     try {
       const conversation = await getOrCreateConversation(userId);
-      await saveMessage(
+      await saveEventWithMetadata(
         conversation.id,
         userId,
         messageType,
         `收到 ${messageType} 訊息`,
         'user',
-        'id' in (context.event.message || {}) ? (context.event.message as any).id : undefined,
-        context.event
+        {
+          lineMessageId: 'id' in (context.event.message || {}) ? (context.event.message as any).id : undefined,
+          eventType: 'message',
+          source: {
+            type: context.event.source?.type || 'user',
+            userId,
+          },
+          replyToken: context.event.replyToken,
+          processingTime,
+          processingStatus: 'success',
+          rawEvent: context.event,
+        }
       );
-      await saveMessage(conversation.id, userId, 'text', messageText, 'assistant');
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        'text',
+        messageText,
+        'assistant',
+        {
+          eventType: 'response',
+          source: {
+            type: context.event.source?.type || 'user',
+            userId,
+          },
+          processingTime: Date.now() - startTime - processingTime,
+          processingStatus: 'success',
+        }
+      );
     } catch (dbError) {
       console.warn('資料庫連接失敗，訊息已回覆但未儲存:', dbError);
     }
-  } catch (error) {
+  } catch (error: any) {
+    const processingTime = Date.now() - startTime;
     console.error('處理其他訊息錯誤:', error);
+    
+    // 儲存錯誤記錄
+    try {
+      const conversation = await getOrCreateConversation(userId);
+      await saveEventWithMetadata(
+        conversation.id,
+        userId,
+        messageType,
+        `收到 ${messageType} 訊息（處理失敗）`,
+        'user',
+        {
+          eventType: 'message',
+          source: {
+            type: context.event.source?.type || 'user',
+            userId,
+          },
+          processingTime,
+          processingStatus: 'error',
+          errorLog: {
+            message: error?.message || 'Unknown error',
+            stack: error?.stack,
+            timestamp: new Date().toISOString(),
+          },
+          rawEvent: context.event,
+        }
+      );
+    } catch (dbError) {
+      console.warn('儲存錯誤記錄失敗:', dbError);
+    }
   }
 }
 
@@ -378,6 +584,7 @@ async function sendLanguageSelection(
   userId: string,
   currentLocale: SupportedLocale
 ): Promise<void> {
+  const startTime = Date.now();
   const quickReply = [
     {
       type: 'action',
@@ -410,5 +617,29 @@ async function sendLanguageSelection(
       },
     } as any,
   ]);
+
+  // 儲存語言選擇訊息
+  const processingTime = Date.now() - startTime;
+  try {
+    const conversation = await getOrCreateConversation(userId);
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      messageText,
+      'assistant',
+      {
+        eventType: 'language_selection',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        processingTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (e) {
+    console.warn('儲存語言選擇訊息失敗:', e);
+  }
 }
 

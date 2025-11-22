@@ -91,10 +91,17 @@ export interface LLMResponse {
   success: boolean;
   message?: string | null; // 允許 message 為 null
   error?: string;
+  model?: string; // 使用的模型名稱
+  latency?: number; // 回應時間（毫秒）
+  tokens?: {
+    input?: number;
+    output?: number;
+  };
 }
 
 // 使用 REST API 直接調用 Gemini（更可靠）
 async function callGeminiREST(modelName: string, prompt: string): Promise<LLMResponse> {
+  const startTime = Date.now();
   const API_KEY = process.env.GEMINI_API_KEY || '';
   if (!API_KEY) {
     return { success: false, error: 'NO_API_KEY', message: null };
@@ -186,8 +193,22 @@ async function callGeminiREST(modelName: string, prompt: string): Promise<LLMRes
         
         if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
           const text = data.candidates[0].content.parts[0].text;
-          console.log(`✅ 使用模型 ${modelName} (${apiVersion}) 成功`);
-          return { success: true, message: text };
+          const latency = Date.now() - startTime;
+          console.log(`✅ 使用模型 ${modelName} (${apiVersion}) 成功，耗時 ${latency}ms`);
+          
+          // 提取 token 使用資訊（如果有的話）
+          const usage = data.usageMetadata || {};
+          
+          return { 
+            success: true, 
+            message: text,
+            model: modelName,
+            latency,
+            tokens: {
+              input: usage.promptTokenCount,
+              output: usage.candidatesTokenCount,
+            },
+          };
         }
 
         lastError = { error: 'INVALID_RESPONSE' };
