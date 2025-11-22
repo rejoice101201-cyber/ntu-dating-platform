@@ -50,27 +50,49 @@ export async function saveMessage(
   lineMessageId?: string,
   metadata?: MessageMetadata | any
 ) {
-  const message = await prisma.message.create({
-    data: {
+  try {
+    console.log('💾 [Prisma] 開始建立訊息記錄...', {
       conversationId,
-      lineUserId,
+      lineUserId: lineUserId.substring(0, 20) + '...',
       messageType,
-      content,
       role,
-      lineMessageId,
-      metadata: metadata || {},
-    },
-  });
+      contentLength: content.length,
+    });
+    
+    const message = await prisma.message.create({
+      data: {
+        conversationId,
+        lineUserId,
+        messageType,
+        content,
+        role,
+        lineMessageId,
+        metadata: metadata || {},
+      },
+    });
 
-  // 更新對話的最後訊息時間
-  await prisma.conversation.update({
-    where: { id: conversationId },
-    data: {
-      lastMessageAt: new Date(),
-    },
-  });
+    console.log('✅ [Prisma] 訊息記錄已建立，messageId:', message.id);
 
-  return message;
+    // 更新對話的最後訊息時間
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessageAt: new Date(),
+      },
+    });
+
+    console.log('✅ [Prisma] 對話最後訊息時間已更新');
+
+    return message;
+  } catch (error: any) {
+    console.error('❌ [Prisma] 儲存訊息失敗:', {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack?.substring(0, 500),
+    });
+    throw error;
+  }
 }
 
 /**

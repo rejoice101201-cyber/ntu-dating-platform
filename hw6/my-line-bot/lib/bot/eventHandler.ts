@@ -159,12 +159,15 @@ async function handleTextMessage(
 
   // 嘗試連接資料庫
   try {
+    console.log('💾 [Database] 嘗試連接資料庫...');
     conversation = await getOrCreateConversation(userId);
     dbAvailable = true;
+    console.log('✅ [Database] 資料庫連接成功，conversationId:', conversation.id);
 
     // 儲存使用者訊息（包含完整 metadata）
     const messageStartTime = Date.now();
-    await saveEventWithMetadata(
+    console.log('💾 [Database] 開始儲存使用者訊息...');
+    const savedMessage = await saveEventWithMetadata(
       conversation.id,
       userId,
       'text',
@@ -185,8 +188,14 @@ async function handleTextMessage(
         rawEvent: context.event,
       }
     );
+    console.log('✅ [Database] 使用者訊息已儲存，messageId:', savedMessage.id);
   } catch (dbError) {
-    console.warn('資料庫連接失敗，將使用降級模式:', dbError);
+    console.error('❌ [Database] 資料庫連接失敗，將使用降級模式:', dbError);
+    console.error('❌ [Database] 錯誤詳情:', {
+      message: (dbError as any)?.message,
+      code: (dbError as any)?.code,
+      stack: (dbError as any)?.stack?.substring(0, 500),
+    });
     dbAvailable = false;
   }
 
@@ -226,13 +235,15 @@ async function handleTextMessage(
 
   // 如果是 schedule 章節，發送 Carousel
   if (section === 'schedule') {
+    console.log('📋 [Schedule] 發送 schedule 章節訊息和 Carousel');
     await sendSectionTextMessage(context, section, locale);
     const carousel = createCarouselTemplate(locale);
     await context.reply([carousel as any]);
     
     if (dbAvailable && conversation) {
       try {
-        await saveEventWithMetadata(
+        console.log('💾 [Database] 開始儲存 schedule 回應...');
+        const savedResponse = await saveEventWithMetadata(
           conversation.id,
           userId,
           'template',
@@ -247,23 +258,34 @@ async function handleTextMessage(
             processingStatus: 'success',
           }
         );
+        console.log('✅ [Database] Schedule 回應已儲存，messageId:', savedResponse.id);
         await updateConversationState(conversation.id, 'menu_selection');
+        console.log('✅ [Database] 對話狀態已更新為 menu_selection');
       } catch (saveError) {
-        console.warn('儲存回應失敗:', saveError);
+        console.error('❌ [Database] 儲存 schedule 回應失敗:', saveError);
+        console.error('❌ [Database] 錯誤詳情:', {
+          message: (saveError as any)?.message,
+          code: (saveError as any)?.code,
+          stack: (saveError as any)?.stack?.substring(0, 500),
+        });
       }
+    } else {
+      console.warn('⚠️ [Database] 資料庫不可用，無法儲存 schedule 回應');
     }
     return;
   }
 
   // 發送章節訊息
   try {
+    console.log(`📋 [Section] 發送 ${section} 章節訊息`);
     await sendSectionTextMessage(context, section, locale);
 
     if (dbAvailable && conversation) {
       try {
+        console.log('💾 [Database] 開始儲存章節回應...');
         const content = getSectionContent(locale, section);
         const responseText = [content.title, ...content.body].join('\n\n');
-        await saveEventWithMetadata(
+        const savedResponse = await saveEventWithMetadata(
           conversation.id,
           userId,
           'text',
@@ -279,13 +301,22 @@ async function handleTextMessage(
             sectionId: section,
           }
         );
+        console.log('✅ [Database] 章節回應已儲存，messageId:', savedResponse.id);
         await updateConversationState(conversation.id, section as any);
+        console.log(`✅ [Database] 對話狀態已更新為 ${section}`);
       } catch (saveError) {
-        console.warn('儲存回應失敗:', saveError);
+        console.error('❌ [Database] 儲存章節回應失敗:', saveError);
+        console.error('❌ [Database] 錯誤詳情:', {
+          message: (saveError as any)?.message,
+          code: (saveError as any)?.code,
+          stack: (saveError as any)?.stack?.substring(0, 500),
+        });
       }
+    } else {
+      console.warn('⚠️ [Database] 資料庫不可用，無法儲存章節回應');
     }
   } catch (error) {
-    console.error('發送章節訊息錯誤:', error);
+    console.error('❌ [Section] 發送章節訊息錯誤:', error);
     
     // 如果腳本無法處理，使用 LLM
     await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
