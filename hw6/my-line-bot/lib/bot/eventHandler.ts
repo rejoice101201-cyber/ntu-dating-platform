@@ -4,6 +4,7 @@ import type { SectionId } from '../i18n/sections';
 import { getUserLocale, setUserLocale } from '../i18n/utils';
 import { getSectionContent } from '../i18n/sections';
 import { sendSectionTextMessage, createWelcomeMessage, createCarouselTemplate, resolveSectionFromText } from './scriptService';
+import { matchSectionFromText } from './sectionMatcher';
 import { generateResponse } from '../services/llmService';
 import { checkRateLimit } from '../services/rateLimitService';
 import {
@@ -214,6 +215,14 @@ async function handleTextMessage(
 
   // 匹配章節
   const section = resolveSectionFromText(text, locale);
+  const matchedSection = matchSectionFromText(text, locale);
+
+  // 如果沒有匹配到任何章節，直接使用 LLM
+  if (!matchedSection) {
+    console.log('💬 [Text Message] 未匹配到章節，使用 LLM 處理');
+    await handleLLMResponse(context, userId, text, locale, conversation, dbAvailable);
+    return;
+  }
 
   // 如果是 schedule 章節，發送 Carousel
   if (section === 'schedule') {
