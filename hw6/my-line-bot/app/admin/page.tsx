@@ -17,6 +17,13 @@ interface Message {
   };
 }
 
+interface UserProfile {
+  userId: string;
+  displayName: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+}
+
 interface Conversation {
   id: string;
   lineUserId: string;
@@ -34,6 +41,7 @@ export default function AdminPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<Map<string, UserProfile>>(new Map());
   
   // 篩選條件
   const [filters, setFilters] = useState({
@@ -129,6 +137,35 @@ export default function AdminPage() {
            old.totalConversations !== new_.totalConversations;
   };
 
+  // 獲取使用者 Profile
+  const fetchUserProfiles = async (userIds: string[]) => {
+    const uniqueUserIds = [...new Set(userIds)];
+    const profiles = new Map<string, UserProfile>();
+    
+    // 批次獲取 Profile（避免過多請求）
+    const profilePromises = uniqueUserIds.slice(0, 20).map(async (userId) => {
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/profile`);
+        if (res.ok) {
+          const profile = await res.json();
+          profiles.set(userId, profile);
+        }
+      } catch (error) {
+        // 靜默處理錯誤
+        console.warn(`無法獲取使用者 ${userId.substring(0, 20)}... 的 Profile:`, error);
+      }
+    });
+
+    await Promise.all(profilePromises);
+    setUserProfiles((prev) => {
+      const newMap = new Map(prev);
+      profiles.forEach((profile, userId) => {
+        newMap.set(userId, profile);
+      });
+      return newMap;
+    });
+  };
+
   // 初始載入（顯示 loading）
   const fetchAll = async () => {
     setLoading(true);
@@ -142,6 +179,15 @@ export default function AdminPage() {
       setConversations(conversationsData);
       setStats(statsData);
       setLastUpdateTime(new Date());
+      
+      // 獲取使用者 Profiles
+      const userIds = [
+        ...new Set([
+          ...messagesData.map((m: Message) => m.lineUserId),
+          ...conversationsData.map((c: Conversation) => c.lineUserId),
+        ])
+      ];
+      await fetchUserProfiles(userIds);
     } catch (error) {
       console.error('載入數據失敗:', error);
     } finally {
@@ -401,8 +447,31 @@ export default function AdminPage() {
                       </span>
                     </div>
                     <div className="text-sm mb-2 break-words">{msg.content}</div>
-                    <div className="text-xs text-gray-500">
-                      User ID: {msg.lineUserId.substring(0, 20)}...
+                    <div className="flex items-center gap-2 mt-2">
+                      {userProfiles.get(msg.lineUserId)?.pictureUrl && (
+                        <img
+                          src={userProfiles.get(msg.lineUserId)!.pictureUrl}
+                          alt={userProfiles.get(msg.lineUserId)?.displayName || 'User'}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div className="text-xs text-gray-500">
+                        {userProfiles.get(msg.lineUserId)?.displayName ? (
+                          <>
+                            <span className="font-semibold text-gray-400">
+                              {userProfiles.get(msg.lineUserId)!.displayName}
+                            </span>
+                            <span className="text-gray-600 ml-2">
+                              (ID: {msg.lineUserId.substring(0, 20)}...)
+                            </span>
+                          </>
+                        ) : (
+                          <>User ID: {msg.lineUserId.substring(0, 20)}...</>
+                        )}
+                      </div>
                     </div>
                     {msg.metadata && (
                       <details className="mt-2 text-xs text-gray-400">
@@ -440,9 +509,21 @@ export default function AdminPage() {
                         >
                           {conv.status === 'active' ? '活躍' : '已結束'}
                         </span>
-                        <span className="text-sm font-mono">
-                          {conv.lineUserId.substring(0, 20)}...
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {userProfiles.get(conv.lineUserId)?.pictureUrl && (
+                            <img
+                              src={userProfiles.get(conv.lineUserId)!.pictureUrl}
+                              alt={userProfiles.get(conv.lineUserId)?.displayName || 'User'}
+                              className="w-5 h-5 rounded-full"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="text-sm font-mono">
+                            {userProfiles.get(conv.lineUserId)?.displayName || `${conv.lineUserId.substring(0, 20)}...`}
+                          </span>
+                        </div>
                       </div>
                       <span className="text-xs text-gray-400">
                         {new Date(conv.lastMessageAt).toLocaleString('zh-TW')}
