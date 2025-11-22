@@ -5,9 +5,14 @@ import getBot from '../../../../bot';
 export async function POST(req: NextRequest) {
   // Line 要求必須返回 200，即使發生錯誤也要返回 200
   try {
-    // 檢查環境變數
-    if (!process.env.LINE_CHANNEL_SECRET || !process.env.LINE_CHANNEL_ACCESS_TOKEN) {
-      console.error('❌ 缺少必要的環境變數: LINE_CHANNEL_SECRET 或 LINE_CHANNEL_ACCESS_TOKEN');
+    // 檢查環境變數（支援兩種命名方式）
+    const channelSecret = process.env.LINE_CHANNEL_SECRET || process.env.CHANNEL_SECRET;
+    const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || process.env.CHANNEL_ACCESS_TOKEN;
+
+    if (!channelSecret || !accessToken) {
+      console.error('❌ 缺少必要的環境變數:');
+      console.error('   需要設定: LINE_CHANNEL_SECRET 或 CHANNEL_SECRET');
+      console.error('   需要設定: LINE_CHANNEL_ACCESS_TOKEN 或 CHANNEL_ACCESS_TOKEN');
       // 仍然返回 200，避免 Line 重試
       return NextResponse.json({ error: 'Configuration error' }, { status: 200 });
     }

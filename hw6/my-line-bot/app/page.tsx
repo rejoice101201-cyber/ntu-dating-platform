@@ -1,4 +1,9 @@
 export default function Home() {
+  // 取得正確的 webhook URL
+  const webhookUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}/api/webhooks/line`
+    : 'https://hw6-bot.vercel.app/api/webhooks/line';
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black">
@@ -14,13 +19,16 @@ export default function Home() {
               ✓ Webhook 端點已就緒
             </p>
             <p className="mt-2 text-xs text-green-600 dark:text-green-300">
-              API 路徑: /api/webhook
+              API 路徑: /api/webhooks/line
             </p>
           </div>
           <div className="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
             <p>請在 Line Developers Console 中設定 Webhook URL:</p>
-            <p className="mt-2 font-mono text-xs bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded">
-              https://your-domain.vercel.app/api/webhook
+            <p className="mt-2 font-mono text-xs bg-zinc-100 dark:bg-zinc-800 px-3 py-2 rounded break-all">
+              {webhookUrl}
+            </p>
+            <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">
+              注意：路徑是 <code className="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">/api/webhooks/line</code>（webhooks 是複數）
             </p>
           </div>
         </div>

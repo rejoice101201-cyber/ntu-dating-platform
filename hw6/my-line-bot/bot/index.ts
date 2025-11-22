@@ -7,16 +7,22 @@ let botInstance: any = null;
 function getBot() {
   if (!botInstance) {
     try {
+      // 支援兩種環境變數命名方式
+      const channelSecret = process.env.LINE_CHANNEL_SECRET || process.env.CHANNEL_SECRET;
+      const accessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN || process.env.CHANNEL_ACCESS_TOKEN;
+
       // 檢查環境變數
-      if (!process.env.LINE_CHANNEL_SECRET || !process.env.LINE_CHANNEL_ACCESS_TOKEN) {
-        console.error('❌ 缺少必要的環境變數: LINE_CHANNEL_SECRET 或 LINE_CHANNEL_ACCESS_TOKEN');
+      if (!channelSecret || !accessToken) {
+        console.error('❌ 缺少必要的環境變數:');
+        console.error('   需要設定: LINE_CHANNEL_SECRET 或 CHANNEL_SECRET');
+        console.error('   需要設定: LINE_CHANNEL_ACCESS_TOKEN 或 CHANNEL_ACCESS_TOKEN');
         throw new Error('Missing required environment variables');
       }
 
       // 建立 Line connector
       const line = new LineConnector({
-        channelSecret: process.env.LINE_CHANNEL_SECRET,
-        accessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+        channelSecret,
+        accessToken,
       });
 
       // 建立 Bot 實例
