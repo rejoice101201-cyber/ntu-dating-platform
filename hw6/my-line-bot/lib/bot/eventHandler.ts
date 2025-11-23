@@ -3,7 +3,7 @@ import type { SupportedLocale } from '../types/locale';
 import type { SectionId } from '../i18n/sections';
 import { getUserLocale, setUserLocale } from '../i18n/utils';
 import { getSectionContent } from '../i18n/sections';
-import { sendSectionTextMessage, createWelcomeMessage, createCarouselTemplate, resolveSectionFromText } from './scriptService';
+import { sendSectionTextMessage, createWelcomeMessage, createCarouselTemplate, resolveSectionFromText, createProductsCarousel } from './scriptService';
 import { matchSectionFromText } from './sectionMatcher';
 import { generateResponse } from '../services/llmService';
 import { checkRateLimit } from '../services/rateLimitService';
@@ -840,29 +840,69 @@ async function handleProducts(
 ): Promise<void> {
   console.log('🛍️ [Products] 處理嚴選產品');
   
-  const responseText = locale === 'zh-TW'
-    ? '🛍️ 嚴選產品\n\n木木日安提供多種嚴選的醫學美容產品，包括：\n\n• 專業保養品\n• 術後修護產品\n• 皮膚保養諮詢\n\n如需了解詳細產品資訊，請致電 02-2778-7178 或預約看診，讓我們的專業團隊為您推薦最適合的產品。\n\n木木日安祝福您！💙'
-    : '🛍️ Selected Products\n\nMumu Ri\'an offers a variety of carefully selected medical beauty products, including:\n\n• Professional skincare products\n• Post-treatment repair products\n• Skin care consultation\n\nFor detailed product information, please call 02-2778-7178 or schedule an appointment, and our professional team will recommend the most suitable products for you.\n\nBest regards from Mumu Ri\'an! 💙';
+  try {
+    // 建立 Flex Message Carousel
+    const productsCarousel = createProductsCarousel(locale);
+    
+    // 發送 Flex Message
+    await context.send(productsCarousel as any);
+    console.log('✅ [Products] Flex Message 已發送');
 
-  await context.sendText(responseText);
+    // 儲存到資料庫
+    if (conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'flex',
+          '嚴選產品 Flex Message',
+          'assistant',
+          {
+            eventType: 'rich_menu_response',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            postbackAction: 'products',
+            messageType: 'flex',
+            flexMessage: productsCarousel,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存回應失敗:', e);
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [Products] 發送 Flex Message 失敗:', error);
+    
+    // 降級方案：發送文字回覆
+    const fallbackText = locale === 'zh-TW'
+      ? '🛍️ 嚴選產品\n\n木木日安提供多種嚴選的醫學美容產品，包括：\n\n• 專業保養品\n• 術後修護產品\n• 皮膚保養諮詢\n\n如需了解詳細產品資訊，請致電 02-2778-7178 或預約看診，讓我們的專業團隊為您推薦最適合的產品。\n\n木木日安祝福您！💙'
+      : '🛍️ Selected Products\n\nMumu Ri\'an offers a variety of carefully selected medical beauty products, including:\n\n• Professional skincare products\n• Post-treatment repair products\n• Skin care consultation\n\nFor detailed product information, please call 02-2778-7178 or schedule an appointment, and our professional team will recommend the most suitable products for you.\n\nBest regards from Mumu Ri\'an! 💙';
 
-  if (conversation) {
     try {
-      await saveEventWithMetadata(
-        conversation.id,
-        userId,
-        'text',
-        responseText,
-        'assistant',
-        {
-          eventType: 'rich_menu_response',
-          source: { type: 'user', userId },
-          processingStatus: 'success',
-          postbackAction: 'products',
+      await context.sendText(fallbackText);
+      
+      if (conversation) {
+        try {
+          await saveEventWithMetadata(
+            conversation.id,
+            userId,
+            'text',
+            fallbackText,
+            'assistant',
+            {
+              eventType: 'rich_menu_response',
+              source: { type: 'user', userId },
+              processingStatus: 'error',
+              postbackAction: 'products',
+              error: error?.message,
+            }
+          );
+        } catch (e) {
+          console.warn('儲存降級回應失敗:', e);
         }
-      );
-    } catch (e) {
-      console.warn('儲存回應失敗:', e);
+      }
+    } catch (sendError) {
+      console.error('❌ [Products] 發送降級文字回覆也失敗:', sendError);
     }
   }
 }

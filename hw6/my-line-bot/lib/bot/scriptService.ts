@@ -393,3 +393,313 @@ export function resolveSectionFromText(
   return matched || 'welcome';
 }
 
+/**
+ * 建立嚴選產品 Flex Message Carousel
+ */
+export function createProductsCarousel(locale: SupportedLocale = 'zh-TW') {
+  const altText = locale === 'zh-TW' ? '嚴選產品' : 'Selected Products';
+  
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'carousel',
+      contents: [
+        {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            size: 'full',
+            aspectRatio: '20:19',
+            aspectMode: 'cover',
+            url: 'https://cdn-next.cybassets.com/media/W1siZiIsIjIzODQzL3Byb2R1Y3RzLzM5MDI5NjEyLzE3MTYzNDE5MzNfZGMxN2NiZDA3MTJhNTVmZTEyYzIuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=f985a7a2896bb024',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '溫和舒服洗面乳',
+                wrap: true,
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'box',
+                layout: 'baseline',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'NT$420',
+                    wrap: true,
+                    weight: 'bold',
+                    size: 'xl',
+                    flex: 0,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                action: {
+                  type: 'uri',
+                  label: 'Buy now',
+                  uri: 'https://shop.muskin.com.tw/products/acne_cleanser',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            size: 'full',
+            aspectRatio: '20:19',
+            aspectMode: 'cover',
+            url: 'https://cdn-next.cybassets.com/media/W1siZiIsIjIzODQzL3Byb2R1Y3RzLzM5MzA0OTUxLzE2Nzg3NzMwNjdfNzNhYjY4ZmNhMzU4MzhjMmIwNzMuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=5b3de1b8c6d72d83',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '果酸保養',
+                wrap: true,
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'box',
+                layout: 'baseline',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'NT$900',
+                    wrap: true,
+                    weight: 'bold',
+                    size: 'xl',
+                    flex: 0,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                flex: 2,
+                style: 'primary',
+                color: '#aaaaaa',
+                action: {
+                  type: 'uri',
+                  label: 'Buy now',
+                  uri: 'https://shop.muskin.com.tw/products/retinoid_gel',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            size: 'full',
+            aspectRatio: '20:19',
+            aspectMode: 'cover',
+            url: 'https://cdn-next.cybassets.com/media/W1siZiIsIjIzODQzL3Byb2R1Y3RzLzM5MzA0OTQ0LzE3MjcxMDM5NjBfOWYyODQ3M2QzNzBmODFhMDE1MWYuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=092d45f4451a1d59',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '抗荳蔓肌膚｜淨荳凝露',
+                wrap: true,
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'box',
+                layout: 'baseline',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'NT$790',
+                    wrap: true,
+                    weight: 'bold',
+                    size: 'xl',
+                    flex: 0,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                action: {
+                  type: 'uri',
+                  label: 'Buy now',
+                  uri: 'https://shop.muskin.com.tw',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            size: 'full',
+            aspectRatio: '20:19',
+            aspectMode: 'cover',
+            url: 'https://cdn-next.cybassets.com/media/W1siZiIsIjIzODQzL3Byb2R1Y3RzLzM5MzA0ODA0LzE3MjcxMTkzMzFfMzhkNGU0YjIyMTAwM2Y1NjgxMDYuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=4333d8a914f12bd5',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '敏弱肌專用乳液 50ml',
+                wrap: true,
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'box',
+                layout: 'baseline',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'NT$790',
+                    wrap: true,
+                    weight: 'bold',
+                    size: 'xl',
+                    flex: 0,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                action: {
+                  type: 'uri',
+                  label: 'Buy now',
+                  uri: 'https://shop.muskin.com.tw',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            size: 'full',
+            aspectRatio: '20:19',
+            aspectMode: 'cover',
+            url: 'https://cdn-next.cybassets.com/media/W1siZiIsIjIzODQzL3Byb2R1Y3RzLzM5MzA0OTU3LzE2Nzg3NzMwMzBfMjg0YzlmMWY1ZjFkYWRmNmQxZDQuanBlZyJdLFsicCIsInRodW1iIiwiNjAweDYwMCJdXQ.jpeg?sha=d303b4cd755f1257',
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '玻尿酸保濕保水',
+                wrap: true,
+                weight: 'bold',
+                size: 'xl',
+              },
+              {
+                type: 'box',
+                layout: 'baseline',
+                contents: [
+                  {
+                    type: 'text',
+                    text: 'NT$980',
+                    wrap: true,
+                    weight: 'bold',
+                    size: 'xl',
+                    flex: 0,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                action: {
+                  type: 'uri',
+                  label: 'Buy now',
+                  uri: 'https://shop.muskin.com.tw',
+                },
+              },
+            ],
+          },
+        },
+        {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                flex: 1,
+                gravity: 'center',
+                action: {
+                  type: 'uri',
+                  label: 'See more',
+                  uri: 'https://shop.muskin.com.tw',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
