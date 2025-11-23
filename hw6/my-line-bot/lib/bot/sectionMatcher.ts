@@ -1,8 +1,10 @@
 import type { SupportedLocale } from '../types/locale';
 import type { SectionId } from '../i18n/sections';
 
-// 關鍵字匹配表（支援多語系）
-const normalizedKeywords: Record<SectionId, Record<SupportedLocale, string[]>> = {
+// 關鍵字匹配表（支援多語系，包含 products）
+export type MatchableSectionId = SectionId | 'products';
+
+const normalizedKeywords: Record<MatchableSectionId, Record<SupportedLocale, string[]>> = {
   welcome: {
     'zh-TW': ['hi', 'hello', 'hey', 'help', '開始', '你好', '嗨', '助教', '在嗎', '哈囉', '您好'],
     'en-US': ['hi', 'hello', 'hey', 'help', 'start', 'begin', 'greeting'],
@@ -97,6 +99,10 @@ const normalizedKeywords: Record<SectionId, Record<SupportedLocale, string[]>> =
     'zh-TW': ['更多', '更多資訊', '更多內容', '詳細', '深入', 'schedule', '時程', '行程'],
     'en-US': ['more', 'more info', 'more information', 'detailed', 'deep dive', 'schedule', 'timeline'],
   },
+  products: {
+    'zh-TW': ['嚴選產品', '產品', '商品', '保養品', '購買', '買', '購物', 'shop', 'store', '產品資訊', '商品資訊'],
+    'en-US': ['products', 'product', 'shop', 'store', 'buy', 'purchase', 'items', 'merchandise'],
+  },
 };
 
 /**
@@ -112,7 +118,7 @@ function normalizeText(text: string): string {
 export function matchSectionFromText(
   text: string | undefined,
   locale: SupportedLocale
-): SectionId | undefined {
+): MatchableSectionId | undefined {
   if (!text) {
     return undefined;
   }
@@ -123,7 +129,7 @@ export function matchSectionFromText(
   for (const [section, keywords] of Object.entries(normalizedKeywords)) {
     const localeKeywords = keywords[locale];
     if (localeKeywords.some((keyword) => normalized.includes(keyword))) {
-      return section as SectionId;
+      return section as MatchableSectionId;
     }
   }
 

@@ -1,6 +1,6 @@
 import type { SupportedLocale } from '../types/locale';
 import { getSectionContent, type SectionId } from '../i18n/sections';
-import { matchSectionFromText } from './sectionMatcher';
+import { matchSectionFromText, type MatchableSectionId } from './sectionMatcher';
 
 /**
  * 發送章節文字訊息
@@ -390,7 +390,11 @@ export function resolveSectionFromText(
   }
 
   const matched = matchSectionFromText(text, locale);
-  return matched || 'welcome';
+  // 如果匹配到 'products'，返回 'welcome'（因為 products 會在 eventHandler 中特殊處理）
+  if (matched === 'products') {
+    return 'welcome';
+  }
+  return (matched as SectionId) || 'welcome';
 }
 
 /**

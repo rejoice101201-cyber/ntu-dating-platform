@@ -274,6 +274,28 @@ async function handleTextMessage(
   const matchedSection = matchSectionFromText(text, locale);
   console.log('🔍 [Text Message] 匹配結果:', { section, matchedSection, text: text?.substring(0, 50) });
 
+  // 如果匹配到 products（嚴選產品），發送 Flex Message Carousel
+  if (matchedSection === 'products') {
+    console.log('🛍️ [Text Message] 匹配到嚴選產品，發送 Flex Message Carousel');
+    try {
+      await handleProducts(context, userId, locale, conversation);
+      return;
+    } catch (productsError: any) {
+      console.error('❌ [Text Message] 處理嚴選產品失敗:', productsError);
+      // 降級處理：發送文字回覆
+      const fallbackText = locale === 'zh-TW'
+        ? '抱歉，目前無法顯示產品資訊。請稍後再試，或致電 02-2778-7178 與我們聯繫。'
+        : 'Sorry, I cannot display product information at the moment. Please try again later or call 02-2778-7178.';
+      try {
+        await context.sendText(fallbackText);
+        console.log('✅ [Text Message] 已發送降級回覆');
+      } catch (sendError) {
+        console.error('❌ [Text Message] 發送降級回覆也失敗:', sendError);
+      }
+      return;
+    }
+  }
+
   // 如果沒有匹配到任何章節，直接使用 LLM
   if (!matchedSection) {
     console.log('💬 [Text Message] 未匹配到章節，使用 LLM 處理');
