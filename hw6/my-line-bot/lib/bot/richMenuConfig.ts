@@ -114,7 +114,7 @@ export const richMenuButtons: RichMenuButton[] = [
     },
     action: {
       type: 'uri',
-      uri: 'line://ti/p/@muskin',
+      uri: 'line://ti/p/@335qqqlp',
       label: '推薦好友',
     },
   },
