@@ -113,9 +113,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Refer Friend',
     },
     action: {
-      type: 'uri',
-      uri: 'https://line.me/R/ti/p/@335qqqlp',
-      label: '推薦好友',
+      type: 'postback',
+      data: 'action=refer_friend',
+      displayText: '推薦好友',
     },
   },
   {

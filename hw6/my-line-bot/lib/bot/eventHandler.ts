@@ -883,46 +883,116 @@ async function handleReferFriend(
   const shareLink = 'https://line.me/R/ti/p/@335qqqlp';
   
   try {
-    // 使用 Buttons Template 發送包含分享按鈕的訊息
-    const templateMessage = locale === 'zh-TW'
+    // 使用 Flex Message 發送包含分享按鈕的訊息
+    const flexMessage = locale === 'zh-TW'
       ? {
-          type: 'template',
+          type: 'flex',
           altText: '推薦好友 - 木木日安官方帳號',
-          template: {
-            type: 'buttons',
-            title: '👥 推薦好友',
-            text: '感謝您對木木日安的支持！\n\n點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
-            actions: [
-              {
-                type: 'uri',
-                label: '分享給好友',
-                uri: shareLink,
-              },
-            ],
+          contents: {
+            type: 'bubble',
+            body: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'text',
+                  text: '👥 推薦好友',
+                  weight: 'bold',
+                  size: 'xl',
+                  color: '#1DB446',
+                },
+                {
+                  type: 'text',
+                  text: '感謝您對木木日安的支持！',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'md',
+                },
+                {
+                  type: 'text',
+                  text: '點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'sm',
+                  color: '#666666',
+                },
+              ],
+            },
+            footer: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'button',
+                  style: 'primary',
+                  color: '#1DB446',
+                  action: {
+                    type: 'uri',
+                    label: '分享給好友',
+                    uri: shareLink,
+                  },
+                },
+              ],
+            },
           },
         }
       : {
-          type: 'template',
+          type: 'flex',
           altText: 'Refer Friend - Mumu Ri\'an Official Account',
-          template: {
-            type: 'buttons',
-            title: '👥 Refer Friend',
-            text: 'Thank you for your support of Mumu Ri\'an!\n\nClick the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
-            actions: [
-              {
-                type: 'uri',
-                label: 'Share with Friends',
-                uri: shareLink,
-              },
-            ],
+          contents: {
+            type: 'bubble',
+            body: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'text',
+                  text: '👥 Refer Friend',
+                  weight: 'bold',
+                  size: 'xl',
+                  color: '#1DB446',
+                },
+                {
+                  type: 'text',
+                  text: 'Thank you for your support of Mumu Ri\'an!',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'md',
+                },
+                {
+                  type: 'text',
+                  text: 'Click the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'sm',
+                  color: '#666666',
+                },
+              ],
+            },
+            footer: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'button',
+                  style: 'primary',
+                  color: '#1DB446',
+                  action: {
+                    type: 'uri',
+                    label: 'Share with Friends',
+                    uri: shareLink,
+                  },
+                },
+              ],
+            },
           },
         };
 
-    console.log('📤 [ReferFriend] 準備發送 Buttons Template 訊息');
-    await context.send(templateMessage as any);
-    console.log('✅ [ReferFriend] Buttons Template 訊息已發送');
+    console.log('📤 [ReferFriend] 準備發送 Flex Message');
+    await context.send(flexMessage as any);
+    console.log('✅ [ReferFriend] Flex Message 已發送');
   } catch (error: any) {
-    console.error('❌ [ReferFriend] 發送 Buttons Template 失敗:', error);
+    console.error('❌ [ReferFriend] 發送 Flex Message 失敗:', error);
     console.error('❌ [ReferFriend] 錯誤詳情:', {
       message: error?.message,
       statusCode: error?.statusCode,
