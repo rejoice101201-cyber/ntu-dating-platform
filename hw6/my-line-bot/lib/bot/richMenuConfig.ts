@@ -113,9 +113,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Refer Friend',
     },
     action: {
-      type: 'postback',
-      data: 'action=refer_friend',
-      displayText: '推薦好友',
+      type: 'uri',
+      uri: 'line://ti/p/@muskin',
+      label: '推薦好友',
     },
   },
   {
@@ -191,7 +191,7 @@ export function createRichMenuConfig(locale: SupportedLocale = 'zh-TW'): any {
     },
     selected: false,
     name: `Mumu Ri'an Rich Menu (${locale})`,
-    chatBarText: locale === 'zh-TW' ? '點我選服務▼' : 'Select Service▼',
+    chatBarText: locale === 'zh-TW' ? '點我選服務' : 'Select Service',
     areas,
   };
 }
