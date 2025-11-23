@@ -707,3 +707,91 @@ export function createProductsCarousel(locale: SupportedLocale = 'zh-TW') {
   };
 }
 
+/**
+ * 建立帳號設定 Flex Message Carousel
+ */
+export function createAccountSettingsCarousel(
+  locale: SupportedLocale = 'zh-TW',
+  phoneNumber?: string | null
+) {
+  const altText = locale === 'zh-TW' ? '帳號設定' : 'Account Settings';
+  
+  const currentPhoneText = locale === 'zh-TW' 
+    ? phoneNumber 
+      ? `目前綁定手機：${phoneNumber}`
+      : '目前尚未綁定手機號碼'
+    : phoneNumber
+      ? `Currently bound mobile: ${phoneNumber}`
+      : 'No mobile number bound yet';
+
+  return {
+    type: 'flex',
+    altText,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'text',
+            text: locale === 'zh-TW' ? '帳號設定' : 'Account Settings',
+            weight: 'bold',
+            size: 'xl',
+            color: '#1DB446',
+          },
+          {
+            type: 'separator',
+            margin: 'md',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: locale === 'zh-TW' 
+                  ? '點擊「重新綁定手機號碼」後，在尚未完成輸入手機與簡訊驗證之前，系統會一直顯示指示訊息。'
+                  : 'After clicking "Re-bind Mobile Number", the system will continuously display instructional messages until you complete the mobile number input and SMS verification.',
+                wrap: true,
+                size: 'sm',
+                color: '#666666',
+              },
+              {
+                type: 'text',
+                text: currentPhoneText,
+                wrap: true,
+                size: 'md',
+                weight: 'bold',
+                margin: 'md',
+                color: '#333333',
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#FF0000',
+            action: {
+              type: 'postback',
+              label: locale === 'zh-TW' ? '重新綁定手機號碼' : 'Re-bind Mobile Number',
+              data: 'action=bind_phone&step=init',
+              displayText: locale === 'zh-TW' ? '重新綁定手機號碼' : 'Re-bind Mobile Number',
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+

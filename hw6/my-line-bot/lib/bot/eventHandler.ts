@@ -3,7 +3,8 @@ import type { SupportedLocale } from '../types/locale';
 import type { SectionId } from '../i18n/sections';
 import { getUserLocale, setUserLocale } from '../i18n/utils';
 import { getSectionContent } from '../i18n/sections';
-import { sendSectionTextMessage, createWelcomeMessage, createCarouselTemplate, resolveSectionFromText, createProductsCarousel } from './scriptService';
+import { sendSectionTextMessage, createWelcomeMessage, createCarouselTemplate, resolveSectionFromText, createProductsCarousel, createAccountSettingsCarousel } from './scriptService';
+import { getUserPhoneNumber, initiatePhoneBinding, setPhoneNumberAndSendCode, verifyPhoneNumber, cancelPhoneBinding, getUserPhoneData } from '../services/phoneService';
 import { matchSectionFromText } from './sectionMatcher';
 import { generateResponse } from '../services/llmService';
 import { checkRateLimit } from '../services/rateLimitService';
@@ -268,11 +269,68 @@ async function handleTextMessage(
     }
   }
 
+  // 檢查是否在手機綁定流程中
+  if (dbAvailable && conversation) {
+    const phoneData = await getUserPhoneData(userId);
+    if (phoneData.phoneBindingStep === 'waiting_phone' && text) {
+      // 檢查是否為手機號碼格式
+      if (/^09\d{8}$/.test(text.trim())) {
+        await handlePhoneNumberInput(context, userId, text.trim(), locale, conversation);
+        return;
+      } else if (text.trim().toLowerCase() === '取消' || text.trim().toLowerCase() === 'cancel') {
+        await cancelPhoneBinding(userId);
+        const cancelText = locale === 'zh-TW'
+          ? '已取消手機號碼綁定流程'
+          : 'Phone binding process cancelled';
+        await context.sendText(cancelText);
+        return;
+      } else {
+        // 提示格式錯誤
+        const errorText = locale === 'zh-TW'
+          ? '❌ 手機號碼格式錯誤\n\n請輸入 10 位數台灣手機號碼（例如：0912345678）\n\n或輸入「取消」來取消綁定流程'
+          : '❌ Invalid phone number format\n\nPlease enter a 10-digit Taiwan mobile number (e.g., 0912345678)\n\nOr type "cancel" to cancel the binding process';
+        await context.sendText(errorText);
+        return;
+      }
+    } else if (phoneData.phoneBindingStep === 'waiting_code' && text) {
+      // 檢查是否為驗證碼（6位數）或取消指令
+      if (text.trim().toLowerCase() === '取消' || text.trim().toLowerCase() === 'cancel') {
+        await cancelPhoneBinding(userId);
+        const cancelText = locale === 'zh-TW'
+          ? '已取消手機號碼綁定流程'
+          : 'Phone binding process cancelled';
+        await context.sendText(cancelText);
+        return;
+      } else if (/^\d{6}$/.test(text.trim())) {
+        await handleVerificationCodeInput(context, userId, text.trim(), locale, conversation);
+        return;
+      } else {
+        // 提示格式錯誤
+        const errorText = locale === 'zh-TW'
+          ? '❌ 驗證碼格式錯誤\n\n請輸入 6 位數驗證碼\n\n或輸入「取消」來取消綁定流程'
+          : '❌ Invalid verification code format\n\nPlease enter a 6-digit verification code\n\nOr type "cancel" to cancel the binding process';
+        await context.sendText(errorText);
+        return;
+      }
+    }
+  }
+
   // 匹配章節
   console.log('🔍 [Text Message] 開始匹配章節...');
   const section = resolveSectionFromText(text, locale);
   const matchedSection = matchSectionFromText(text, locale);
   console.log('🔍 [Text Message] 匹配結果:', { section, matchedSection, text: text?.substring(0, 50) });
+
+  // 如果匹配到 edit_profile（修改資料），顯示帳號設定
+  if (matchedSection === 'edit_profile') {
+    console.log('📝 [Text Message] 匹配到修改資料，顯示帳號設定');
+    try {
+      await handleEditProfile(context, userId, locale, conversation);
+      return;
+    } catch (error: any) {
+      console.error('❌ [Text Message] 處理修改資料失敗:', error);
+    }
+  }
 
   // 如果匹配到 products（嚴選產品），發送 Flex Message Carousel
   if (matchedSection === 'products') {
@@ -679,6 +737,11 @@ async function handlePostbackEvent(
     await handleReferFriend(context, userId, locale, conversation);
   } else if (action === 'edit_profile') {
     await handleEditProfile(context, userId, locale, conversation);
+  } else if (action === 'bind_phone') {
+    const step = params.get('step');
+    if (step === 'init') {
+      await handlePhoneBindingInit(context, userId, locale, conversation);
+    }
   } else if (action === 'products') {
     await handleProducts(context, userId, locale, conversation);
   } else {
@@ -822,31 +885,53 @@ async function handleEditProfile(
   locale: SupportedLocale,
   conversation: any
 ): Promise<void> {
-  console.log('✏️ [EditProfile] 處理修改資料');
+  console.log('📝 [Edit Profile] 處理修改資料');
   
-  const responseText = locale === 'zh-TW'
-    ? '✏️ 修改資料\n\n目前資料修改功能正在開發中。\n\n如需更新您的個人資料，請致電 02-2778-7178 與我們聯繫，我們的工作人員會協助您處理。\n\n感謝您的理解！'
-    : '✏️ Edit Profile\n\nThe profile editing feature is currently under development.\n\nIf you need to update your personal information, please call 02-2778-7178 to contact us, and our staff will assist you.\n\nThank you for your understanding!';
+  try {
+    // 取得目前綁定的手機號碼
+    const phoneNumber = await getUserPhoneNumber(userId);
+    
+    // 建立帳號設定 Flex Message
+    const settingsCarousel = createAccountSettingsCarousel(locale, phoneNumber);
+    
+    // 發送 Flex Message
+    await context.send(settingsCarousel as any);
+    console.log('✅ [Edit Profile] Flex Message 已發送');
 
-  await context.sendText(responseText);
+    // 儲存到資料庫
+    if (conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'flex',
+          '帳號設定 Flex Message',
+          'assistant',
+          {
+            eventType: 'rich_menu_response',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            postbackAction: 'edit_profile',
+            messageType: 'flex',
+            flexMessage: settingsCarousel,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存回應失敗:', e);
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [Edit Profile] 發送 Flex Message 失敗:', error);
+    
+    // 降級方案：發送文字回覆
+    const fallbackText = locale === 'zh-TW'
+      ? '📝 帳號設定\n\n目前功能：\n• 查看綁定手機號碼\n• 重新綁定手機號碼\n\n請點擊 Rich Menu 中的「修改資料」按鈕來使用完整功能。'
+      : '📝 Account Settings\n\nCurrent features:\n• View bound mobile number\n• Re-bind mobile number\n\nPlease click the "Edit Profile" button in the Rich Menu to use the full features.';
 
-  if (conversation) {
     try {
-      await saveEventWithMetadata(
-        conversation.id,
-        userId,
-        'text',
-        responseText,
-        'assistant',
-        {
-          eventType: 'rich_menu_response',
-          source: { type: 'user', userId },
-          processingStatus: 'success',
-          postbackAction: 'edit_profile',
-        }
-      );
-    } catch (e) {
-      console.warn('儲存回應失敗:', e);
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Edit Profile] 發送降級文字回覆也失敗:', sendError);
     }
   }
 }
@@ -1547,6 +1632,182 @@ async function sendLanguageSelection(
     );
   } catch (e) {
     console.warn('儲存語言選擇訊息失敗:', e);
+  }
+}
+
+/**
+ * 處理手機綁定初始化
+ */
+async function handlePhoneBindingInit(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('📱 [Phone Binding] 開始綁定流程');
+  
+  try {
+    await initiatePhoneBinding(userId);
+    
+    const promptText = locale === 'zh-TW'
+      ? '📱 重新綁定手機號碼\n\n請輸入您的手機號碼（10 位數，例如：0912345678）\n\n輸入「取消」可取消此操作'
+      : '📱 Re-bind Mobile Number\n\nPlease enter your mobile number (10 digits, e.g., 0912345678)\n\nType "cancel" to cancel this operation';
+    
+    await context.sendText(promptText);
+    
+    if (conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          promptText,
+          'assistant',
+          {
+            eventType: 'phone_binding',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            action: 'bind_phone_init',
+          }
+        );
+      } catch (e) {
+        console.warn('儲存回應失敗:', e);
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [Phone Binding] 初始化失敗:', error);
+    const errorText = locale === 'zh-TW'
+      ? '抱歉，無法開始綁定流程，請稍後再試。'
+      : 'Sorry, unable to start the binding process. Please try again later.';
+    await context.sendText(errorText);
+  }
+}
+
+/**
+ * 處理手機號碼輸入
+ */
+async function handlePhoneNumberInput(
+  context: LineContext,
+  userId: string,
+  phoneNumber: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('📱 [Phone Binding] 處理手機號碼輸入:', phoneNumber);
+  
+  try {
+    const result = await setPhoneNumberAndSendCode(userId, phoneNumber);
+    
+    if (!result.success) {
+      const errorText = locale === 'zh-TW'
+        ? `❌ ${result.error}\n\n請重新輸入手機號碼，或輸入「取消」來取消綁定流程`
+        : `❌ ${result.error}\n\nPlease re-enter your mobile number, or type "cancel" to cancel`;
+      await context.sendText(errorText);
+      return;
+    }
+    
+    // 如果簡訊發送失敗（開發模式），顯示驗證碼
+    let successText = locale === 'zh-TW'
+      ? `✅ 驗證碼已發送到 ${phoneNumber}\n\n請輸入您收到的 6 位數驗證碼\n\n輸入「取消」可取消此操作`
+      : `✅ Verification code sent to ${phoneNumber}\n\nPlease enter the 6-digit verification code you received\n\nType "cancel" to cancel this operation`;
+    
+    if (result.code) {
+      // 開發模式：顯示驗證碼
+      successText += locale === 'zh-TW'
+        ? `\n\n（開發模式）驗證碼：${result.code}`
+        : `\n\n(Development mode) Verification code: ${result.code}`;
+    }
+    
+    await context.sendText(successText);
+    
+    if (conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          phoneNumber,
+          'user',
+          {
+            eventType: 'phone_binding',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            action: 'phone_input',
+            phoneNumber,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存訊息失敗:', e);
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [Phone Binding] 處理手機號碼輸入失敗:', error);
+    const errorText = locale === 'zh-TW'
+      ? '抱歉，處理手機號碼時發生錯誤，請稍後再試。'
+      : 'Sorry, an error occurred while processing the phone number. Please try again later.';
+    await context.sendText(errorText);
+  }
+}
+
+/**
+ * 處理驗證碼輸入
+ */
+async function handleVerificationCodeInput(
+  context: LineContext,
+  userId: string,
+  code: string,
+  locale: SupportedLocale,
+  conversation: any
+): Promise<void> {
+  console.log('📱 [Phone Binding] 處理驗證碼輸入:', code);
+  
+  try {
+    const result = await verifyPhoneNumber(userId, code);
+    
+    if (!result.success) {
+      const errorText = locale === 'zh-TW'
+        ? `❌ ${result.error}\n\n請重新輸入驗證碼，或輸入「取消」來取消綁定流程`
+        : `❌ ${result.error}\n\nPlease re-enter the verification code, or type "cancel" to cancel`;
+      await context.sendText(errorText);
+      return;
+    }
+    
+    // 取得綁定的手機號碼
+    const phoneNumber = await getUserPhoneNumber(userId);
+    
+    const successText = locale === 'zh-TW'
+      ? `✅ 手機號碼綁定成功！\n\n已綁定手機：${phoneNumber}\n\n您現在可以使用此手機號碼進行相關服務。`
+      : `✅ Mobile number bound successfully!\n\nBound mobile: ${phoneNumber}\n\nYou can now use this mobile number for related services.`;
+    
+    await context.sendText(successText);
+    
+    if (conversation) {
+      try {
+        await saveEventWithMetadata(
+          conversation.id,
+          userId,
+          'text',
+          code,
+          'user',
+          {
+            eventType: 'phone_binding',
+            source: { type: 'user', userId },
+            processingStatus: 'success',
+            action: 'verification_code_input',
+            verified: true,
+            phoneNumber,
+          }
+        );
+      } catch (e) {
+        console.warn('儲存訊息失敗:', e);
+      }
+    }
+  } catch (error: any) {
+    console.error('❌ [Phone Binding] 處理驗證碼輸入失敗:', error);
+    const errorText = locale === 'zh-TW'
+      ? '抱歉，驗證時發生錯誤，請稍後再試。'
+      : 'Sorry, an error occurred during verification. Please try again later.';
+    await context.sendText(errorText);
   }
 }
 

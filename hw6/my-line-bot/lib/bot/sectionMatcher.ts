@@ -1,8 +1,8 @@
 import type { SupportedLocale } from '../types/locale';
 import type { SectionId } from '../i18n/sections';
 
-// 關鍵字匹配表（支援多語系，包含 products）
-export type MatchableSectionId = SectionId | 'products';
+// 關鍵字匹配表（支援多語系，包含 products 和 edit_profile）
+export type MatchableSectionId = SectionId | 'products' | 'edit_profile';
 
 const normalizedKeywords: Record<MatchableSectionId, Record<SupportedLocale, string[]>> = {
   welcome: {
@@ -102,6 +102,10 @@ const normalizedKeywords: Record<MatchableSectionId, Record<SupportedLocale, str
   products: {
     'zh-TW': ['嚴選產品', '產品', '商品', '保養品', '購買', '買', '購物', 'shop', 'store', '產品資訊', '商品資訊'],
     'en-US': ['products', 'product', 'shop', 'store', 'buy', 'purchase', 'items', 'merchandise'],
+  },
+  edit_profile: {
+    'zh-TW': ['修改資料', '修改', '資料', '帳號設定', '個人資料', '設定', '帳號', '個人資訊', '修改手機', '綁定手機'],
+    'en-US': ['edit profile', 'edit', 'profile', 'account settings', 'settings', 'account', 'personal info', 'bind phone', 'phone binding'],
   },
 };
 
