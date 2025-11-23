@@ -11,6 +11,11 @@ export function createLineContext(event: any, client: Client): LineContext {
     event: {
       ...event,
       isText: event.type === 'message' && event.message?.type === 'text',
+      isImage: event.type === 'message' && event.message?.type === 'image',
+      isVideo: event.type === 'message' && event.message?.type === 'video',
+      isAudio: event.type === 'message' && event.message?.type === 'audio',
+      isLocation: event.type === 'message' && event.message?.type === 'location',
+      isSticker: event.type === 'message' && event.message?.type === 'sticker',
       isFollow: event.type === 'follow',
       isJoin: event.type === 'join',
       isPostback: event.type === 'postback',

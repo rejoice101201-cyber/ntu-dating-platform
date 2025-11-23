@@ -15,6 +15,7 @@ import {
   updateConversationState,
 } from '../services/conversationService';
 import { richMenuService } from '../services/richMenuService';
+import { getContentService } from '../services/contentService';
 
 /**
  * 處理 Line 事件
@@ -51,6 +52,36 @@ export async function handleLineEvent(context: LineContext): Promise<void> {
   // 處理 Postback 事件
   if (context.event.isPostback) {
     await handlePostbackEvent(context, userId, locale);
+    return;
+  }
+
+  // 處理圖片訊息
+  if (context.event.isImage) {
+    await handleImageMessage(context, userId, locale);
+    return;
+  }
+
+  // 處理影片訊息
+  if (context.event.isVideo) {
+    await handleVideoMessage(context, userId, locale);
+    return;
+  }
+
+  // 處理音訊訊息
+  if (context.event.isAudio) {
+    await handleAudioMessage(context, userId, locale);
+    return;
+  }
+
+  // 處理位置訊息
+  if (context.event.isLocation) {
+    await handleLocationMessage(context, userId, locale);
+    return;
+  }
+
+  // 處理貼圖訊息
+  if (context.event.isSticker) {
+    await handleStickerMessage(context, userId, locale);
     return;
   }
 
@@ -832,6 +863,460 @@ async function handleProducts(
       );
     } catch (e) {
       console.warn('儲存回應失敗:', e);
+    }
+  }
+}
+
+/**
+ * 處理圖片訊息
+ */
+async function handleImageMessage(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale
+): Promise<void> {
+  const startTime = Date.now();
+  const message = context.event.message as any;
+  const imageId = message?.id;
+  const previewImageUrl = message?.previewImageUrl;
+  const originalContentUrl = message?.originalContentUrl;
+
+  console.log('🖼️ [Image Message]', {
+    userId: userId.substring(0, 20) + '...',
+    imageId,
+    timestamp: new Date().toISOString(),
+  });
+
+  let conversation: any = null;
+  try {
+    conversation = await getOrCreateConversation(userId);
+    
+    // 儲存圖片訊息到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'image',
+      '圖片訊息',
+      'user',
+      {
+        lineMessageId: imageId,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        imageId,
+        previewImageUrl,
+        originalContentUrl,
+        rawEvent: context.event,
+      }
+    );
+
+    // 可選：下載圖片內容進行分析
+    let imageAnalysis = '';
+    try {
+      if (imageId) {
+        const contentService = getContentService();
+        const imageBuffer = await contentService.downloadImage(imageId);
+        console.log('✅ [Image] 圖片下載成功，大小:', imageBuffer.length);
+        
+        // 這裡可以整合圖片分析 API（如 Google Vision API、Gemini Vision 等）
+        // 目前先提供基本回覆
+        imageAnalysis = locale === 'zh-TW'
+          ? '我已收到您的圖片。'
+          : 'I have received your image.';
+      }
+    } catch (downloadError: any) {
+      console.warn('⚠️ [Image] 下載圖片失敗（不影響回覆）:', downloadError);
+      // 下載失敗不影響基本回覆
+    }
+
+    // 發送回覆
+    const responseText = locale === 'zh-TW'
+      ? `感謝您分享圖片！${imageAnalysis}\n\n目前我主要協助處理文字訊息，如需協助請致電 02-2778-7178`
+      : `Thank you for sharing the image! ${imageAnalysis}\n\nI mainly assist with text messages. For assistance, please call 02-2778-7178`;
+
+    await context.sendText(responseText);
+
+    // 儲存回覆到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      responseText,
+      'assistant',
+      {
+        eventType: 'image_response',
+        source: { type: 'user', userId },
+        processingTime: Date.now() - startTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (error: any) {
+    console.error('❌ [Image] 處理圖片訊息失敗:', error);
+    // 確保即使出錯也發送回覆
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? '感謝您分享圖片！如需協助，請致電 02-2778-7178'
+        : 'Thank you for sharing the image! For assistance, please call 02-2778-7178';
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Image] 發送回覆失敗:', sendError);
+    }
+  }
+}
+
+/**
+ * 處理影片訊息
+ */
+async function handleVideoMessage(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale
+): Promise<void> {
+  const startTime = Date.now();
+  const message = context.event.message as any;
+  const videoId = message?.id;
+  const previewImageUrl = message?.previewImageUrl;
+  const originalContentUrl = message?.originalContentUrl;
+  const duration = message?.duration;
+
+  console.log('🎥 [Video Message]', {
+    userId: userId.substring(0, 20) + '...',
+    videoId,
+    duration,
+    timestamp: new Date().toISOString(),
+  });
+
+  let conversation: any = null;
+  try {
+    conversation = await getOrCreateConversation(userId);
+    
+    // 儲存影片訊息到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'video',
+      '影片訊息',
+      'user',
+      {
+        lineMessageId: videoId,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        videoId,
+        previewImageUrl,
+        originalContentUrl,
+        duration,
+        rawEvent: context.event,
+      }
+    );
+
+    // 可選：下載影片內容進行分析
+    try {
+      if (videoId) {
+        const contentService = getContentService();
+        const videoBuffer = await contentService.downloadVideo(videoId);
+        console.log('✅ [Video] 影片下載成功，大小:', videoBuffer.length);
+      }
+    } catch (downloadError: any) {
+      console.warn('⚠️ [Video] 下載影片失敗（不影響回覆）:', downloadError);
+    }
+
+    // 發送回覆
+    const responseText = locale === 'zh-TW'
+      ? '感謝您分享影片！目前我主要協助處理文字訊息，如需協助請致電 02-2778-7178'
+      : 'Thank you for sharing the video! I mainly assist with text messages. For assistance, please call 02-2778-7178';
+
+    await context.sendText(responseText);
+
+    // 儲存回覆到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      responseText,
+      'assistant',
+      {
+        eventType: 'video_response',
+        source: { type: 'user', userId },
+        processingTime: Date.now() - startTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (error: any) {
+    console.error('❌ [Video] 處理影片訊息失敗:', error);
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? '感謝您分享影片！如需協助，請致電 02-2778-7178'
+        : 'Thank you for sharing the video! For assistance, please call 02-2778-7178';
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Video] 發送回覆失敗:', sendError);
+    }
+  }
+}
+
+/**
+ * 處理音訊訊息
+ */
+async function handleAudioMessage(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale
+): Promise<void> {
+  const startTime = Date.now();
+  const message = context.event.message as any;
+  const audioId = message?.id;
+  const duration = message?.duration;
+
+  console.log('🎵 [Audio Message]', {
+    userId: userId.substring(0, 20) + '...',
+    audioId,
+    duration,
+    timestamp: new Date().toISOString(),
+  });
+
+  let conversation: any = null;
+  try {
+    conversation = await getOrCreateConversation(userId);
+    
+    // 儲存音訊訊息到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'audio',
+      '語音訊息',
+      'user',
+      {
+        lineMessageId: audioId,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        audioId,
+        duration,
+        rawEvent: context.event,
+      }
+    );
+
+    // 可選：下載音訊內容進行分析
+    try {
+      if (audioId) {
+        const contentService = getContentService();
+        const audioBuffer = await contentService.downloadAudio(audioId);
+        console.log('✅ [Audio] 音訊下載成功，大小:', audioBuffer.length);
+        // 這裡可以整合語音轉文字 API（如 Google Speech-to-Text）
+      }
+    } catch (downloadError: any) {
+      console.warn('⚠️ [Audio] 下載音訊失敗（不影響回覆）:', downloadError);
+    }
+
+    // 發送回覆
+    const responseText = locale === 'zh-TW'
+      ? '收到您的語音訊息！目前我主要協助處理文字訊息，如需協助請致電 02-2778-7178'
+      : 'I received your voice message! I mainly assist with text messages. For assistance, please call 02-2778-7178';
+
+    await context.sendText(responseText);
+
+    // 儲存回覆到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      responseText,
+      'assistant',
+      {
+        eventType: 'audio_response',
+        source: { type: 'user', userId },
+        processingTime: Date.now() - startTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (error: any) {
+    console.error('❌ [Audio] 處理音訊訊息失敗:', error);
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? '收到您的語音訊息！如需協助，請致電 02-2778-7178'
+        : 'I received your voice message! For assistance, please call 02-2778-7178';
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Audio] 發送回覆失敗:', sendError);
+    }
+  }
+}
+
+/**
+ * 處理位置訊息
+ */
+async function handleLocationMessage(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale
+): Promise<void> {
+  const startTime = Date.now();
+  const message = context.event.message as any;
+  const latitude = message?.latitude;
+  const longitude = message?.longitude;
+  const address = message?.address;
+  const title = message?.title;
+
+  console.log('📍 [Location Message]', {
+    userId: userId.substring(0, 20) + '...',
+    latitude,
+    longitude,
+    address,
+    title,
+    timestamp: new Date().toISOString(),
+  });
+
+  let conversation: any = null;
+  try {
+    conversation = await getOrCreateConversation(userId);
+    
+    // 儲存位置訊息到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'location',
+      title || address || '位置訊息',
+      'user',
+      {
+        lineMessageId: message?.id,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        latitude,
+        longitude,
+        address,
+        title,
+        rawEvent: context.event,
+      }
+    );
+
+    // 發送回覆
+    const responseText = locale === 'zh-TW'
+      ? '收到您的位置資訊！📍 如需預約或查詢診所資訊，請致電 02-2778-7178'
+      : 'I received your location! 📍 For appointments or clinic information, please call 02-2778-7178';
+
+    await context.sendText(responseText);
+
+    // 儲存回覆到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      responseText,
+      'assistant',
+      {
+        eventType: 'location_response',
+        source: { type: 'user', userId },
+        processingTime: Date.now() - startTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (error: any) {
+    console.error('❌ [Location] 處理位置訊息失敗:', error);
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? '收到您的位置資訊！如需協助，請致電 02-2778-7178'
+        : 'I received your location! For assistance, please call 02-2778-7178';
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Location] 發送回覆失敗:', sendError);
+    }
+  }
+}
+
+/**
+ * 處理貼圖訊息
+ */
+async function handleStickerMessage(
+  context: LineContext,
+  userId: string,
+  locale: SupportedLocale
+): Promise<void> {
+  const startTime = Date.now();
+  const message = context.event.message as any;
+  const packageId = message?.packageId;
+  const stickerId = message?.stickerId;
+
+  console.log('😊 [Sticker Message]', {
+    userId: userId.substring(0, 20) + '...',
+    packageId,
+    stickerId,
+    timestamp: new Date().toISOString(),
+  });
+
+  let conversation: any = null;
+  try {
+    conversation = await getOrCreateConversation(userId);
+    
+    // 儲存貼圖訊息到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'sticker',
+      `貼圖 ${packageId}/${stickerId}`,
+      'user',
+      {
+        lineMessageId: message?.id,
+        eventType: 'message',
+        source: {
+          type: context.event.source?.type || 'user',
+          userId,
+        },
+        replyToken: context.event.replyToken,
+        processingStatus: 'success',
+        packageId,
+        stickerId,
+        rawEvent: context.event,
+      }
+    );
+
+    // 發送回覆
+    const responseText = locale === 'zh-TW'
+      ? '收到您的貼圖！😊 如需協助，請直接輸入文字訊息或致電 02-2778-7178'
+      : 'I received your sticker! 😊 For assistance, please send a text message or call 02-2778-7178';
+
+    await context.sendText(responseText);
+
+    // 儲存回覆到資料庫
+    await saveEventWithMetadata(
+      conversation.id,
+      userId,
+      'text',
+      responseText,
+      'assistant',
+      {
+        eventType: 'sticker_response',
+        source: { type: 'user', userId },
+        processingTime: Date.now() - startTime,
+        processingStatus: 'success',
+      }
+    );
+  } catch (error: any) {
+    console.error('❌ [Sticker] 處理貼圖訊息失敗:', error);
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? '收到您的貼圖！如需協助，請致電 02-2778-7178'
+        : 'I received your sticker! For assistance, please call 02-2778-7178';
+      await context.sendText(fallbackText);
+    } catch (sendError) {
+      console.error('❌ [Sticker] 發送回覆失敗:', sendError);
     }
   }
 }
