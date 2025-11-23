@@ -850,11 +850,44 @@ async function handleReferFriend(
 ): Promise<void> {
   console.log('👥 [ReferFriend] 處理推薦好友');
   
-  const responseText = locale === 'zh-TW'
-    ? '👥 推薦好友\n\n感謝您對木木日安的支持！\n\n推薦好友加入我們的官方帳號，一起體驗優質的醫學美容服務。\n\n您可以分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務。\n\n木木日安祝福您！💙'
-    : '👥 Refer Friend\n\nThank you for your support of Mumu Ri\'an!\n\nRecommend our official account to your friends and family to experience our quality medical beauty services.\n\nYou can share our official account with your loved ones so they can also enjoy professional dermatology services.\n\nBest regards from Mumu Ri\'an! 💙';
+  // 使用 Buttons Template 發送包含分享按鈕的訊息
+  const shareLink = 'https://line.me/R/ti/p/@335qqqlp';
+  
+  const templateMessage = locale === 'zh-TW'
+    ? {
+        type: 'template',
+        altText: '推薦好友 - 木木日安官方帳號',
+        template: {
+          type: 'buttons',
+          title: '👥 推薦好友',
+          text: '感謝您對木木日安的支持！\n\n點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
+          actions: [
+            {
+              type: 'uri',
+              label: '分享給好友',
+              uri: shareLink,
+            },
+          ],
+        },
+      }
+    : {
+        type: 'template',
+        altText: 'Refer Friend - Mumu Ri\'an Official Account',
+        template: {
+          type: 'buttons',
+          title: '👥 Refer Friend',
+          text: 'Thank you for your support of Mumu Ri\'an!\n\nClick the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
+          actions: [
+            {
+              type: 'uri',
+              label: 'Share with Friends',
+              uri: shareLink,
+            },
+          ],
+        },
+      };
 
-  await context.sendText(responseText);
+  await context.send(templateMessage as any);
 
   if (conversation) {
     try {
