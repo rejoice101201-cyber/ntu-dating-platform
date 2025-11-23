@@ -891,6 +891,10 @@ async function handleReferFriend(
 
   if (conversation) {
     try {
+      const responseText = locale === 'zh-TW'
+        ? '👥 推薦好友\n\n感謝您對木木日安的支持！\n\n點擊按鈕即可分享我們的官方帳號給親朋好友。'
+        : '👥 Refer Friend\n\nThank you for your support of Mumu Ri\'an!\n\nClick the button to share our official account with your friends.';
+      
       await saveEventWithMetadata(
         conversation.id,
         userId,
