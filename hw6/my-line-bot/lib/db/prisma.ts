@@ -10,6 +10,12 @@ const globalForPrisma = globalThis as unknown as {
 function isValidDatabaseUrl(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
   
+  // 檢查是否為 Prisma Accelerate URL（不支援，需要直接 PostgreSQL 連接）
+  if (url.includes('db.prisma.io') || url.startsWith('prisma://')) {
+    console.warn('⚠️ [Database] 偵測到 Prisma Accelerate URL，但需要直接 PostgreSQL 連接');
+    return false;
+  }
+  
   // 檢查是否為有效的 PostgreSQL 連接字串格式
   const isValidFormat = /^postgres(ql)?:\/\//.test(url);
   if (!isValidFormat) return false;
@@ -54,8 +60,13 @@ function getDatabaseUrl(): string {
   // 如果 DATABASE_URL 不存在或格式錯誤，嘗試 POSTGRES_URL
   if (!dbUrl || !isValidDatabaseUrl(dbUrl)) {
     if (dbUrl) {
-      console.warn('⚠️ [Database] DATABASE_URL 格式錯誤，嘗試使用 POSTGRES_URL');
+      console.warn('⚠️ [Database] DATABASE_URL 格式錯誤或為 Prisma Accelerate URL，嘗試使用 POSTGRES_URL');
       console.warn('⚠️ [Database] DATABASE_URL 值（隱藏敏感信息）:', maskDatabaseUrl(dbUrl));
+      if (dbUrl.includes('db.prisma.io') || dbUrl.startsWith('prisma://')) {
+        console.error('❌ [Database] 錯誤：DATABASE_URL 設定為 Prisma Accelerate URL');
+        console.error('❌ [Database] 請在 Vercel 環境變數中將 DATABASE_URL 設定為直接 PostgreSQL 連接字串');
+        console.error('❌ [Database] 應該使用 POSTGRES_URL 的值（Vercel Postgres 提供的連接字串）');
+      }
     } else {
       console.warn('⚠️ [Database] DATABASE_URL 不存在，嘗試使用 POSTGRES_URL');
     }
