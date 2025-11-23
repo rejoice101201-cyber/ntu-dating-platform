@@ -33,10 +33,12 @@ export interface RichMenuButton {
     'en-US': string;
   };
   action: {
-    type: 'postback' | 'message';
+    type: 'postback' | 'message' | 'uri';
     data?: string;
     text?: string;
     displayText?: string;
+    uri?: string;
+    label?: string;
   };
 }
 
@@ -63,9 +65,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Peel Online Appointment',
     },
     action: {
-      type: 'postback',
-      data: 'action=appointment&type=peel',
-      displayText: '果酸線上預約',
+      type: 'uri',
+      uri: 'https://www.leyancloud.com.tw/#/login?clinicCode=88198082',
+      label: '果酸線上預約',
     },
   },
   {
@@ -75,9 +77,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Acne Special Clinic Online Appointment',
     },
     action: {
-      type: 'postback',
-      data: 'action=appointment&type=acne',
-      displayText: '青春痘特別門診線上預約',
+      type: 'uri',
+      uri: 'https://www.leyancloud.com.tw/#/login?clinicCode=88198082',
+      label: '青春痘特別門診線上預約',
     },
   },
   {
@@ -87,9 +89,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Health Insurance Registration',
     },
     action: {
-      type: 'postback',
-      data: 'action=appointment&type=insurance',
-      displayText: '健保掛號',
+      type: 'uri',
+      uri: 'https://www.muskin.com.tw/contact/#beauty4',
+      label: '健保掛號',
     },
   },
   {
@@ -99,9 +101,9 @@ export const richMenuButtons: RichMenuButton[] = [
       'en-US': 'Clinic Introduction',
     },
     action: {
-      type: 'postback',
-      data: 'action=clinic_info',
-      displayText: '館別介紹',
+      type: 'uri',
+      uri: 'https://www.muskin.com.tw/building/',
+      label: '館別介紹',
     },
   },
   {
@@ -165,12 +167,20 @@ export function createRichMenuConfig(locale: SupportedLocale = 'zh-TW'): any {
     const col = index % 4; // 0, 1, 2, 或 3
     const bounds = calculateAreaBounds(row, col);
 
+    // 處理不同類型的 action
+    const action: any = { ...button.action };
+    
+    if (button.action.type === 'uri') {
+      // URI action 需要 label
+      action.label = button.action.label || button.label[locale];
+    } else if (button.action.type === 'postback') {
+      // Postback action 需要 displayText
+      action.displayText = button.action.displayText || button.label[locale];
+    }
+
     return {
       bounds,
-      action: {
-        ...button.action,
-        displayText: button.action.displayText || button.label[locale],
-      },
+      action,
     };
   });
 
@@ -225,4 +235,5 @@ export function getRichMenuButtonByPostbackData(postbackData: string): RichMenuB
   const buttonId = buttonIdMap[action];
   return buttonId ? getRichMenuButtonById(buttonId) : undefined;
 }
+
 
