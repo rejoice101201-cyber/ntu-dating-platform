@@ -676,7 +676,14 @@ async function handlePostbackEvent(
   const action = params.get('action');
   const type = params.get('type');
 
-  console.log('📱 [Postback] 收到 Postback 事件:', { action, type, postbackData, displayText });
+  console.log('📱 [Postback] 收到 Postback 事件:', { 
+    action, 
+    type, 
+    postbackData, 
+    displayText,
+    hasReplyToken: !!context.event.replyToken,
+    replyToken: context.event.replyToken ? context.event.replyToken.substring(0, 20) + '...' : 'none',
+  });
 
   // 儲存到資料庫
   let conversation: any = null;
