@@ -122,10 +122,11 @@ function maskDatabaseUrl(url: string): string {
 // 取得並驗證資料庫連接字串
 const databaseUrl = getDatabaseUrl();
 
-// 確保 DATABASE_URL 環境變數已設定（供 Prisma 使用）
-if (!process.env.DATABASE_URL || !isValidDatabaseUrl(process.env.DATABASE_URL)) {
-  process.env.DATABASE_URL = databaseUrl;
-}
+// 強制設定 DATABASE_URL 環境變數為驗證過的連接字串
+// 這確保 Prisma 使用正確的連接字串，而不是可能錯誤的環境變數
+process.env.DATABASE_URL = databaseUrl;
+
+console.log('🔧 [Database] 已設定 DATABASE_URL 環境變數（已驗證）');
 
 export const prisma =
   globalForPrisma.prisma ??
@@ -133,10 +134,22 @@ export const prisma =
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: databaseUrl,
+        url: databaseUrl, // 明確指定 URL，覆蓋環境變數
       },
     },
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// 在生產環境中，嘗試連接資料庫以驗證連接
+if (process.env.NODE_ENV === 'production') {
+  prisma.$connect()
+    .then(() => {
+      console.log('✅ [Database] Prisma Client 連接成功');
+    })
+    .catch((error: any) => {
+      console.error('❌ [Database] Prisma Client 連接失敗:', error);
+      console.error('❌ [Database] 使用的連接字串（隱藏敏感信息）:', maskDatabaseUrl(databaseUrl));
+    });
+}
 
