@@ -1706,16 +1706,21 @@ async function handlePhoneNumberInput(
       return;
     }
     
-    // 如果簡訊發送失敗（開發模式），顯示驗證碼
-    let successText = locale === 'zh-TW'
-      ? `✅ 驗證碼已發送到 ${phoneNumber}\n\n請輸入您收到的 6 位數驗證碼\n\n輸入「取消」可取消此操作`
-      : `✅ Verification code sent to ${phoneNumber}\n\nPlease enter the 6-digit verification code you received\n\nType "cancel" to cancel this operation`;
+    // 檢查是否為模擬模式
+    const isMockMode = process.env.SMS_MOCK_MODE === 'true' || !process.env.SMS_API_KEY;
     
-    if (result.code) {
-      // 開發模式：顯示驗證碼
-      successText += locale === 'zh-TW'
-        ? `\n\n（開發模式）驗證碼：${result.code}`
-        : `\n\n(Development mode) Verification code: ${result.code}`;
+    // 如果簡訊發送失敗或為開發模式，顯示驗證碼
+    let successText: string;
+    if (result.code || isMockMode) {
+      // 開發模式或簡訊發送失敗：直接顯示驗證碼
+      successText = locale === 'zh-TW'
+        ? `✅ 驗證碼已產生\n\n📱 手機號碼：${phoneNumber}\n\n🔑 驗證碼：${result.code || '（請查看 Vercel Logs）'}\n\n請輸入上述 6 位數驗證碼\n\n輸入「取消」可取消此操作`
+        : `✅ Verification code generated\n\n📱 Mobile: ${phoneNumber}\n\n🔑 Verification code: ${result.code || '(Please check Vercel Logs)'}\n\nPlease enter the 6-digit verification code above\n\nType "cancel" to cancel this operation`;
+    } else {
+      // 實際簡訊已發送
+      successText = locale === 'zh-TW'
+        ? `✅ 驗證碼已發送到 ${phoneNumber}\n\n請輸入您收到的 6 位數驗證碼\n\n輸入「取消」可取消此操作`
+        : `✅ Verification code sent to ${phoneNumber}\n\nPlease enter the 6-digit verification code you received\n\nType "cancel" to cancel this operation`;
     }
     
     await context.sendText(successText);

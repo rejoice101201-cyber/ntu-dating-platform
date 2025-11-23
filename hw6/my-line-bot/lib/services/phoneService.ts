@@ -152,13 +152,14 @@ export async function setPhoneNumberAndSendCode(
 
     // 發送驗證碼簡訊
     const smsSent = await sendVerificationCode(phoneNumber, code);
-    if (!smsSent) {
-      console.warn('⚠️ [Phone Service] 簡訊發送失敗，但驗證碼已儲存');
-    }
-
+    
+    // 檢查是否為模擬模式
+    const isMockMode = process.env.SMS_MOCK_MODE === 'true' || !process.env.SMS_API_KEY;
+    
     return {
       success: true,
-      code: smsSent ? undefined : code, // 如果簡訊發送失敗，返回驗證碼（開發測試用）
+      // 如果是模擬模式或簡訊發送失敗，返回驗證碼（讓用戶可以直接看到）
+      code: (!smsSent || isMockMode) ? code : undefined,
     };
   } catch (error: any) {
     console.error('❌ [Phone Service] 設定手機號碼失敗:', error);
