@@ -734,7 +734,20 @@ async function handlePostbackEvent(
       }
     }
   } else if (action === 'refer_friend') {
-    await handleReferFriend(context, userId, locale, conversation);
+    try {
+      await handleReferFriend(context, userId, locale, conversation);
+    } catch (error: any) {
+      console.error('❌ [Postback] 處理推薦好友失敗:', error);
+      // 發送錯誤訊息給用戶
+      const errorText = locale === 'zh-TW'
+        ? '抱歉，發生錯誤。請稍後再試，或直接點擊以下連結分享：\nhttps://line.me/R/ti/p/@335qqqlp'
+        : 'Sorry, an error occurred. Please try again later, or click the link to share:\nhttps://line.me/R/ti/p/@335qqqlp';
+      try {
+        await context.sendText(errorText);
+      } catch (sendError) {
+        console.error('❌ [Postback] 發送錯誤訊息也失敗:', sendError);
+      }
+    }
   } else if (action === 'edit_profile') {
     await handleEditProfile(context, userId, locale, conversation);
   } else if (action === 'bind_phone') {
@@ -849,46 +862,82 @@ async function handleReferFriend(
   conversation: any
 ): Promise<void> {
   console.log('👥 [ReferFriend] 處理推薦好友');
+  console.log('👥 [ReferFriend] 檢查 replyToken:', {
+    hasReplyToken: !!context.event.replyToken,
+    replyToken: context.event.replyToken?.substring(0, 20) + '...',
+    eventType: context.event.type,
+  });
   
-  // 使用 Buttons Template 發送包含分享按鈕的訊息
+  if (!context.event.replyToken) {
+    console.error('❌ [ReferFriend] 沒有 replyToken，無法回覆訊息');
+    throw new Error('No replyToken available');
+  }
+  
   const shareLink = 'https://line.me/R/ti/p/@335qqqlp';
   
-  const templateMessage = locale === 'zh-TW'
-    ? {
-        type: 'template',
-        altText: '推薦好友 - 木木日安官方帳號',
-        template: {
-          type: 'buttons',
-          title: '👥 推薦好友',
-          text: '感謝您對木木日安的支持！\n\n點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
-          actions: [
-            {
-              type: 'uri',
-              label: '分享給好友',
-              uri: shareLink,
-            },
-          ],
-        },
-      }
-    : {
-        type: 'template',
-        altText: 'Refer Friend - Mumu Ri\'an Official Account',
-        template: {
-          type: 'buttons',
-          title: '👥 Refer Friend',
-          text: 'Thank you for your support of Mumu Ri\'an!\n\nClick the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
-          actions: [
-            {
-              type: 'uri',
-              label: 'Share with Friends',
-              uri: shareLink,
-            },
-          ],
-        },
-      };
+  try {
+    // 使用 Buttons Template 發送包含分享按鈕的訊息
+    const templateMessage = locale === 'zh-TW'
+      ? {
+          type: 'template',
+          altText: '推薦好友 - 木木日安官方帳號',
+          template: {
+            type: 'buttons',
+            title: '👥 推薦好友',
+            text: '感謝您對木木日安的支持！\n\n點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
+            actions: [
+              {
+                type: 'uri',
+                label: '分享給好友',
+                uri: shareLink,
+              },
+            ],
+          },
+        }
+      : {
+          type: 'template',
+          altText: 'Refer Friend - Mumu Ri\'an Official Account',
+          template: {
+            type: 'buttons',
+            title: '👥 Refer Friend',
+            text: 'Thank you for your support of Mumu Ri\'an!\n\nClick the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
+            actions: [
+              {
+                type: 'uri',
+                label: 'Share with Friends',
+                uri: shareLink,
+              },
+            ],
+          },
+        };
 
-  await context.send(templateMessage as any);
+    console.log('📤 [ReferFriend] 準備發送 Buttons Template 訊息');
+    await context.send(templateMessage as any);
+    console.log('✅ [ReferFriend] Buttons Template 訊息已發送');
+  } catch (error: any) {
+    console.error('❌ [ReferFriend] 發送 Buttons Template 失敗:', error);
+    console.error('❌ [ReferFriend] 錯誤詳情:', {
+      message: error?.message,
+      statusCode: error?.statusCode,
+      originalError: error?.originalError,
+    });
+    
+    // 降級方案：發送包含連結的文字訊息
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? `👥 推薦好友\n\n感謝您對木木日安的支持！\n\n點擊下方連結即可分享我們的官方帳號給親朋好友：\n\n${shareLink}\n\n讓您的朋友也能享受專業的皮膚科診療服務！\n\n木木日安祝福您！💙`
+        : `👥 Refer Friend\n\nThank you for your support of Mumu Ri'an!\n\nClick the link below to share our official account with your friends:\n\n${shareLink}\n\nLet your friends enjoy professional dermatology services too!\n\nBest regards from Mumu Ri'an! 💙`;
+      
+      console.log('📤 [ReferFriend] 使用降級方案：發送文字訊息');
+      await context.sendText(fallbackText);
+      console.log('✅ [ReferFriend] 降級文字訊息已發送');
+    } catch (fallbackError: any) {
+      console.error('❌ [ReferFriend] 降級方案也失敗:', fallbackError);
+      throw fallbackError;
+    }
+  }
 
+  // 儲存回應到資料庫
   if (conversation) {
     try {
       const responseText = locale === 'zh-TW'
@@ -909,7 +958,7 @@ async function handleReferFriend(
         }
       );
     } catch (e) {
-      console.warn('儲存回應失敗:', e);
+      console.warn('⚠️ [ReferFriend] 儲存回應失敗:', e);
     }
   }
 }
