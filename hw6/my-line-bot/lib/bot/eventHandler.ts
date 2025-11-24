@@ -880,29 +880,141 @@ async function handleReferFriend(
     throw new Error('No replyToken available');
   }
   
-  // LINE 的分享功能在 Flex Message 按鈕中的 URI action 可能無法正常工作
-  // 因此直接使用文字訊息，文字訊息中的連結可以正常點擊並開啟分享畫面
-  const shareLink = 'https://line.me/R/ti/p/@335qqqlp';
+  // 使用 LINE 深層連結直接觸發分享畫面
+  // line://nv/recommendOA/@官方帳號ID 會直接開啟 LINE 的推薦好友介面
+  const shareDeepLink = 'line://nv/recommendOA/@335qqqlp';
+  const shareWebLink = 'https://line.me/R/ti/p/@335qqqlp';
   
   try {
-    // 直接發送包含分享連結的文字訊息
-    // 文字訊息中的連結可以正常點擊，會開啟 LINE 分享畫面
-    const shareText = locale === 'zh-TW'
-      ? `👥 推薦好友\n\n感謝您對木木日安的支持！\n\n點擊下方連結即可分享我們的官方帳號給親朋好友：\n\n${shareLink}\n\n讓您的朋友也能享受專業的皮膚科診療服務！\n\n木木日安祝福您！💙`
-      : `👥 Refer Friend\n\nThank you for your support of Mumu Ri'an!\n\nClick the link below to share our official account with your friends:\n\n${shareLink}\n\nLet your friends enjoy professional dermatology services too!\n\nBest regards from Mumu Ri'an! 💙`;
-    
-    console.log('📤 [ReferFriend] 準備發送分享連結文字訊息');
-    await context.sendText(shareText);
-    console.log('✅ [ReferFriend] 分享連結文字訊息已發送');
+    // 使用 Flex Message，按鈕使用深層連結直接觸發分享畫面
+    const flexMessage = locale === 'zh-TW'
+      ? {
+          type: 'flex',
+          altText: '推薦好友 - 木木日安官方帳號',
+          contents: {
+            type: 'bubble',
+            body: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'text',
+                  text: '👥 推薦好友',
+                  weight: 'bold',
+                  size: 'xl',
+                  color: '#1DB446',
+                },
+                {
+                  type: 'text',
+                  text: '感謝您對木木日安的支持！',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'md',
+                },
+                {
+                  type: 'text',
+                  text: '點擊下方按鈕即可分享我們的官方帳號給親朋好友，讓他們也能享受專業的皮膚科診療服務！',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'sm',
+                  color: '#666666',
+                },
+              ],
+            },
+            footer: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'button',
+                  style: 'primary',
+                  color: '#1DB446',
+                  action: {
+                    type: 'uri',
+                    label: '分享給好友',
+                    uri: shareDeepLink,  // 使用深層連結直接觸發分享畫面
+                  },
+                },
+              ],
+            },
+          },
+        }
+      : {
+          type: 'flex',
+          altText: 'Refer Friend - Mumu Ri\'an Official Account',
+          contents: {
+            type: 'bubble',
+            body: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'text',
+                  text: '👥 Refer Friend',
+                  weight: 'bold',
+                  size: 'xl',
+                  color: '#1DB446',
+                },
+                {
+                  type: 'text',
+                  text: 'Thank you for your support of Mumu Ri\'an!',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'md',
+                },
+                {
+                  type: 'text',
+                  text: 'Click the button below to share our official account with your friends so they can also enjoy professional dermatology services!',
+                  wrap: true,
+                  margin: 'md',
+                  size: 'sm',
+                  color: '#666666',
+                },
+              ],
+            },
+            footer: {
+              type: 'box',
+              layout: 'vertical',
+              contents: [
+                {
+                  type: 'button',
+                  style: 'primary',
+                  color: '#1DB446',
+                  action: {
+                    type: 'uri',
+                    label: 'Share with Friends',
+                    uri: shareDeepLink,  // 使用深層連結直接觸發分享畫面
+                  },
+                },
+              ],
+            },
+          },
+        };
+
+    console.log('📤 [ReferFriend] 準備發送 Flex Message（使用深層連結）');
+    await context.send(flexMessage as any);
+    console.log('✅ [ReferFriend] Flex Message 已發送');
   } catch (error: any) {
-    console.error('❌ [ReferFriend] 發送文字訊息失敗:', error);
+    console.error('❌ [ReferFriend] 發送 Flex Message 失敗:', error);
     console.error('❌ [ReferFriend] 錯誤詳情:', {
       message: error?.message,
       statusCode: error?.statusCode,
       originalError: error?.originalError,
     });
-    // 如果發送失敗，拋出錯誤讓上層處理
-    throw error;
+    
+    // 降級方案：發送文字訊息，包含網頁連結
+    try {
+      const fallbackText = locale === 'zh-TW'
+        ? `👥 推薦好友\n\n感謝您對木木日安的支持！\n\n點擊下方連結即可分享我們的官方帳號給親朋好友：\n\n${shareWebLink}\n\n讓您的朋友也能享受專業的皮膚科診療服務！\n\n木木日安祝福您！💙`
+        : `👥 Refer Friend\n\nThank you for your support of Mumu Ri'an!\n\nClick the link below to share our official account with your friends:\n\n${shareWebLink}\n\nLet your friends enjoy professional dermatology services too!\n\nBest regards from Mumu Ri'an! 💙`;
+      
+      console.log('📤 [ReferFriend] 使用降級方案：發送文字訊息');
+      await context.sendText(fallbackText);
+      console.log('✅ [ReferFriend] 降級文字訊息已發送');
+    } catch (fallbackError: any) {
+      console.error('❌ [ReferFriend] 降級方案也失敗:', fallbackError);
+      throw fallbackError;
+    }
   }
 
   // 儲存回應到資料庫
