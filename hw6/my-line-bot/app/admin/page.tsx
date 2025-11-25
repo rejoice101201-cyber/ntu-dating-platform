@@ -32,10 +32,21 @@ interface Conversation {
   messages: Message[];
 }
 
+interface HealthStatus {
+  status: 'healthy' | 'unhealthy';
+  timestamp: string;
+  checks: {
+    database: { status: 'ok' | 'error'; message?: string };
+    environment: { status: 'ok' | 'error'; message?: string };
+  };
+  uptime: number;
+}
+
 export default function AdminPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'messages' | 'conversations'>('messages');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -50,6 +61,7 @@ export default function AdminPage() {
     messageType: '',
     role: '',
     timeRange: '24h', // '24h', '7d', '30d', 'all'
+    search: '', // 內容搜尋
   });
 
   const getTimeRange = (range: string) => {
@@ -74,6 +86,7 @@ export default function AdminPage() {
         ...(filters.messageType && { messageType: filters.messageType }),
         ...(filters.role && { role: filters.role }),
         ...(filters.timeRange !== 'all' && { startDate: getTimeRange(filters.timeRange) || '' }),
+        ...(filters.search && { search: filters.search }),
       });
       const res = await fetch(`/api/admin/messages?${params}`);
       const data = await res.json();
@@ -108,6 +121,17 @@ export default function AdminPage() {
       return data;
     } catch (error) {
       console.error('取得統計失敗:', error);
+      return null;
+    }
+  };
+
+  const fetchHealthStatus = async (): Promise<HealthStatus | null> => {
+    try {
+      const res = await fetch('/api/health');
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error('取得健康檢查失敗:', error);
       return null;
     }
   };
@@ -170,14 +194,16 @@ export default function AdminPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [messagesData, conversationsData, statsData] = await Promise.all([
+      const [messagesData, conversationsData, statsData, healthData] = await Promise.all([
         fetchMessages(),
         fetchConversations(),
-        fetchStats()
+        fetchStats(),
+        fetchHealthStatus()
       ]);
       setMessages(messagesData);
       setConversations(conversationsData);
       setStats(statsData);
+      setHealthStatus(healthData);
       setLastUpdateTime(new Date());
       
       // 獲取使用者 Profiles
@@ -200,10 +226,11 @@ export default function AdminPage() {
     if (isUpdating) return; // 防止重複請求
     setIsUpdating(true);
     try {
-      const [messagesData, conversationsData, statsData] = await Promise.all([
+      const [messagesData, conversationsData, statsData, healthData] = await Promise.all([
         fetchMessages(),
         fetchConversations(),
-        fetchStats()
+        fetchStats(),
+        fetchHealthStatus()
       ]);
       
       // 只在有新數據時才更新
@@ -215,6 +242,10 @@ export default function AdminPage() {
       }
       if (hasStatsChanged(stats, statsData)) {
         setStats(statsData);
+      }
+      // 健康檢查狀態總是更新（因為狀態可能隨時改變）
+      if (healthData) {
+        setHealthStatus(healthData);
       }
       
       setLastUpdateTime(new Date());
@@ -277,6 +308,100 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* 系統狀態 */}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-4">系統狀態</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 健康檢查 */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">健康檢查</h3>
+              {healthStatus ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${
+                      healthStatus.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'
+                    }`}></span>
+                    <span className={`font-semibold ${
+                      healthStatus.status === 'healthy' ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {healthStatus.status === 'healthy' ? '健康' : '異常'}
+                    </span>
+                  </div>
+                  <div className="text-sm space-y-1 ml-5">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        healthStatus.checks.database.status === 'ok' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></span>
+                      <span className="text-gray-300">
+                        資料庫: {healthStatus.checks.database.status === 'ok' ? '正常' : '錯誤'}
+                      </span>
+                      {healthStatus.checks.database.message && (
+                        <span className="text-xs text-red-400 ml-2">
+                          ({healthStatus.checks.database.message})
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        healthStatus.checks.environment.status === 'ok' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></span>
+                      <span className="text-gray-300">
+                        環境變數: {healthStatus.checks.environment.status === 'ok' ? '正常' : '錯誤'}
+                      </span>
+                      {healthStatus.checks.environment.message && (
+                        <span className="text-xs text-red-400 ml-2">
+                          ({healthStatus.checks.environment.message})
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2">
+                      檢查時間: {new Date(healthStatus.timestamp).toLocaleString('zh-TW')}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">載入中...</div>
+              )}
+            </div>
+
+            {/* 效能監控 */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">效能監控</h3>
+              {stats?.performance ? (
+                <div className="space-y-2">
+                  <div className="text-sm">
+                    <span className="text-gray-400">平均回應時間: </span>
+                    <span className="text-white font-semibold">
+                      {stats.performance.avgResponseTime} ms
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-400">慢查詢數量: </span>
+                    <span className={`font-semibold ${
+                      stats.performance.slowQueries > 0 ? 'text-yellow-400' : 'text-green-400'
+                    }`}>
+                      {stats.performance.slowQueries}
+                    </span>
+                    <span className="text-gray-400 text-xs ml-1">
+                      (處理時間 &gt; 3 秒)
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-400">樣本數量: </span>
+                    <span className="text-white font-semibold">
+                      {stats.performance.sampleSize || 0}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  {stats ? '尚無效能數據' : '載入中...'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* 控制列 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -334,7 +459,19 @@ export default function AdminPage() {
           </div>
 
           {/* 篩選條件 */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-6 gap-4">
+            {activeTab === 'messages' && (
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">內容搜尋</label>
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  placeholder="搜尋訊息內容..."
+                  className="w-full px-3 py-2 bg-gray-700 rounded text-white text-sm"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm text-gray-400 mb-1">使用者 ID</label>
               <input

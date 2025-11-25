@@ -36,66 +36,87 @@ export async function handleLineEvent(context: LineContext): Promise<void> {
     text: context.event.isText ? context.event.text?.substring(0, 50) : undefined,
   });
 
-  if (!userId) {
-    console.error('❌ [Webhook Event] No user ID in event');
-    return;
-  }
+  try {
+    if (!userId) {
+      console.error('❌ [Webhook Event] No user ID in event');
+      return;
+    }
 
-  const locale = await getUserLocale(userId);
-  const text = context.event.isText ? context.event.text : undefined;
+    const locale = await getUserLocale(userId);
+    const text = context.event.isText ? context.event.text : undefined;
 
-  // 處理 Follow/Join 事件
-  if (context.event.isFollow || context.event.isJoin) {
-    await sendWelcomeMessage(context, userId, locale);
-    return;
-  }
+    // 處理 Follow/Join 事件
+    if (context.event.isFollow || context.event.isJoin) {
+      await sendWelcomeMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理 Postback 事件
-  if (context.event.isPostback) {
-    await handlePostbackEvent(context, userId, locale);
-    return;
-  }
+    // 處理 Postback 事件
+    if (context.event.isPostback) {
+      await handlePostbackEvent(context, userId, locale);
+      return;
+    }
 
-  // 處理圖片訊息
-  if (context.event.isImage) {
-    await handleImageMessage(context, userId, locale);
-    return;
-  }
+    // 處理圖片訊息
+    if (context.event.isImage) {
+      await handleImageMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理影片訊息
-  if (context.event.isVideo) {
-    await handleVideoMessage(context, userId, locale);
-    return;
-  }
+    // 處理影片訊息
+    if (context.event.isVideo) {
+      await handleVideoMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理音訊訊息
-  if (context.event.isAudio) {
-    await handleAudioMessage(context, userId, locale);
-    return;
-  }
+    // 處理音訊訊息
+    if (context.event.isAudio) {
+      await handleAudioMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理位置訊息
-  if (context.event.isLocation) {
-    await handleLocationMessage(context, userId, locale);
-    return;
-  }
+    // 處理位置訊息
+    if (context.event.isLocation) {
+      await handleLocationMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理貼圖訊息
-  if (context.event.isSticker) {
-    await handleStickerMessage(context, userId, locale);
-    return;
-  }
+    // 處理貼圖訊息
+    if (context.event.isSticker) {
+      await handleStickerMessage(context, userId, locale);
+      return;
+    }
 
-  // 處理文字訊息
-  if (context.event.isText) {
-    await handleTextMessage(context, userId, text, locale);
-    return;
-  }
+    // 處理文字訊息
+    if (context.event.isText) {
+      await handleTextMessage(context, userId, text, locale);
+      return;
+    }
 
-  // 處理其他訊息類型
-  if (context.event.isMessage) {
-    await handleOtherMessage(context, userId, locale);
-    return;
+    // 處理其他訊息類型
+    if (context.event.isMessage) {
+      await handleOtherMessage(context, userId, locale);
+      return;
+    }
+  } finally {
+    // 記錄處理時間
+    const processingTime = Date.now() - startTime;
+    const isSlowQuery = processingTime > 3000; // 超過 3 秒視為慢查詢
+    
+    console.log('⏱️ [Performance]', {
+      eventType,
+      processingTime: `${processingTime}ms`,
+      isSlowQuery,
+      userId: userId?.substring(0, 20) + '...',
+    });
+    
+    if (isSlowQuery) {
+      console.warn('⚠️ [Performance] 慢查詢警告:', {
+        eventType,
+        processingTime: `${processingTime}ms`,
+        userId: userId?.substring(0, 20) + '...',
+      });
+    }
   }
 }
 

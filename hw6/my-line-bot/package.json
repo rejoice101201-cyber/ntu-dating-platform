@@ -14,7 +14,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "create-rich-menu": "tsx scripts/createRichMenu.ts"
+    "create-rich-menu": "tsx scripts/createRichMenu.ts",
+    "test-features": "tsx scripts/test-features.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

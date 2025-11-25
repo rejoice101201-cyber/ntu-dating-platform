@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const role = searchParams.get('role'); // 'user' | 'assistant' | 'system'
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const search = searchParams.get('search'); // 內容搜尋
 
     const where: any = {};
     
@@ -39,6 +40,14 @@ export async function GET(req: NextRequest) {
       if (endDate) {
         where.timestamp.lte = new Date(endDate);
       }
+    }
+    
+    // 內容搜尋：使用 contains 進行大小寫不敏感搜尋
+    if (search) {
+      where.content = {
+        contains: search,
+        mode: 'insensitive', // PostgreSQL 的大小寫不敏感模式
+      };
     }
 
     // 取得訊息列表
@@ -77,4 +86,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+
 
