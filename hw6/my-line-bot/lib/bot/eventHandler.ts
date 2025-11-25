@@ -812,8 +812,8 @@ async function handleAppointmentPostback(
   if (appointmentType === 'medical_aesthetics') {
     const appointmentLink = 'https://www.leyancloud.com.tw/#/login?clinicCode=88198082';
     responseText = locale === 'zh-TW'
-      ? '📅 醫美查詢預約\n\n目前預約狀態：尚未預約\n\n如需查詢或預約醫美服務，請點擊以下連結進行線上預約：\n' + appointmentLink + '\n\n我們的工作人員將盡快為您安排最適合的看診時間。\n\n如有任何疑問，歡迎致電 02-2778-7178 與我們聯繫。'
-      : '📅 Medical Aesthetics Appointment\n\nCurrent Status: Not yet scheduled\n\nTo check or schedule a medical aesthetics appointment, please click the link below:\n' + appointmentLink + '\n\nOur staff will arrange the most suitable appointment time for you as soon as possible.\n\nIf you have any questions, please feel free to call us at 02-2778-7178.';
+      ? '📅 醫美查詢預約\n\n如需查詢或預約醫美服務，請點擊以下連結進行線上預約：\n' + appointmentLink + '\n\n我們的工作人員將盡快為您安排最適合的看診時間。\n\n如有任何疑問，歡迎致電 02-2778-7178 與我們聯繫。'
+      : '📅 Medical Aesthetics Appointment\n\nTo check or schedule a medical aesthetics appointment, please click the link below:\n' + appointmentLink + '\n\nOur staff will arrange the most suitable appointment time for you as soon as possible.\n\nIf you have any questions, please feel free to call us at 02-2778-7178.';
   } else if (appointmentType === 'peel') {
     responseText = locale === 'zh-TW'
       ? '📅 果酸線上預約\n\n木木日安目前預約方式為電話預約，請直接致電 02-2778-7178\n\n營業時間：\n週一至週五：09:00-18:00\n週六：09:00-12:00\n\n我們的工作人員會為您安排最適合的看診時間。'
