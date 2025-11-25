@@ -66,7 +66,7 @@ export const richMenuButtons: RichMenuButton[] = [
     },
     action: {
       type: 'uri',
-      uri: 'https://www.leyancloud.com.tw/#/login?clinicCode=88198082',
+      uri: 'https://www.leyancloud.com.tw/#/choose-service?clinicCode=88198082',
       label: '果酸線上預約',
     },
   },
@@ -78,7 +78,7 @@ export const richMenuButtons: RichMenuButton[] = [
     },
     action: {
       type: 'uri',
-      uri: 'https://www.leyancloud.com.tw/#/login?clinicCode=88198082',
+      uri: 'https://www.leyancloud.com.tw/#/choose-service?clinicCode=88198082',
       label: '青春痘特別門診線上預約',
     },
   },
