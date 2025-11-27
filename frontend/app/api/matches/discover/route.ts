@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Get current user
+    // Get current user with preferences
     const currentUser = await prisma.user.findUnique({
       where: { id: authUser.id },
       include: {
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
         },
         matches: true,
         ratings: true,
+        matchPreference: true,
       },
     });
 
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       tagsCount: userTagIds.length,
       matchedUserIds: matchedUserIds.length,
       ratingsCount: currentUser.ratings.length,
+      matchPreference: currentUser.matchPreference,
     });
 
     // Get all available users for debugging
@@ -70,16 +72,35 @@ export async function GET(request: NextRequest) {
 
     console.log('All users in database:', allUsers);
 
-    const recommendations = await prisma.user.findMany({
-      where: {
-        id: { 
-          not: authUser.id,
-          notIn: matchedUserIds,
-        },
-        isActive: true,
-        // Temporarily remove isVerified requirement for testing
-        // isVerified: true,
+    // Build where clause based on match preferences
+    const whereClause: any = {
+      id: { 
+        not: authUser.id,
+        notIn: matchedUserIds,
       },
+      isActive: true,
+    };
+
+    // Apply gender preference filter
+    if (currentUser.matchPreference?.gender) {
+      whereClause.gender = currentUser.matchPreference.gender;
+    }
+
+    // Apply age range filter
+    if (currentUser.matchPreference?.minAge || currentUser.matchPreference?.maxAge) {
+      const now = new Date();
+      if (currentUser.matchPreference.minAge) {
+        const maxBirthday = new Date(now.getFullYear() - currentUser.matchPreference.minAge, now.getMonth(), now.getDate());
+        whereClause.birthday = { ...whereClause.birthday, lte: maxBirthday };
+      }
+      if (currentUser.matchPreference.maxAge) {
+        const minBirthday = new Date(now.getFullYear() - currentUser.matchPreference.maxAge - 1, now.getMonth(), now.getDate());
+        whereClause.birthday = { ...whereClause.birthday, gte: minBirthday };
+      }
+    }
+
+    const recommendations = await prisma.user.findMany({
+      where: whereClause,
       include: {
         photos: {
           where: { isCover: true },

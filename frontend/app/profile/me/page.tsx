@@ -21,6 +21,11 @@ export default function MyProfilePage() {
     school: '',
     bloodType: '',
   })
+  const [matchPreference, setMatchPreference] = useState({
+    gender: null as string | null,
+    minAge: null as number | null,
+    maxAge: null as number | null,
+  })
 
   useEffect(() => {
     if (!token) {
@@ -44,6 +49,18 @@ export default function MyProfilePage() {
         school: response.data.school || '',
         bloodType: response.data.bloodType || '',
       })
+      
+      // Load match preferences
+      try {
+        const prefResponse = await api.get('/users/me/preferences')
+        setMatchPreference({
+          gender: prefResponse.data.preference?.gender || null,
+          minAge: prefResponse.data.preference?.minAge || null,
+          maxAge: prefResponse.data.preference?.maxAge || null,
+        })
+      } catch (error) {
+        console.error('Failed to load match preferences:', error)
+      }
     } catch (error) {
       console.error('Failed to load profile:', error)
     } finally {
@@ -284,6 +301,117 @@ export default function MyProfilePage() {
                   <h2 className="font-semibold mb-2">血型</h2>
                   <p>{profile?.bloodType || '未填寫'}</p>
                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Match Preferences Section */}
+        <div className="bg-white rounded-lg p-6 mb-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">配對條件設定</h2>
+            {!editing ? (
+              <button
+                onClick={() => setEditing(true)}
+                className="text-primary-500 hover:text-primary-600"
+              >
+                編輯
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.put('/users/me/preferences', {
+                        gender: matchPreference.gender || null,
+                        minAge: matchPreference.minAge || null,
+                        maxAge: matchPreference.maxAge || null,
+                      })
+                      await loadProfile()
+                      setEditing(false)
+                    } catch (error) {
+                      console.error('Failed to save match preferences:', error)
+                      alert('儲存配對條件失敗，請重試')
+                    }
+                  }}
+                  className="text-primary-500 hover:text-primary-600"
+                >
+                  儲存
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false)
+                    loadProfile()
+                  }}
+                  className="text-gray-600"
+                >
+                  取消
+                </button>
+              </div>
+            )}
+          </div>
+
+          {editing ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">性別偏好</label>
+                <select
+                  value={matchPreference.gender || ''}
+                  onChange={(e) => setMatchPreference({ ...matchPreference, gender: e.target.value || null })}
+                  className="w-full px-4 py-2 border rounded-lg"
+                >
+                  <option value="">不限</option>
+                  <option value="male">男性</option>
+                  <option value="female">女性</option>
+                  <option value="other">其他</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">最小年齡</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="100"
+                    value={matchPreference.minAge || ''}
+                    onChange={(e) => setMatchPreference({ 
+                      ...matchPreference, 
+                      minAge: e.target.value ? parseInt(e.target.value) : null 
+                    })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                    placeholder="不限"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">最大年齡</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="100"
+                    value={matchPreference.maxAge || ''}
+                    onChange={(e) => setMatchPreference({ 
+                      ...matchPreference, 
+                      maxAge: e.target.value ? parseInt(e.target.value) : null 
+                    })}
+                    className="w-full px-4 py-2 border rounded-lg"
+                    placeholder="不限"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h2 className="font-semibold mb-2">性別偏好</h2>
+                <p>{matchPreference.gender === 'male' ? '男性' : matchPreference.gender === 'female' ? '女性' : matchPreference.gender === 'other' ? '其他' : '不限'}</p>
+              </div>
+              <div>
+                <h2 className="font-semibold mb-2">年齡範圍</h2>
+                <p>
+                  {matchPreference.minAge || matchPreference.maxAge 
+                    ? `${matchPreference.minAge || '不限'} 歲 - ${matchPreference.maxAge || '不限'} 歲`
+                    : '不限'}
+                </p>
               </div>
             </div>
           )}
