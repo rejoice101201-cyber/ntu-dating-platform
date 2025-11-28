@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from 'next-auth';
 import { MongoDBAdapter } from '@auth/mongodb-adapter';
-import { MongoClient } from 'mongodb';
+import clientPromise from './mongodb'; // 使用標準的 MongoDB 連接文件
 import GoogleProvider from 'next-auth/providers/google';
 import FacebookProvider from 'next-auth/providers/facebook';
 import connectDB from './db';
@@ -32,31 +32,7 @@ if (!requiredEnvVars.AUTH_SECRET) {
   console.log('[NextAuth] AUTH_SECRET is set (length:', requiredEnvVars.AUTH_SECRET.length, ')');
 }
 
-// MongoDB client for adapter - MongoDBAdapter needs MongoClient, not Mongoose
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
-
-if (MONGODB_URI) {
-  if (process.env.NODE_ENV === 'development') {
-    // In development mode, use a global variable so that the value
-    // is preserved across module reloads caused by HMR (Hot Module Replacement).
-    if (!(global as any)._mongoClientPromise) {
-      client = new MongoClient(MONGODB_URI);
-      (global as any)._mongoClientPromise = client.connect();
-    }
-    clientPromise = (global as any)._mongoClientPromise;
-  } else {
-    // In production mode, it's best to not use a global variable.
-    client = new MongoClient(MONGODB_URI);
-    clientPromise = client.connect();
-  }
-} else {
-  // Create a dummy promise that will reject when used
-  clientPromise = Promise.reject(new Error('MONGODB_URI is not set'));
-}
-
+// 使用標準的 MongoDB 連接文件 (lib/mongodb.ts)
 // Custom adapter that extends MongoDBAdapter
 const baseAdapter = MongoDBAdapter(clientPromise) as any;
 
@@ -195,12 +171,19 @@ export const authOptions: NextAuthConfig = {
       }
     },
     async redirect({ url, baseUrl }) {
+      // 如果 URL 包含 /auth/register，允許跳轉
       if (url.includes('/auth/register')) {
         return url;
       }
+      // 如果 URL 是相對路徑或同源，允許跳轉
       if (url.startsWith(baseUrl)) {
         return url;
       }
+      // 如果 URL 是相對路徑（以 / 開頭），組合 baseUrl
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      // 預設返回 baseUrl
       return baseUrl;
     },
   },
