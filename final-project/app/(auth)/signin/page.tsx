@@ -11,18 +11,22 @@ export default function SignInPage() {
     try {
       setLoading(true);
       // 直接跳轉到 Google OAuth 授權頁面
-      // 使用 window.location 確保立即跳轉，不等待 Promise
+      // 使用 redirect: false 獲取 URL，然後手動跳轉
       const result = await signIn('google', {
         callbackUrl: '/auth/register',
-        redirect: false, // 先設為 false，然後手動跳轉
+        redirect: false,
       });
       
-      // 如果返回 URL，直接跳轉
+      // 如果返回 URL，直接跳轉到 Google OAuth 授權頁面
       if (result?.url) {
         window.location.href = result.url;
       } else if (result?.ok) {
-        // 如果成功，跳轉到 callback URL
+        // 如果已經登入，跳轉到註冊頁面
         window.location.href = '/auth/register';
+      } else {
+        // 如果失敗，顯示錯誤
+        console.error('Sign in failed:', result?.error);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Sign in error:', error);
