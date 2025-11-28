@@ -2,16 +2,17 @@
 
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e: React.MouseEvent) => {
+    e.preventDefault();
     try {
       setLoading(true);
-      const result = await signIn('google', {
+      // 直接跳轉到 Google OAuth 授權頁面
+      // 使用 redirect: true 確保立即跳轉
+      await signIn('google', {
         callbackUrl: '/auth/register',
         redirect: true,
       });
