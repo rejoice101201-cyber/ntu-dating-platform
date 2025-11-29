@@ -67,6 +67,9 @@
 - [ ] 添加 `PUSHER_APP_ID`
 - [ ] 添加 `PUSHER_SECRET`
 - [ ] 添加 `NEXT_PUBLIC_PUSHER_CLUSTER`
+- [ ] 添加 `BLOB_READ_WRITE_TOKEN`（已提供：`vercel_blob_rw_8sRz3T9Y3XSRnANr_mKu9bjHMigbTQUgpwL3bAFVn4XeAbC`）
+- [ ] 添加 `SHARP_IGNORE_GLOBAL_LIBVIPS=1`（可選）
+- [ ] 添加 `JWT_SECRET`（可選，已提供）
 
 ### 步驟 3: 部署
 - [ ] 點擊 Deploy
@@ -101,18 +104,36 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ### 環境變數模板
 
 ```env
+# Database
 MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/pikabu?retryWrites=true&w=majority
+
+# NextAuth
 NEXTAUTH_URL=https://your-project.vercel.app
 AUTH_SECRET=your-generated-secret-here
+
+# OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 FACEBOOK_ID=your-facebook-app-id
 FACEBOOK_SECRET=your-facebook-app-secret
+
+# Pusher
 NEXT_PUBLIC_PUSHER_APP_KEY=your-pusher-app-key
 PUSHER_APP_ID=your-pusher-app-id
 PUSHER_SECRET=your-pusher-secret
 NEXT_PUBLIC_PUSHER_CLUSTER=ap1
+
+# Vercel Blob Storage (照片上傳)
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_8sRz3T9Y3XSRnANr_mKu9bjHMigbTQUgpwL3bAFVn4XeAbC
+
+# Image Processing (可選)
+SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
+# JWT (可選)
+JWT_SECRET=d0845fef0cebdc1539036fb505b320422842845e72f3811f9737ea31ffa8f740
 ```
+
+**注意**: 不要添加 PostgreSQL 相關的環境變數（POSTGRES_URL, PRISMA_DATABASE_URL, DATABASE_URL），此專案使用 MongoDB。
 
 ### OAuth Redirect URIs 格式
 
@@ -125,4 +146,5 @@ https://your-project.vercel.app/api/auth/callback/google
 ```
 https://your-project.vercel.app/api/auth/callback/facebook
 ```
+
 

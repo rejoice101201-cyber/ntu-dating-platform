@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+import { put } from '@vercel/blob';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,34 +22,25 @@ export async function POST(req: NextRequest) {
 
     const photoUrls: string[] = [];
 
-    // 確保上傳目錄存在
-    const uploadDir = join(process.cwd(), 'public', 'uploads', session.user.id);
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
     // 處理每張照片
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
         return NextResponse.json({ error: '只能上傳圖片檔案' }, { status: 400 });
       }
 
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
       // 生成唯一檔名
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 15);
       const extension = file.name.split('.').pop() || 'jpg';
-      const filename = `${timestamp}-${randomStr}.${extension}`;
-      const filepath = join(uploadDir, filename);
+      const filename = `${session.user.id}/${timestamp}-${randomStr}.${extension}`;
 
-      // 儲存檔案
-      await writeFile(filepath, buffer);
+      // 上傳到 Vercel Blob Storage
+      const blob = await put(filename, file, {
+        access: 'public',
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
 
-      // 生成 URL
-      const photoUrl = `/uploads/${session.user.id}/${filename}`;
-      photoUrls.push(photoUrl);
+      photoUrls.push(blob.url);
     }
 
     return NextResponse.json({ photoUrls });
@@ -63,6 +52,7 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 
 
 
