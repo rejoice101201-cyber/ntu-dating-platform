@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 240, 245;
+  --background-end-rgb: 255, 250, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      rgba(255, 240, 245, 0.8),
+      rgba(255, 250, 255, 0.9)
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 182, 193, 0.1) 0%,
+      rgba(221, 160, 221, 0.1) 50%,
+      rgba(176, 224, 230, 0.1) 100%
+    );
+  min-height: 100vh;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Blur effect for photos */
+.photo-blur {
+  filter: blur(var(--blur-level, 20px));
+  transition: filter 0.3s ease;
+}
+
