@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Use standalone output to avoid file tracing stack overflow
-  output: 'standalone',
+  // 移除 standalone 輸出以修復構建錯誤
+  // output: 'standalone',
   // 使用 webpack 配置（禁用 Turbopack）
   webpack: (config, { isServer }) => {
     if (!isServer) {
