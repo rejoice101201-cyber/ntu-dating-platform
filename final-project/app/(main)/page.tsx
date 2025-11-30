@@ -30,7 +30,7 @@ export default function HomePage() {
     if (status === 'authenticated' && session?.user?.userID) {
       fetchRecommendations();
     }
-  }, [status, session]);
+  }, [status, session, router]);
 
   const fetchRecommendations = async () => {
     try {
