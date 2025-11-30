@@ -1,13 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true,
   images: {
-    domains: [],
+    domains: ['localhost'],
     remotePatterns: [],
   },
-  // 添加空的 turbopack 配置以解決 Next.js 16 的 Turbopack 警告
-  turbopack: {},
+  // Use standalone output to avoid file tracing stack overflow
+  output: 'standalone',
+  // 使用 webpack 配置（禁用 Turbopack）
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
