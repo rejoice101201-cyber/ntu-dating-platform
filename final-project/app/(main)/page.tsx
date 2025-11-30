@@ -26,14 +26,11 @@ export default function HomePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (status === 'authenticated' && !session?.user?.userID) {
-      router.push('/auth/register');
-    } else if (status === 'authenticated') {
+    // 認證檢查由 layout 處理，這裡只處理已認證且有 userID 的情況
+    if (status === 'authenticated' && session?.user?.userID) {
       fetchRecommendations();
     }
-  }, [status, session, router]);
+  }, [status, session]);
 
   const fetchRecommendations = async () => {
     try {

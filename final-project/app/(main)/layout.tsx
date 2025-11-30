@@ -16,10 +16,9 @@ export default function MainLayout({
   const pathname = usePathname();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    } else if (status === 'authenticated' && !session?.user?.userID) {
-      router.push('/auth/register');
+    // 只在已認證但沒有 userID 時重定向（未認證的情況由根路由處理）
+    if (status === 'authenticated' && !session?.user?.userID) {
+      router.replace('/auth/register');
     }
   }, [status, session, router]);
 
