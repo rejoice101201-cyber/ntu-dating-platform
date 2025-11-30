@@ -35,6 +35,8 @@ const nextConfig: NextConfig = {
         'node_modules/@esbuild/linux-x64',
       ],
     },
+    // 禁用服務器組件追蹤
+    serverComponentsExternalPackages: ['mongoose', 'mongodb'],
   },
 };
 
