@@ -26,18 +26,16 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // 禁用構建追蹤以修復 ENOENT 錯誤
-  experimental: {
-    outputFileTracingExcludes: {
-      '*': [
-        'node_modules/@swc/core-linux-x64-gnu',
-        'node_modules/@swc/core-linux-x64-musl',
-        'node_modules/@esbuild/linux-x64',
-      ],
-    },
-    // 禁用服務器組件追蹤
-    serverComponentsExternalPackages: ['mongoose', 'mongodb'],
+  // 禁用構建追蹤以修復 ENOENT 錯誤（Next.js 16 中已移到頂層）
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@esbuild/linux-x64',
+    ],
   },
+  // 禁用服務器組件追蹤（Next.js 16 中已移到頂層）
+  serverExternalPackages: ['mongoose', 'mongodb'],
 };
 
 export default nextConfig;
