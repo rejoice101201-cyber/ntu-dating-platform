@@ -1,35 +1,29 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import SessionProvider from "@/components/providers/SessionProvider";
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import dynamic from 'next/dynamic'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const Navigation = dynamic(() => import('@/components/Navigation'), { ssr: false })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Pikabu - 交友軟體唯一清流",
-  description: "Pikabu 約會網站",
-};
+  title: 'NTU Dating Platform - 找到你的另一半',
+  description: '一個注重內在的交友平台，透過互動解鎖照片，找到真正適合的人',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="zh-TW">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SessionProvider>{children}</SessionProvider>
+      <body className={inter.className}>
+        {children}
+        <Navigation />
       </body>
     </html>
-  );
+  )
 }
+
