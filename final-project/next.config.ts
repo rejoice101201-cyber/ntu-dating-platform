@@ -28,8 +28,6 @@ const nextConfig: NextConfig = {
   },
   // 禁用服務器組件追蹤（Next.js 16 中已移到頂層）
   serverExternalPackages: ['mongoose', 'mongodb'],
-  // 禁用構建追蹤以修復 ENOENT 錯誤
-  output: undefined, // 不使用 standalone，讓 Vercel 自動處理
 };
 
 export default nextConfig;
