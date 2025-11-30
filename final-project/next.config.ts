@@ -14,8 +14,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // 移除 standalone 輸出以修復構建錯誤
-  // output: 'standalone',
   // 使用 webpack 配置（禁用 Turbopack）
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -27,6 +25,16 @@ const nextConfig: NextConfig = {
       };
     }
     return config;
+  },
+  // 禁用構建追蹤以修復 ENOENT 錯誤
+  experimental: {
+    outputFileTracingExcludes: {
+      '*': [
+        'node_modules/@swc/core-linux-x64-gnu',
+        'node_modules/@swc/core-linux-x64-musl',
+        'node_modules/@esbuild/linux-x64',
+      ],
+    },
   },
 };
 
