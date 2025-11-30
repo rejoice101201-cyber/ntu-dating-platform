@@ -44,7 +44,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!token) {
-      router.push('/auth/login')
+      router.push('/auth/signin')
       return
     }
 

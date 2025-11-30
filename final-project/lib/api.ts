@@ -31,9 +31,9 @@ api.interceptors.response.use(
     // Only redirect on 401 if we actually got a response (not network error)
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      // Only redirect if we're not already on login page
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-        window.location.href = '/auth/login';
+      // Only redirect if we're not already on signin page
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/signin')) {
+        window.location.href = '/auth/signin';
       }
     } else if (!error.response) {
       // Network error or API not available
