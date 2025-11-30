@@ -32,10 +32,13 @@ const nextConfig: NextConfig = {
       'node_modules/@swc/core-linux-x64-gnu',
       'node_modules/@swc/core-linux-x64-musl',
       'node_modules/@esbuild/linux-x64',
+      'node_modules/**/*',
     ],
   },
   // 禁用服務器組件追蹤（Next.js 16 中已移到頂層）
   serverExternalPackages: ['mongoose', 'mongodb'],
+  // 完全禁用構建追蹤以修復 ENOENT 錯誤
+  outputFileTracingIncludes: {},
 };
 
 export default nextConfig;
