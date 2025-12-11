@@ -118,11 +118,9 @@ export default function ChatPage() {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
       const pollInterval = setInterval(() => {
-        if (!isInitialLoad) {
-          loadMessages(false) // Don't show loading spinner on polling
-          checkActiveGameSession() // 检查游戏状态
-        }
-      }, 5000) // Poll every 5 seconds
+        loadMessages(false) // Don't show loading spinner on polling
+        checkActiveGameSession() // 检查游戏状态
+      }, 4000) // Poll every 4 seconds
 
       return () => {
         clearInterval(pollInterval)
@@ -231,6 +229,10 @@ export default function ChatPage() {
           msg.id === tempMessage.id ? response.data.message : msg
         ))
       }
+      
+      // 保險再次拉取，確保 UI 與後端一致（包含遊戲狀態）
+      loadMessages(false)
+      checkActiveGameSession()
     } catch (error) {
       console.error('Failed to send message:', error)
       // Remove optimistic message on error
