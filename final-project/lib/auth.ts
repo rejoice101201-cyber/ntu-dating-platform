@@ -11,18 +11,27 @@ import User from '@/models/User';
 const requiredEnvVars = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-  FACEBOOK_ID: process.env.FACEBOOK_ID,
-  FACEBOOK_SECRET: process.env.FACEBOOK_SECRET,
   AUTH_SECRET: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 };
 
-// Log missing environment variables for debugging
+// Optional Facebook envs (do not block deploy)
+const facebookEnv = {
+  id: process.env.FACEBOOK_ID,
+  secret: process.env.FACEBOOK_SECRET,
+};
+
+// Log missing required environment variables for debugging
 const missingVars = Object.entries(requiredEnvVars)
   .filter(([_, value]) => !value)
   .map(([key]) => key);
 
 if (missingVars.length > 0) {
-  console.error('[NextAuth] Missing environment variables:', missingVars);
+  console.error('[NextAuth] Missing REQUIRED environment variables:', missingVars);
+}
+
+// If Facebook is partially configured, warn once
+if ((facebookEnv.id && !facebookEnv.secret) || (!facebookEnv.id && facebookEnv.secret)) {
+  console.warn('[NextAuth] Facebook env vars are partially set. Set both FACEBOOK_ID and FACEBOOK_SECRET or leave both empty.');
 }
 
 // Log secret status for debugging
@@ -68,11 +77,11 @@ const providers = [
         }),
       ]
     : []),
-  ...(requiredEnvVars.FACEBOOK_ID && requiredEnvVars.FACEBOOK_SECRET
+  ...(facebookEnv.id && facebookEnv.secret
     ? [
         FacebookProvider({
-          clientId: requiredEnvVars.FACEBOOK_ID,
-          clientSecret: requiredEnvVars.FACEBOOK_SECRET,
+          clientId: facebookEnv.id,
+          clientSecret: facebookEnv.secret,
           allowDangerousEmailAccountLinking: true,
         }),
       ]
