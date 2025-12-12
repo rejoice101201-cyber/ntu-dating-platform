@@ -31,6 +31,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [pusher, setPusher] = useState<Pusher | null>(null)
+  const [sending, setSending] = useState(false)
   const [otherUser, setOtherUser] = useState<any>(null)
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -120,35 +121,8 @@ export default function ChatPage() {
           }
         })
 
-        // Also subscribe to user channel for notifications
-        if (user) {
-          const userChannel = newPusher.subscribe(`user-${user.id}`)
-          userChannel.bind('new_message', (message: Message) => {
-            if (message.matchId !== matchId) return
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body:JSON.stringify({
-                sessionId:'debug-session',
-                runId:'pre-fix',
-                hypothesisId:'H1',
-                location:'app/chat/[matchId]/page.tsx:user-channel',
-                message:'pusher user new_message',
-                data:{incomingId:(message as any)?.id || (message as any)?._id},
-                timestamp:Date.now()
-              })
-            }).catch(()=>{});
-            // #endregion
-            setMessages(prev => {
-              const incomingId = (message as any)?.id || (message as any)?._id
-              if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
-                return prev
-              }
-              return [...prev, message]
-            })
-          })
-        }
+        // NOTE: 不在聊天頁訂閱 user channel，避免與 match channel 重複導致同訊息出現兩次。
+        // user channel 適合用於「不在聊天室頁」時做通知。
 
         setPusher(newPusher)
 
@@ -252,38 +226,10 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !user) return
+    if (!input.trim() || !user || sending) return
 
     const messageContent = input.trim()
-    
-    // Optimistically add message to UI
-    const tempMessage: Message = {
-      id: `temp-${Date.now()}`,
-      content: messageContent,
-      type: 'text',
-      senderId: user.id,
-      sender: {
-        id: user.id,
-        name: user.name,
-      },
-      createdAt: new Date().toISOString(),
-    }
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        sessionId:'debug-session',
-        runId:'pre-fix',
-        hypothesisId:'H2',
-        location:'app/chat/[matchId]/page.tsx:handleSend-temp',
-        message:'optimistic temp created',
-        data:{tempId:tempMessage.id, content:tempMessage.content},
-        timestamp:Date.now()
-      })
-    }).catch(()=>{});
-    // #endregion
-    setMessages(prev => [...prev, tempMessage])
+    setSending(true)
     setInput('')
 
     try {
@@ -292,35 +238,11 @@ export default function ChatPage() {
         content: messageContent,
         type: 'text',
       })
-      
-      // Replace temp message with real message (and dedupe against Pusher)
-      if (response.data.message) {
-        const realMessage = response.data.message as any
-        const realId = realMessage?.id || realMessage?._id
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            sessionId:'debug-session',
-            runId:'pre-fix',
-            hypothesisId:'H2',
-            location:'app/chat/[matchId]/page.tsx:handleSend-response',
-            message:'api response message',
-            data:{tempId:tempMessage.id, realId},
-            timestamp:Date.now()
-          })
-        }).catch(()=>{});
-        // #endregion
-        setMessages(prev => {
-          // 移除 optimistic temp
-          const withoutTemp = prev.filter(m => ((m as any)?.id || (m as any)?._id) !== tempMessage.id)
-          // 如果 Pusher 已經先送到真訊息，就不要再加一次
-          if (realId && withoutTemp.some(m => ((m as any)?.id || (m as any)?._id) === realId)) {
-            return withoutTemp
-          }
-          return [...withoutTemp, realMessage]
-        })
+
+      // 不在這裡手動 append/replace，避免與 Pusher 或輪詢重複
+      // 立即重拉一次，確保自己也能立刻看到最新訊息
+      if (response?.data?.message) {
+        loadMessages(false)
       }
       
       // 保險再次拉取，確保 UI 與後端一致（包含遊戲狀態）
@@ -328,8 +250,11 @@ export default function ChatPage() {
       checkActiveGameSession()
     } catch (error) {
       console.error('Failed to send message:', error)
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
+      // 發送失敗時把輸入還原，讓使用者可重送
+      setInput(messageContent)
+      alert('發送失敗，請稍後再試')
+    } finally {
+      setSending(false)
     }
   }
 
