@@ -40,21 +40,32 @@ export async function POST(
       return NextResponse.json({ error: '無權限' }, { status: 403 });
     }
 
-    // 創建訊息
-    const message = await Message.create({
-      chatId: chatId,
+    // 以 senderId + content + chatId + 近1秒內的訊息去重，避免前端/事件重送
+    const now = new Date();
+    const oneSecondAgo = new Date(now.getTime() - 1000);
+    const existing = await Message.findOne({
+      chatId,
       senderId: session.user.id,
       content,
-      type,
+      createdAt: { $gte: oneSecondAgo },
     });
+
+    const message =
+      existing ||
+      (await Message.create({
+        chatId: chatId,
+        senderId: session.user.id,
+        content,
+        type,
+      }));
 
     // 更新聊天室的最後訊息時間
     await Chat.findByIdAndUpdate(chatId, {
       lastMessageAt: new Date(),
     });
 
-    // 發送 Pusher 事件
-    if (pusherServer) {
+    // 發送 Pusher 事件（如果已存在就不要再推一次）
+    if (pusherServer && !existing) {
       await pusherServer.trigger(
         `chat-${chatId}`,
         'new-message',
