@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [gLoading, setGLoading] = useState(false)
+  const [gisReady, setGisReady] = useState(false)
 
   useEffect(() => {
     // 動態載入 Google Identity Services
@@ -34,6 +35,23 @@ export default function LoginPage() {
     script.async = true
     script.defer = true
     script.id = 'google-oauth-script'
+    script.onload = () => {
+      setGisReady(true)
+      // 預先初始化，避免按鈕點擊時才初始化導致延遲
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: () => {},
+          ux_mode: 'popup',
+        })
+        // 渲染隱藏按鈕，部分瀏覽器需有 renderButton 觸發權限
+        const btnContainer = document.getElementById('google-btn-slot')
+        if (btnContainer) {
+          window.google.accounts.id.renderButton(btnContainer, { theme: 'outline', size: 'large' })
+        }
+      }
+    }
+    script.onerror = () => setError('無法載入 Google 登入腳本，請稍後再試')
     document.body.appendChild(script)
   }, [])
 
@@ -55,7 +73,7 @@ export default function LoginPage() {
   }
 
   const handleGoogle = async () => {
-    if (typeof window === 'undefined' || !window.google) {
+    if (typeof window === 'undefined' || !window.google || !window.google.accounts?.id) {
       setError('Google 登入初始化中，請稍後再試')
       return
     }
@@ -76,6 +94,7 @@ export default function LoginPage() {
           setGLoading(false)
         }
       },
+      ux_mode: 'popup',
     })
     window.google.accounts.id.prompt((notification: any) => {
       if (notification.isNotDisplayed()) {
@@ -147,6 +166,7 @@ export default function LoginPage() {
           >
             {gLoading ? 'Google 登入中...' : '使用 Google 登入'}
           </button>
+          <div id="google-btn-slot" className="hidden" aria-hidden="true" />
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
