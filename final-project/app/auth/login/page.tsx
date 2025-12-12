@@ -145,7 +145,7 @@ export default function LoginPage() {
             disabled={gLoading}
             className="w-full border border-pink-300 text-pink-600 py-3 rounded-full font-semibold hover:bg-pink-50 disabled:opacity-50 transition-all"
           >
-            {gLoading ? 'Google 登入中...' : '使用 Google 登入（跳轉）'}
+            {gLoading ? 'Google 登入中...' : '使用 Google 登入'}
           </button>
         </form>
 
