@@ -74,7 +74,21 @@ export default function ChatPage() {
         const channel = newPusher.subscribe(`match-${matchId}`)
         
         channel.bind('new_message', (message: Message) => {
-          // 避免因為多個來源（自己送出 + Pusher、match channel + user channel）造成重複訊息
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+              sessionId:'debug-session',
+              runId:'pre-fix',
+              hypothesisId:'H1',
+              location:'app/chat/[matchId]/page.tsx:match-channel',
+              message:'pusher match new_message',
+              data:{incomingId:(message as any)?.id || (message as any)?._id},
+              timestamp:Date.now()
+            })
+          }).catch(()=>{});
+          // #endregion
           setMessages(prev => {
             const incomingId = (message as any)?.id || (message as any)?._id
             if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
@@ -111,6 +125,21 @@ export default function ChatPage() {
           const userChannel = newPusher.subscribe(`user-${user.id}`)
           userChannel.bind('new_message', (message: Message) => {
             if (message.matchId !== matchId) return
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({
+                sessionId:'debug-session',
+                runId:'pre-fix',
+                hypothesisId:'H1',
+                location:'app/chat/[matchId]/page.tsx:user-channel',
+                message:'pusher user new_message',
+                data:{incomingId:(message as any)?.id || (message as any)?._id},
+                timestamp:Date.now()
+              })
+            }).catch(()=>{});
+            // #endregion
             setMessages(prev => {
               const incomingId = (message as any)?.id || (message as any)?._id
               if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
@@ -239,6 +268,21 @@ export default function ChatPage() {
       },
       createdAt: new Date().toISOString(),
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        sessionId:'debug-session',
+        runId:'pre-fix',
+        hypothesisId:'H2',
+        location:'app/chat/[matchId]/page.tsx:handleSend-temp',
+        message:'optimistic temp created',
+        data:{tempId:tempMessage.id, content:tempMessage.content},
+        timestamp:Date.now()
+      })
+    }).catch(()=>{});
+    // #endregion
     setMessages(prev => [...prev, tempMessage])
     setInput('')
 
@@ -253,6 +297,21 @@ export default function ChatPage() {
       if (response.data.message) {
         const realMessage = response.data.message as any
         const realId = realMessage?.id || realMessage?._id
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            sessionId:'debug-session',
+            runId:'pre-fix',
+            hypothesisId:'H2',
+            location:'app/chat/[matchId]/page.tsx:handleSend-response',
+            message:'api response message',
+            data:{tempId:tempMessage.id, realId},
+            timestamp:Date.now()
+          })
+        }).catch(()=>{});
+        // #endregion
         setMessages(prev => {
           // 移除 optimistic temp
           const withoutTemp = prev.filter(m => ((m as any)?.id || (m as any)?._id) !== tempMessage.id)

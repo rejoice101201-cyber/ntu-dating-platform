@@ -119,6 +119,21 @@ export default function ChatPage() {
           type: data.type || 'text',
           createdAt: new Date(data.createdAt),
         };
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            sessionId:'debug-session',
+            runId:'pre-fix',
+            hypothesisId:'H1',
+            location:'app/(main)/chat/[chatId]/page.tsx:pusher-new-message',
+            message:'pusher new-message',
+            data:{incomingId:newMessage._id},
+            timestamp:Date.now()
+          })
+        }).catch(()=>{});
+        // #endregion
         setMessages((prev) => {
           if (prev.some((m) => m._id === newMessage._id)) return prev;
           return [...prev, newMessage];
@@ -146,7 +161,22 @@ export default function ChatPage() {
       });
 
       if (res.ok) {
-        await res.json();
+        const data = await res.json();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            sessionId:'debug-session',
+            runId:'pre-fix',
+            hypothesisId:'H2',
+            location:'app/(main)/chat/[chatId]/page.tsx:handleSend-response',
+            message:'api response message',
+            data:{messageId:data?.message?._id},
+            timestamp:Date.now()
+          })
+        }).catch(()=>{});
+        // #endregion
         setMessage('');
         // 交由 Pusher 來即時新增訊息；同時保險重拉一次避免漏事件
         fetchChat(false);
