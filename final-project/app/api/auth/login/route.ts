@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      console.log('User not found:', data.email);
+      console.log('User not found:', identifier);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
