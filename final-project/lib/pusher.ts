@@ -2,8 +2,14 @@ import Pusher from 'pusher';
 
 const PUSHER_APP_ID = process.env.PUSHER_APP_ID || '';
 const PUSHER_SECRET = process.env.PUSHER_SECRET || '';
-const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || '';
-const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'ap1';
+// Support multiple env var names to avoid misconfig
+const PUSHER_KEY =
+  process.env.NEXT_PUBLIC_PUSHER_APP_KEY ||
+  process.env.NEXT_PUBLIC_PUSHER_KEY ||
+  process.env.PUSHER_KEY ||
+  '';
+const PUSHER_CLUSTER =
+  process.env.NEXT_PUBLIC_PUSHER_CLUSTER || process.env.PUSHER_CLUSTER || 'ap1';
 
 // Only create Pusher instance if all required env vars are set
 let pusherServer: Pusher | null = null;

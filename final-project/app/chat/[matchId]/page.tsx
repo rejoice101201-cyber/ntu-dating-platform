@@ -24,9 +24,9 @@ export default function ChatPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const matchId = params.matchId as string
-  const hasRealPusher =
-    process.env.NEXT_PUBLIC_PUSHER_APP_KEY &&
-    process.env.NEXT_PUBLIC_PUSHER_APP_KEY !== 'dummy'
+  const pusherKey =
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY || process.env.NEXT_PUBLIC_PUSHER_KEY
+  const hasRealPusher = Boolean(pusherKey && pusherKey !== 'dummy')
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -66,7 +66,7 @@ export default function ChatPage() {
     // Initialize Pusher if environment variables are set
     if (hasRealPusher && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
       try {
-        const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+        const newPusher = new Pusher(pusherKey as string, {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
         })
 
