@@ -25,8 +25,8 @@ export default function ChatPage() {
   const { user, token } = useAuthStore()
   const matchId = params.matchId as string
   const hasRealPusher =
-    process.env.NEXT_PUBLIC_PUSHER_KEY &&
-    process.env.NEXT_PUBLIC_PUSHER_KEY !== 'dummy'
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY &&
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY !== 'dummy'
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
