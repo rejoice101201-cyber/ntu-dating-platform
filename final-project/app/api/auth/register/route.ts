@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingByUserId = await prisma.user.findUnique({
+    const existingByUserId = await prisma.user.findFirst({
       where: { userId: data.userId },
     });
     if (existingByUserId) {
