@@ -32,6 +32,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // 基本寄件設定檢查，避免因環境變數錯誤導致 500
+    if (!process.env.EMAIL_SERVER_USER || !process.env.EMAIL_SERVER_PASS) {
+      return NextResponse.json(
+        { error: '寄件設定缺失，請通知管理員補齊 EMAIL_SERVER_USER / EMAIL_SERVER_PASS' },
+        { status: 500 }
+      );
+    }
+    if (String(process.env.EMAIL_SERVER_PASS).length < 12) {
+      return NextResponse.json(
+        { error: '寄件設定異常，請更新 EMAIL_SERVER_PASS 為 Gmail 應用程式密碼（16 碼）' },
+        { status: 500 }
+      );
+    }
+
     const token = jwt.sign({ email: lowerEmail }, AUTH_SECRET, { expiresIn: '15m' });
     const resetUrl = `${NEXTAUTH_URL || ''}/auth/reset/${token}`;
 
@@ -50,7 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Forgot password error:', error);
-    return NextResponse.json({ error: '寄送失敗，請稍後再試' }, { status: 500 });
+    return NextResponse.json({ error: '寄送失敗，請稍後再試（請確認寄件設定與應用程式密碼）' }, { status: 500 });
   }
 }
 

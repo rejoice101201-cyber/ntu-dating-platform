@@ -43,6 +43,7 @@ export default function LoginPage() {
           client_id: GOOGLE_CLIENT_ID,
           callback: () => {},
           ux_mode: 'popup',
+          use_fedcm_for_prompt: false,
         })
         // 渲染隱藏按鈕，部分瀏覽器需有 renderButton 觸發權限
         const btnContainer = document.getElementById('google-btn-slot')
@@ -95,10 +96,16 @@ export default function LoginPage() {
         }
       },
       ux_mode: 'popup',
+      use_fedcm_for_prompt: false,
     })
     window.google.accounts.id.prompt((notification: any) => {
       if (notification.isNotDisplayed()) {
-        setError('無法顯示 Google 登入，請稍後再試')
+        setError('Google 登入被阻擋，請允許第三方 Cookie 或改用無痕/桌面再試')
+        setGLoading(false)
+      } else if (notification.isSkippedMoment()) {
+        setError('Google 登入被瀏覽器跳過，請重新點擊或改用無痕/桌面')
+        setGLoading(false)
+      } else if (notification.isDismissedMoment()) {
         setGLoading(false)
       }
     })
