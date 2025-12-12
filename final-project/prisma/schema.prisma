@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id               String   @id @default(cuid())
-  userId           String?  @unique @default(cuid())
+  userId           String?  @default(cuid())
   email            String   @unique
   phone            String?  @unique
   password         String
