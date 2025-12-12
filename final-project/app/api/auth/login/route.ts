@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  identifier: z.string(), // email 或 userId
+  password: z.string().optional(),
 });
 
 // Handle OPTIONS for CORS
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Login request body:', { email: body.email });
     const data = loginSchema.parse(body);
-    const email = data.email.toLowerCase();
+    const identifier = data.identifier.trim();
+    const emailLike = identifier.includes('@') ? identifier.toLowerCase() : null;
 
     // Check database connection
     try {
@@ -41,8 +42,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findFirst({
+      where: emailLike
+        ? { email: emailLike }
+        : { userId: identifier },
     });
 
     if (!user) {
@@ -55,14 +58,24 @@ export async function POST(request: NextRequest) {
 
     console.log('User found:', { id: user.id, email: user.email, isActive: user.isActive });
 
-    const isValidPassword = await bcrypt.compare(data.password, user.password);
-
-    if (!isValidPassword) {
-      console.log('Invalid password for user:', data.email);
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+    const hasPassword = !!data.password && data.password.length > 0;
+    if (hasPassword) {
+      const isValidPassword = await bcrypt.compare(data.password!, user.password);
+      if (!isValidPassword) {
+        console.log('Invalid password for user:', identifier);
+        return NextResponse.json(
+          { error: 'Invalid credentials' },
+          { status: 401 }
+        );
+      }
+    } else {
+      // 無密碼登入：僅當 identifier 等於 userId 時允許
+      if (identifier !== user.userId) {
+        return NextResponse.json(
+          { error: '需要密碼' },
+          { status: 401 }
+        );
+      }
     }
 
     if (!user.isActive) {

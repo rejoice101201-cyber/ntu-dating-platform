@@ -19,7 +19,7 @@ export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle)
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -62,7 +62,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(email, password)
+      await login(identifier, password || undefined)
       // Wait a bit for state to update
       setTimeout(() => {
         router.push('/discover')
@@ -129,28 +129,27 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              郵箱（建議使用 Gmail）
+              Email 或 userID（userID 可免密碼）
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="your@gmail.com"
+              placeholder="your@gmail.com 或 yourUserID"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              密碼
+              密碼（使用 userID 可留空）
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               autoComplete="current-password"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="••••••••"

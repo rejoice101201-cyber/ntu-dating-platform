@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const register = useAuthStore((state) => state.register)
   const { token } = useAuthStore()
   const [formData, setFormData] = useState({
+    userId: '',
     email: '',
     password: '',
     name: '',
@@ -43,7 +44,16 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     
-    // 检查是否上传了照片
+    if (!formData.userId.trim()) {
+      setError('請輸入 userID')
+      return
+    }
+    if (!formData.email.toLowerCase().includes('gmail.com')) {
+      setError('請使用 Gmail 帳號註冊')
+      return
+    }
+
+    // 檢查是否上传了照片
     if (!photo) {
       setError('請上傳至少一張照片')
       return
@@ -60,6 +70,7 @@ export default function RegisterPage() {
       // 先注册用户
       await register({
         ...formData,
+        userId: formData.userId.trim(),
         height: formData.height ? parseInt(formData.height) : undefined,
         weight: formData.weight ? parseInt(formData.weight) : undefined,
         occupation: formData.occupation || undefined,
@@ -118,6 +129,21 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              userID *
+            </label>
+            <input
+              type="text"
+              value={formData.userId}
+              onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+              required
+              autoComplete="username"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="輸入 userID (1-15 字元)"
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

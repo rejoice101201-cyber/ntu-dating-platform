@@ -4,6 +4,7 @@ import api from '@/lib/api';
 
 interface User {
   id: string;
+  userId: string;
   email: string;
   name: string;
   birthday: string;
@@ -18,7 +19,7 @@ interface User {
 interface AuthState {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password?: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -26,6 +27,7 @@ interface AuthState {
 }
 
 interface RegisterData {
+  userId: string;
   email: string;
   password: string;
   name: string;
@@ -45,8 +47,8 @@ export const useAuthStore = create<AuthState>()(
       return {
         user: null,
         token: null,
-        login: async (email: string, password: string) => {
-          const response = await api.post('/auth/login', { email, password });
+        login: async (identifier: string, password?: string) => {
+          const response = await api.post('/auth/login', { identifier, password });
           const { user, token } = response.data;
           set({ user, token });
           if (typeof window !== 'undefined') {

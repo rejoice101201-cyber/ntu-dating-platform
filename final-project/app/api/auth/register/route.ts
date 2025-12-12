@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 const registerSchema = z.object({
+  userId: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
@@ -46,13 +47,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
+    const existingByEmail = await prisma.user.findUnique({
       where: { email: lowerEmail },
     });
-
-    if (existingUser) {
+    if (existingByEmail) {
       return NextResponse.json(
-        { error: 'User already exists' },
+        { error: 'Email 已被使用' },
+        { status: 400 }
+      );
+    }
+
+    const existingByUserId = await prisma.user.findUnique({
+      where: { userId: data.userId },
+    });
+    if (existingByUserId) {
+      return NextResponse.json(
+        { error: 'userID 已被使用' },
         { status: 400 }
       );
     }
@@ -63,6 +73,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
+        userId: data.userId,
         email: lowerEmail,
         password: hashedPassword,
         name: data.name,
@@ -77,6 +88,7 @@ export async function POST(request: NextRequest) {
       },
       select: {
         id: true,
+        userId: true,
         email: true,
         name: true,
         birthday: true,
