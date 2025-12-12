@@ -43,9 +43,13 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findFirst({
-      where: emailLike
-        ? { email: emailLike }
-        : { userId: identifier },
+      where: {
+        OR: [
+          emailLike ? { email: emailLike } : undefined,
+          { userId: identifier },
+          { name: { equals: identifier, mode: 'insensitive' } },
+        ].filter(Boolean) as any,
+      },
     });
 
     if (!user) {
@@ -69,12 +73,21 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // 無密碼登入：僅當 identifier 等於 userId 時允許
-      if (identifier !== user.userId) {
-        return NextResponse.json(
-          { error: '需要密碼' },
-          { status: 401 }
-        );
+      // 無密碼登入：僅當 identifier 等於 userId，或 userId 為空且名稱匹配時允許
+      const idMatch = user.userId && identifier === user.userId;
+      const nameMatch = !user.userId && user.name?.toLowerCase() === identifier.toLowerCase();
+
+      if (!idMatch && !nameMatch) {
+        return NextResponse.json({ error: '需要密碼' }, { status: 401 });
+      }
+
+      // 若 userId 尚未設定且名稱匹配，嘗試補上 userId（避免下次再失敗）
+      if (!user.userId && nameMatch) {
+        const conflict = await prisma.user.findFirst({ where: { userId: identifier } });
+        if (!conflict) {
+          await prisma.user.update({ where: { id: user.id }, data: { userId: identifier } });
+          user.userId = identifier;
+        }
       }
     }
 
