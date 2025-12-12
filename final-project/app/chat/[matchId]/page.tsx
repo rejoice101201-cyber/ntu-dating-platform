@@ -231,16 +231,16 @@ export default function ChatPage() {
 
     try {
       // Send via API (which will trigger Pusher)
-      const response = await api.post(`/chat/${matchId}/messages`, {
+      await api.post(`/chat/${matchId}/messages`, {
         content: messageContent,
         type: 'text',
       })
 
-      // 交由 Pusher 事件加入；保險重拉一次
-      if (response?.data?.message) {
+      // 交由 Pusher 事件加入；為避免與即時事件重疊造成瞬間重複，延遲補拉一次
+      setTimeout(() => {
         loadMessages(false)
         checkActiveGameSession()
-      }
+      }, 1200)
     } catch (error) {
       console.error('Failed to send message:', error)
       // 發送失敗時把輸入還原，讓使用者可重送
