@@ -37,6 +37,9 @@ export default function ChatPage() {
   const router = useRouter();
   const params = useParams();
   const chatId = params.chatId as string;
+  const hasRealPusher =
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY &&
+    process.env.NEXT_PUBLIC_PUSHER_APP_KEY !== 'dummy';
 
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -44,6 +47,7 @@ export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -53,6 +57,12 @@ export default function ChatPage() {
     } else if (status === 'authenticated') {
       fetchChat();
       setupPusher();
+      // If no real pusher config, start lightweight polling as fallback
+      if (!hasRealPusher && !pollRef.current) {
+        pollRef.current = setInterval(() => {
+          fetchChat(false);
+        }, 4000);
+      }
     }
 
     return () => {
@@ -60,8 +70,12 @@ export default function ChatPage() {
       if (chatId) {
         pusherClient.unsubscribe(`chat-${chatId}`);
       }
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
     };
-  }, [status, session, router, chatId]);
+  }, [status, session, router, chatId, hasRealPusher]);
 
   useEffect(() => {
     scrollToBottom();
@@ -71,8 +85,9 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchChat = async () => {
+  const fetchChat = async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const res = await fetch(`/api/chat/${chatId}`);
       if (res.ok) {
         const data = await res.json();
@@ -87,6 +102,7 @@ export default function ChatPage() {
   };
 
   const setupPusher = () => {
+    if (!hasRealPusher) return;
     if (!chatId || !session?.user?.id) return;
 
     try {
@@ -128,6 +144,8 @@ export default function ChatPage() {
         const data = await res.json();
         setMessages((prev) => [...prev, data.message]);
         setMessage('');
+        // 保險重拉一次，確保列表/時間與後端同步
+        fetchChat(false);
       }
     } catch (error) {
       console.error('Failed to send message:', error);

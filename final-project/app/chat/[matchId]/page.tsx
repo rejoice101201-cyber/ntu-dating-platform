@@ -24,6 +24,9 @@ export default function ChatPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const matchId = params.matchId as string
+  const hasRealPusher =
+    process.env.NEXT_PUBLIC_PUSHER_KEY &&
+    process.env.NEXT_PUBLIC_PUSHER_KEY !== 'dummy'
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -41,6 +44,7 @@ export default function ChatPage() {
   const [unlockProgress, setUnlockProgress] = useState<any>(null)
   const [keys, setKeys] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const pollRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -60,7 +64,7 @@ export default function ChatPage() {
     checkActiveGameSession()
 
     // Initialize Pusher if environment variables are set
-    if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+    if (hasRealPusher && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
       try {
         const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
@@ -121,16 +125,26 @@ export default function ChatPage() {
         loadMessages(false) // Don't show loading spinner on polling
         checkActiveGameSession() // 检查游戏状态
       }, 4000) // Poll every 4 seconds
+      pollRef.current = pollInterval
 
       return () => {
         clearInterval(pollInterval)
       }
     }
-  }, [matchId, token, user])
+  }, [matchId, token, user, hasRealPusher])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
+    }
+  }, [])
 
   const loadMessages = async (showLoading = true) => {
     try {
@@ -360,6 +374,9 @@ export default function ChatPage() {
       })
       setGameSession(response.data.gameSession)
       alert('答案已提交！等待對方猜測...')
+      // 保險刷新遊戲/訊息
+      loadMessages(false)
+      checkActiveGameSession()
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit answer:', error)
@@ -386,6 +403,9 @@ export default function ChatPage() {
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
       }
+      // 保險刷新遊戲/訊息
+      loadMessages(false)
+      checkActiveGameSession()
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit guess:', error)
@@ -411,6 +431,9 @@ export default function ChatPage() {
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
       }
+      // 保險刷新遊戲/訊息
+      loadMessages(false)
+      checkActiveGameSession()
     } catch (error: any) {
       console.error('Failed to unlock:', error)
       alert(error.response?.data?.error || '解鎖失敗')
