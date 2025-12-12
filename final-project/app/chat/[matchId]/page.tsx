@@ -74,7 +74,14 @@ export default function ChatPage() {
         const channel = newPusher.subscribe(`match-${matchId}`)
         
         channel.bind('new_message', (message: Message) => {
-          setMessages(prev => [...prev, message])
+          // 避免因為多個來源（自己送出 + Pusher、match channel + user channel）造成重複訊息
+          setMessages(prev => {
+            const incomingId = (message as any)?.id || (message as any)?._id
+            if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
+              return prev
+            }
+            return [...prev, message]
+          })
         })
         
         // 监听游戏状态更新
@@ -103,9 +110,14 @@ export default function ChatPage() {
         if (user) {
           const userChannel = newPusher.subscribe(`user-${user.id}`)
           userChannel.bind('new_message', (message: Message) => {
-            if (message.matchId === matchId) {
-              setMessages(prev => [...prev, message])
-            }
+            if (message.matchId !== matchId) return
+            setMessages(prev => {
+              const incomingId = (message as any)?.id || (message as any)?._id
+              if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
+                return prev
+              }
+              return [...prev, message]
+            })
           })
         }
 
@@ -237,11 +249,19 @@ export default function ChatPage() {
         type: 'text',
       })
       
-      // Replace temp message with real message
+      // Replace temp message with real message (and dedupe against Pusher)
       if (response.data.message) {
-        setMessages(prev => prev.map(msg => 
-          msg.id === tempMessage.id ? response.data.message : msg
-        ))
+        const realMessage = response.data.message as any
+        const realId = realMessage?.id || realMessage?._id
+        setMessages(prev => {
+          // 移除 optimistic temp
+          const withoutTemp = prev.filter(m => ((m as any)?.id || (m as any)?._id) !== tempMessage.id)
+          // 如果 Pusher 已經先送到真訊息，就不要再加一次
+          if (realId && withoutTemp.some(m => ((m as any)?.id || (m as any)?._id) === realId)) {
+            return withoutTemp
+          }
+          return [...withoutTemp, realMessage]
+        })
       }
       
       // 保險再次拉取，確保 UI 與後端一致（包含遊戲狀態）

@@ -107,6 +107,8 @@ export default function ChatPage() {
 
     try {
       const channel = pusherClient.subscribe(`chat-${chatId}`);
+      // 避免重複綁定造成訊息重複
+      channel.unbind('new-message');
 
       channel.bind('new-message', (data: any) => {
         // 確保訊息格式正確
@@ -117,7 +119,10 @@ export default function ChatPage() {
           type: data.type || 'text',
           createdAt: new Date(data.createdAt),
         };
-        setMessages((prev) => [...prev, newMessage]);
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === newMessage._id)) return prev;
+          return [...prev, newMessage];
+        });
       });
 
       return () => {
@@ -141,10 +146,9 @@ export default function ChatPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        setMessages((prev) => [...prev, data.message]);
+        await res.json();
         setMessage('');
-        // 保險重拉一次，確保列表/時間與後端同步
+        // 交由 Pusher 來即時新增訊息；同時保險重拉一次避免漏事件
         fetchChat(false);
       }
     } catch (error) {
