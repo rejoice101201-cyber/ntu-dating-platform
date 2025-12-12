@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
   try {
     const { idToken } = await req.json();
     if (!idToken) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/route.ts:entry',message:'missing idToken',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
+      // #endregion
       return NextResponse.json({ error: 'Missing Google token' }, { status: 400 });
     }
 
@@ -24,6 +27,9 @@ export async function POST(req: NextRequest) {
     const payload = ticket.getPayload();
 
     if (!payload?.email) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/route.ts:verify',message:'token invalid email missing',data:{hasEmail:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
+      // #endregion
       return NextResponse.json({ error: 'Google token invalid' }, { status: 400 });
     }
 
@@ -51,15 +57,24 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user.isActive) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/route.ts:inactive',message:'user inactive',data:{email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+      // #endregion
       return NextResponse.json({ error: '帳號已停用' }, { status: 403 });
     }
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '30d' });
     const { password, ...userWithoutPassword } = user;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/route.ts:success',message:'google login success',data:{email:user.email,userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
+    // #endregion
     return NextResponse.json({ user: userWithoutPassword, token });
   } catch (error) {
     console.error('Google login error:', error);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/route.ts:catch',message:'google login error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
+    // #endregion
     return NextResponse.json({ error: 'Google 登入失敗' }, { status: 500 });
   }
 }
