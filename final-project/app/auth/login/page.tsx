@@ -25,6 +25,30 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [gLoading, setGLoading] = useState(false)
 
+  // 處理 Google redirect 回來的 hash 參數（id_token）
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash || ''
+    if (!hash.includes('id_token')) return
+    const params = new URLSearchParams(hash.replace(/^#/, ''))
+    const idToken = params.get('id_token')
+    if (!idToken) return
+    setGLoading(true)
+    setError('')
+    // 清掉 hash
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search)
+    ;(async () => {
+      try {
+        await loginWithGoogle(idToken)
+        setTimeout(() => router.push('/discover'), 100)
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || 'Google 登入失敗')
+      } finally {
+        setGLoading(false)
+      }
+    })()
+  }, [loginWithGoogle, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -49,8 +73,8 @@ export default function LoginPage() {
     setGLoading(true)
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
-    url.searchParams.set('redirect_uri', `${window.location.origin}/api/auth/google`)
-    url.searchParams.set('response_type', 'token id_token')
+    url.searchParams.set('redirect_uri', `${window.location.origin}/auth/login`)
+    url.searchParams.set('response_type', 'token id_token`)
     url.searchParams.set('scope', 'openid email profile')
     url.searchParams.set('prompt', 'select_account')
     window.location.href = url.toString()
