@@ -24,37 +24,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [gLoading, setGLoading] = useState(false)
-  const [gisReady, setGisReady] = useState(false)
-
-  useEffect(() => {
-    // 動態載入 Google Identity Services
-    if (typeof window === 'undefined') return
-    if (document.getElementById('google-oauth-script')) return
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.id = 'google-oauth-script'
-    script.onload = () => {
-      setGisReady(true)
-      // 預先初始化，避免按鈕點擊時才初始化導致延遲
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: () => {},
-          ux_mode: 'popup',
-          use_fedcm_for_prompt: false,
-        })
-        // 渲染隱藏按鈕，部分瀏覽器需有 renderButton 觸發權限
-        const btnContainer = document.getElementById('google-btn-slot')
-        if (btnContainer) {
-          window.google.accounts.id.renderButton(btnContainer, { theme: 'outline', size: 'large' })
-        }
-      }
-    }
-    script.onerror = () => setError('無法載入 Google 登入腳本，請稍後再試')
-    document.body.appendChild(script)
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,42 +42,18 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogle = async () => {
-    if (typeof window === 'undefined' || !window.google || !window.google.accounts?.id) {
-      setError('Google 登入初始化中，請稍後再試')
-      return
-    }
+  const handleGoogle = () => {
+    // 改用 redirect 流程，避免 FedCM / 第三方 Cookie 阻擋
+    if (typeof window === 'undefined') return
     setError('')
     setGLoading(true)
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (response: any) => {
-        try {
-          const credential = response?.credential
-          if (!credential) {
-            throw new Error('未取得 Google 憑證')
-          }
-          await loginWithGoogle(credential)
-          setTimeout(() => router.push('/discover'), 100)
-        } catch (err: any) {
-          setError(err.response?.data?.error || err.message || 'Google 登入失敗')
-          setGLoading(false)
-        }
-      },
-      ux_mode: 'popup',
-      use_fedcm_for_prompt: false,
-    })
-    window.google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed()) {
-        setError('Google 登入被阻擋，請允許第三方 Cookie 或改用無痕/桌面再試')
-        setGLoading(false)
-      } else if (notification.isSkippedMoment()) {
-        setError('Google 登入被瀏覽器跳過，請重新點擊或改用無痕/桌面')
-        setGLoading(false)
-      } else if (notification.isDismissedMoment()) {
-        setGLoading(false)
-      }
-    })
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
+    url.searchParams.set('redirect_uri', `${window.location.origin}/api/auth/google`)
+    url.searchParams.set('response_type', 'token id_token')
+    url.searchParams.set('scope', 'openid email profile')
+    url.searchParams.set('prompt', 'select_account')
+    window.location.href = url.toString()
   }
 
   return (
@@ -170,9 +115,8 @@ export default function LoginPage() {
             disabled={gLoading}
             className="w-full border border-pink-300 text-pink-600 py-3 rounded-full font-semibold hover:bg-pink-50 disabled:opacity-50 transition-all"
           >
-            {gLoading ? 'Google 登入中...' : '使用 Google 登入'}
+            {gLoading ? 'Google 登入中...' : '使用 Google 登入（跳轉）'}
           </button>
-          <div id="google-btn-slot" className="hidden" aria-hidden="true" />
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
