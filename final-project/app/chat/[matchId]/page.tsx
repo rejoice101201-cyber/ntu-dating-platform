@@ -71,8 +71,8 @@ export default function ChatPage() {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
         })
 
-        // Subscribe to match channel
-        const channel = newPusher.subscribe(`match-${matchId}`)
+        // Subscribe to chat channel (與後端事件一致)
+        const channel = newPusher.subscribe(`chat-${matchId}`)
         
         channel.bind('new_message', (message: Message) => {
           // #region agent log
@@ -120,9 +120,6 @@ export default function ChatPage() {
             }
           }
         })
-
-        // NOTE: 不在聊天頁訂閱 user channel，避免與 match channel 重複導致同訊息出現兩次。
-        // user channel 適合用於「不在聊天室頁」時做通知。
 
         setPusher(newPusher)
 
@@ -234,20 +231,16 @@ export default function ChatPage() {
 
     try {
       // Send via API (which will trigger Pusher)
-      const response = await api.post(`/chat/${matchId}`, {
+      const response = await api.post(`/chat/${matchId}/messages`, {
         content: messageContent,
         type: 'text',
       })
 
-      // 不在這裡手動 append/replace，避免與 Pusher 或輪詢重複
-      // 立即重拉一次，確保自己也能立刻看到最新訊息
+      // 交由 Pusher 事件加入；保險重拉一次
       if (response?.data?.message) {
         loadMessages(false)
+        checkActiveGameSession()
       }
-      
-      // 保險再次拉取，確保 UI 與後端一致（包含遊戲狀態）
-      loadMessages(false)
-      checkActiveGameSession()
     } catch (error) {
       console.error('Failed to send message:', error)
       // 發送失敗時把輸入還原，讓使用者可重送
