@@ -74,7 +74,7 @@ export default function LoginPage() {
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
     url.searchParams.set('redirect_uri', `${window.location.origin}/auth/login`)
-    url.searchParams.set('response_type', 'token id_token`)
+    url.searchParams.set('response_type', 'token id_token')
     url.searchParams.set('scope', 'openid email profile')
     url.searchParams.set('prompt', 'select_account')
     window.location.href = url.toString()
