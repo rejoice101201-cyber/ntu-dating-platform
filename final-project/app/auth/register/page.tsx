@@ -49,6 +49,11 @@ export default function RegisterPage() {
       return
     }
 
+    if (!formData.email.toLowerCase().includes('gmail.com')) {
+      setError('請使用 Gmail 帳號註冊')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -116,7 +121,7 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              郵箱 *
+              Gmail *
             </label>
             <input
               type="email"
@@ -125,6 +130,7 @@ export default function RegisterPage() {
               required
               autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              placeholder="your@gmail.com"
             />
           </div>
 

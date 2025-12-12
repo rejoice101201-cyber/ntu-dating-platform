@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Login request body:', { email: body.email });
     const data = loginSchema.parse(body);
+    const email = data.email.toLowerCase();
 
     // Check database connection
     try {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email },
     });
 
     if (!user) {

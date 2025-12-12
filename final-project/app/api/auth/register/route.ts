@@ -37,9 +37,17 @@ export async function POST(request: NextRequest) {
     console.log('Request body received:', { email: body.email, name: body.name });
     const data = registerSchema.parse(body);
 
+    const lowerEmail = data.email.toLowerCase();
+    if (!lowerEmail.includes('@gmail.com')) {
+      return NextResponse.json(
+        { error: '僅接受 Gmail 帳號註冊' },
+        { status: 400 }
+      );
+    }
+
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email: lowerEmail },
     });
 
     if (existingUser) {
@@ -55,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await prisma.user.create({
       data: {
-        email: data.email,
+        email: lowerEmail,
         password: hashedPassword,
         name: data.name,
         birthday: new Date(data.birthday),

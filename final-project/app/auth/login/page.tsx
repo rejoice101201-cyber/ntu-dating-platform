@@ -1,17 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import Link from 'next/link'
 
+declare global {
+  interface Window {
+    google: any
+  }
+}
+
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  '509318580080-2kko35m08jd0icaa4143mrcl7cgl9o5a.apps.googleusercontent.com'
+
 export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
+  const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [gLoading, setGLoading] = useState(false)
+
+  useEffect(() => {
+    // 動態載入 Google Identity Services
+    if (typeof window === 'undefined') return
+    if (document.getElementById('google-oauth-script')) return
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.id = 'google-oauth-script'
+    document.body.appendChild(script)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +52,37 @@ export default function LoginPage() {
       setError(err.response?.data?.error || '登入失敗')
       setLoading(false)
     }
+  }
+
+  const handleGoogle = async () => {
+    if (typeof window === 'undefined' || !window.google) {
+      setError('Google 登入初始化中，請稍後再試')
+      return
+    }
+    setError('')
+    setGLoading(true)
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response: any) => {
+        try {
+          const credential = response?.credential
+          if (!credential) {
+            throw new Error('未取得 Google 憑證')
+          }
+          await loginWithGoogle(credential)
+          setTimeout(() => router.push('/discover'), 100)
+        } catch (err: any) {
+          setError(err.response?.data?.error || err.message || 'Google 登入失敗')
+          setGLoading(false)
+        }
+      },
+    })
+    window.google.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed()) {
+        setError('無法顯示 Google 登入，請稍後再試')
+        setGLoading(false)
+      }
+    })
   }
 
   return (
@@ -48,7 +103,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              郵箱
+              郵箱（建議使用 Gmail）
             </label>
             <input
               type="email"
@@ -57,7 +112,7 @@ export default function LoginPage() {
               required
               autoComplete="email"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="your@email.com"
+              placeholder="your@gmail.com"
             />
           </div>
 
@@ -83,12 +138,27 @@ export default function LoginPage() {
           >
             {loading ? '登入中... 🐾' : '✨ 登入 ✨'}
           </button>
+
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={gLoading}
+            className="w-full border border-pink-300 text-pink-600 py-3 rounded-full font-semibold hover:bg-pink-50 disabled:opacity-50 transition-all"
+          >
+            {gLoading ? 'Google 登入中...' : '使用 Google 登入'}
+          </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
           還沒有帳戶？{' '}
           <Link href="/auth/register" className="text-primary-500 hover:underline">
             註冊
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          忘記密碼？{' '}
+          <Link href="/auth/forgot" className="text-primary-500 hover:underline">
+            重設密碼
           </Link>
         </p>
       </div>
