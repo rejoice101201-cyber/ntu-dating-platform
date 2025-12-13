@@ -47,6 +47,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
   const lastSendRef = useRef<{ content: string; timestamp: number } | null>(null)
+  const isSendingRef = useRef<boolean>(false) // 用 ref 追蹤發送狀態，避免 state 異步問題
 
   useEffect(() => {
     if (!token) {
@@ -225,31 +226,54 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !user || sending) return
-
+    e.stopPropagation() // 阻止事件冒泡，避免重複觸發
+    
     const messageContent = input.trim()
     
-    // 嚴格防重：3秒內相同內容不允許再送
+    // 多重防重檢查
+    if (!messageContent || !user) {
+      return
+    }
+    
+    // 檢查 ref（同步，避免 state 異步問題）
+    if (isSendingRef.current) {
+      console.warn('[防重] 正在發送中，忽略重複請求')
+      return
+    }
+    
+    // 檢查 state（雙重保險）
+    if (sending) {
+      console.warn('[防重] sending state 為 true，忽略重複請求')
+      return
+    }
+    
+    // 嚴格防重：5秒內相同內容不允許再送
     const now = Date.now()
     if (
       lastSendRef.current &&
       lastSendRef.current.content === messageContent &&
-      now - lastSendRef.current.timestamp < 3000
+      now - lastSendRef.current.timestamp < 5000
     ) {
-      console.warn('Duplicate send prevented:', messageContent)
+      console.warn('[防重] 5秒內相同內容已發送，忽略:', messageContent)
       return
     }
 
+    // 立即設置所有防重標記（同步）
     lastSendRef.current = { content: messageContent, timestamp: now }
+    isSendingRef.current = true
     setSending(true)
     setInput('')
 
+    console.log('[發送] 開始發送訊息:', messageContent, '時間:', new Date().toISOString())
+
     try {
       // Send via API (which will trigger Pusher)
-      await api.post(`/chat/${matchId}/messages`, {
+      const response = await api.post(`/chat/${matchId}/messages`, {
         content: messageContent,
         type: 'text',
       })
+      
+      console.log('[發送] API 回應成功:', response.data)
 
       // 完全依賴 Pusher 事件更新，不再手動 loadMessages 避免重複
       // 只有在 Pusher 未連線時才延遲補拉（作為保險）
@@ -262,14 +286,19 @@ export default function ChatPage() {
         // 有 Pusher 時只更新遊戲狀態，不拉訊息
         checkActiveGameSession()
       }
-    } catch (error) {
-      console.error('Failed to send message:', error)
+    } catch (error: any) {
+      console.error('[發送] API 錯誤:', error)
       // 發送失敗時把輸入還原，讓使用者可重送
       setInput(messageContent)
       lastSendRef.current = null // 清除防重記錄，允許重試
       alert('發送失敗，請稍後再試')
     } finally {
-      setSending(false)
+      // 延遲重置，確保不會立即被重複觸發
+      setTimeout(() => {
+        isSendingRef.current = false
+        setSending(false)
+        console.log('[發送] 重置發送狀態')
+      }, 1000) // 1秒後才允許再次發送
     }
   }
 
@@ -809,12 +838,35 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
+<<<<<<< HEAD
       <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4">
         <form onSubmit={handleSend} className="flex gap-2">
+=======
+      <div className="bg-white border-t p-4">
+        <form 
+          onSubmit={handleSend} 
+          className="flex gap-2"
+          onKeyDown={(e) => {
+            // 防止 Enter 鍵觸發兩次提交
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              // Ctrl+Enter 或 Cmd+Enter 允許提交（多行輸入）
+              return
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              // 普通 Enter 鍵：如果正在發送，阻止默認行為
+              if (isSendingRef.current || sending) {
+                e.preventDefault()
+                e.stopPropagation()
+              }
+            }
+          }}
+        >
+>>>>>>> 15885d9 (fix: strengthen duplicate message prevention with ref-based guard and improved dedupe)
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
+<<<<<<< HEAD
             placeholder="Type a message..."
             className="flex-1"
           />
@@ -822,6 +874,31 @@ export default function ChatPage() {
             type="submit"
             disabled={!input.trim()}
             className="px-6 py-2"
+=======
+            onKeyDown={(e) => {
+              // 防止 input 的 Enter 鍵和 form 的 onSubmit 同時觸發
+              if (e.key === 'Enter' && !e.shiftKey) {
+                if (isSendingRef.current || sending) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }
+              }
+            }}
+            placeholder="輸入訊息..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <button
+            type="submit"
+            disabled={!input.trim() || sending || isSendingRef.current}
+            onClick={(e) => {
+              // 防止 button click 和 form submit 同時觸發
+              if (isSendingRef.current || sending) {
+                e.preventDefault()
+                e.stopPropagation()
+              }
+            }}
+            className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+>>>>>>> 15885d9 (fix: strengthen duplicate message prevention with ref-based guard and improved dedupe)
           >
             Send
           </button>

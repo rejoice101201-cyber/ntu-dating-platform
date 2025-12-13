@@ -40,44 +40,69 @@ export async function POST(
       return NextResponse.json({ error: '無權限' }, { status: 403 });
     }
 
-    // 以 senderId + content + chatId + 近3秒內的訊息去重，避免前端/事件重送
+    // 以 senderId + content + chatId + 近5秒內的訊息去重，避免前端/事件重送
     const now = new Date();
-    const threeSecondsAgo = new Date(now.getTime() - 3000);
+    const fiveSecondsAgo = new Date(now.getTime() - 5000);
+    const trimmedContent = content.trim();
+    
+    console.log('[後端] 收到發送請求:', {
+      chatId,
+      senderId: session.user.id,
+      content: trimmedContent,
+      timestamp: now.toISOString(),
+    });
+    
     const existing = await Message.findOne({
       chatId,
       senderId: session.user.id,
-      content: content.trim(),
-      createdAt: { $gte: threeSecondsAgo },
+      content: trimmedContent,
+      createdAt: { $gte: fiveSecondsAgo },
     }).sort({ createdAt: -1 }); // 取最新的
 
-    const message =
-      existing ||
-      (await Message.create({
-        chatId: chatId,
-        senderId: session.user.id,
-        content,
-        type,
-      }));
+    if (existing) {
+      console.log('[後端] 發現重複訊息，返回現有訊息:', {
+        messageId: existing._id,
+        createdAt: existing.createdAt,
+      });
+      return NextResponse.json({ message: existing, duplicate: true });
+    }
+
+    const message = await Message.create({
+      chatId: chatId,
+      senderId: session.user.id,
+      content: trimmedContent,
+      type,
+    });
+
+    console.log('[後端] 建立新訊息:', {
+      messageId: message._id,
+      content: message.content,
+    });
 
     // 更新聊天室的最後訊息時間
     await Chat.findByIdAndUpdate(chatId, {
       lastMessageAt: new Date(),
     });
 
-    // 發送 Pusher 事件（如果已存在就不要再推一次）
-    if (pusherServer && !existing) {
-      await pusherServer.trigger(
-        `chat-${chatId}`,
-        'new-message',
-        {
-          _id: message._id,
-          chatId: message.chatId,
-          senderId: message.senderId,
-          content: message.content,
-          type: message.type,
-          createdAt: message.createdAt,
-        }
-      );
+    // 發送 Pusher 事件（只有新訊息才推播）
+    if (pusherServer) {
+      try {
+        await pusherServer.trigger(
+          `chat-${chatId}`,
+          'new-message',
+          {
+            _id: message._id,
+            chatId: message.chatId,
+            senderId: message.senderId,
+            content: message.content,
+            type: message.type,
+            createdAt: message.createdAt,
+          }
+        );
+        console.log('[後端] Pusher 事件已推播:', `chat-${chatId}`, 'new-message');
+      } catch (pusherError) {
+        console.error('[後端] Pusher 推播失敗:', pusherError);
+      }
     }
 
     return NextResponse.json({ message });
