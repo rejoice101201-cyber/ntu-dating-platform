@@ -99,111 +99,94 @@ export default function MatchesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>載入中...</p>
+        <p className="text-gray-700">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50">
-      <div className="max-w-2xl mx-auto py-8">
-        <h1 className="text-3xl font-bold px-4 mb-6 text-center">
-          <span className="text-4xl">🐕</span>
-          <span className="ml-2 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">我的配對</span>
-        </h1>
+    <div className="min-h-screen">
+      <div className="max-w-2xl mx-auto py-8 px-4">
+        <h1 className="text-xl font-bold uppercase tracking-wide text-center mb-6">Matches</h1>
 
         {matches.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🐾</div>
-            <p className="text-pink-600 text-lg font-semibold mb-2">還沒有配對</p>
-            <p className="text-gray-600 mb-6">去探索一下吧！</p>
-            <Link
-              href="/discover"
-              className="mt-4 inline-block bg-gradient-to-r from-pink-400 to-purple-400 text-white px-8 py-3 rounded-full hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl font-bold text-lg"
-            >
-              🎈 開始探索
+          <div className="text-center py-12 pixel-panel">
+            <div className="text-5xl mb-3">🐾</div>
+            <p className="text-sm uppercase tracking-wide text-[var(--pixel-text-dim)] mb-2">No matches yet</p>
+            <p className="text-xs text-[var(--pixel-text-dim)] mb-4">Try discovering more people</p>
+            <Link href="/discover" className="inline-block">
+              <button className="bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] px-6 py-2">
+                Discover
+              </button>
             </Link>
           </div>
         ) : (
-          <div className="space-y-3 px-4">
+          <div className="space-y-3">
             {matches.map((match) => (
               <Link
                 key={match.id}
                 href={`/chat/${match.id}`}
-                className="block bg-white rounded-2xl p-4 hover:shadow-lg transition-all border-2 border-pink-100 hover:border-pink-300"
+                className="block pixel-panel p-4 hover:translate-y-[-2px] transition-transform"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 relative">
+                  <div className="w-16 h-16 rounded-none overflow-hidden flex-shrink-0 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)]">
                     {(() => {
-                      // 完全按照资料页面的方式显示照片
                       if (!match.user?.photos || match.user.photos.length === 0) {
                         return (
-                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold rounded-full">
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
                             {match.user?.name?.[0]?.toUpperCase() || '?'}
                           </div>
                         )
                       }
-                      
-                      // Find cover photo or first photo
+
                       const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
                       const photoUrl = coverPhoto?.url
                       const blurLevel = coverPhoto?.blurLevel ?? 20
-                      
+
                       if (!photoUrl) {
-                        console.error('No photo URL found for match:', {
-                          matchId: match.id,
-                          userName: match.user.name,
-                          photos: match.user.photos,
-                          coverPhoto,
-                        })
                         return (
-                          <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-600 text-xs font-bold rounded-full">
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
                             {match.user?.name?.[0]?.toUpperCase() || '?'}
                           </div>
                         )
                       }
-                      
-                      // 使用与资料页面完全相同的样式（包括backgroundColor fallback）
+
                       return (
                         <div
-                          className="w-full h-full rounded-full"
+                          className="w-full h-full"
                           style={{
                             filter: `blur(${blurLevel}px)`,
-                            backgroundImage: photoUrl ? `url(${photoUrl})` : 'none',
+                            backgroundImage: `url(${photoUrl})`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            backgroundColor: photoUrl ? 'transparent' : '#e5e7eb',
                           }}
                         />
                       )
                     })()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg truncate text-pink-700">{match.user.name}</h3>
+                    <h3 className="font-bold text-lg truncate text-[var(--pixel-text)]">{match.user.name}</h3>
                     {match.lastMessage && (
-                      <p className="text-sm text-gray-600 truncate mt-1">
+                      <p className="text-sm text-[var(--pixel-text-dim)] truncate mt-1">
                         {match.lastMessage.content}
                       </p>
                     )}
-                    <p className="text-xs text-pink-400 mt-2 flex items-center gap-1">
-                      <span>💕</span>
+                    <p className="text-xs text-[var(--pixel-text-dim)] mt-2 flex items-center gap-2">
+                      <span>🗓</span>
                       {(() => {
-                        // Use matchedAt if available, otherwise use createdAt
                         const dateToShow = match.matchedAt || match.createdAt
                         if (dateToShow) {
                           const date = new Date(dateToShow)
-                          // Check if date is valid (not 1970/1/1 or invalid)
                           const timestamp = date.getTime()
                           if (timestamp > 0 && !isNaN(timestamp) && timestamp > 86400000) {
-                            // 86400000 = 1 day in ms, ensures it's not 1970/1/1
-                            return date.toLocaleDateString('zh-TW', {
+                            return date.toLocaleDateString('en-US', {
                               year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
+                              month: 'short',
+                              day: 'numeric',
                             })
                           }
                         }
-                        return '配對中'
+                        return 'Matching'
                       })()}
                     </p>
                   </div>

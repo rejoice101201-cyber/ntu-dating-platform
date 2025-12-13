@@ -416,19 +416,19 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 relative">
+    <div className="flex flex-col h-screen relative">
       {/* Header */}
-      <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
+      <div className="bg-[var(--pixel-panel)] border-b-3 border-[var(--pixel-border)] px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="text-gray-600 hover:text-gray-800"
+          className="text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)]"
         >
           ←
         </button>
         <div className="flex-1">
-          <h2 className="font-semibold">{otherUser?.name || '聊天'}</h2>
+          <h2 className="font-semibold text-[var(--pixel-text)]">{otherUser?.name || 'Chat'}</h2>
           {unlockProgress && (
-            <p className="text-xs text-gray-500">解鎖進度: {unlockProgress.unlockLevel}%</p>
+            <p className="text-xs text-[var(--pixel-text-dim)]">Unlock: {unlockProgress.unlockLevel}%</p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -447,14 +447,14 @@ export default function ChatPage() {
               }
             }}
             className="text-2xl hover:scale-110 transition-transform"
-            title="默契問答遊戲"
+            title="Q&A game"
           >
             🎮
           </button>
           <button
             onClick={getOpeningLines}
             className="text-2xl"
-            title="AI 柴犬建議"
+            title="AI coach"
           >
             🐕
           </button>
@@ -463,11 +463,9 @@ export default function ChatPage() {
 
       {/* Q&A Game Panel */}
       {showQAGame && otherUser && (
-        <div className="bg-gradient-to-br from-pink-50 to-purple-50 border-b-4 border-pink-200 p-4 max-h-96 overflow-y-auto">
+        <div className="bg-[var(--pixel-surface)] border-b-3 border-[var(--pixel-border)] p-4 max-h-96 overflow-y-auto">
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-lg bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-              🎮 默契問答遊戲
-            </h3>
+            <h3 className="font-bold text-lg text-[var(--pixel-text)]">🎮 Q&A game</h3>
             <button
               onClick={() => {
                 setShowQAGame(false)
@@ -475,30 +473,30 @@ export default function ChatPage() {
                 setGameAnswer('')
                 setGameGuess('')
               }}
-              className="text-gray-500 hover:text-gray-700 text-xl"
+              className="text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)] text-xl"
             >
               ✕
             </button>
           </div>
           
           {unlockProgress && (
-            <div className="mb-3 space-y-2 bg-white rounded-lg p-3 border-2 border-pink-200">
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
+            <div className="mb-3 space-y-2 pixel-panel p-3">
+              <div className="w-full bg-gray-200 h-3 mb-1">
                 <div
-                  className="bg-gradient-to-r from-pink-400 to-purple-400 h-3 rounded-full transition-all"
-                  style={{ width: `${unlockProgress.unlockLevel}%` }}
+                  className="h-3"
+                  style={{ width: `${unlockProgress.unlockLevel}%`, backgroundColor: 'var(--pixel-highlight)' }}
                 />
               </div>
               <div className="flex justify-between items-center">
-                <p className="text-sm font-semibold text-gray-700">解鎖進度: {unlockProgress.unlockLevel}%</p>
+                <p className="text-sm font-semibold text-[var(--pixel-text)]">Unlock: {unlockProgress.unlockLevel}%</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-yellow-600 font-bold">🔑 {keys} 把鑰匙</span>
+                  <span className="text-sm text-yellow-600 font-bold">🔑 {keys} keys</span>
                   {keys > 0 && (
                     <button
                       onClick={useKeyToUnlock}
-                      className="text-xs bg-gradient-to-r from-pink-400 to-purple-400 text-white px-3 py-1 rounded-full hover:from-pink-500 hover:to-purple-500 transition-all shadow-md"
+                      className="text-xs bg-[var(--pixel-highlight)] text-white px-3 py-1 border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
                     >
-                      使用鑰匙解鎖
+                      Use key
                     </button>
                   )}
                 </div>
@@ -507,15 +505,14 @@ export default function ChatPage() {
           )}
 
           {!gameSession ? (
-            // 选择主题发起游戏
             <div className="space-y-3">
-              <p className="text-gray-700 font-semibold mb-3">選擇一個主題來發起遊戲：</p>
+              <p className="text-[var(--pixel-text)] font-semibold mb-3">Pick a topic to start:</p>
               <div className="grid grid-cols-2 gap-3">
                 {['interest', 'personality', 'lifestyle', 'icebreaker'].map((topic) => (
                   <button
                     key={topic}
                     onClick={() => initiateGame(topic)}
-                    className="bg-white border-2 border-pink-200 rounded-xl p-4 hover:border-pink-400 hover:shadow-lg transition-all text-left"
+                    className="pixel-panel p-4 text-left hover:-translate-y-0.5 transition-transform"
                   >
                     <div className="text-2xl mb-1">
                       {topic === 'interest' && '🎨'}
@@ -523,27 +520,26 @@ export default function ChatPage() {
                       {topic === 'lifestyle' && '🏠'}
                       {topic === 'icebreaker' && '💬'}
                     </div>
-                    <div className="font-semibold text-sm">
-                      {topic === 'interest' && '興趣'}
-                      {topic === 'personality' && '個性'}
-                      {topic === 'lifestyle' && '生活方式'}
-                      {topic === 'icebreaker' && '破冰'}
-                    </div>
+                    <div className="font-semibold text-sm uppercase">{topic}</div>
                   </button>
                 ))}
               </div>
             </div>
           ) : gameSession.status === 'waiting_answer' && gameSession.responderId === user?.id ? (
-            // 回答者：回答问题
-            <div className="space-y-3 bg-white rounded-lg p-4 border-2 border-purple-200">
-              <p className="text-sm text-gray-600 mb-2">對方選擇了主題：<span className="font-semibold">{gameSession.topic}</span></p>
+            <div className="space-y-3 pixel-panel p-4">
+              <p className="text-sm text-[var(--pixel-text-dim)] mb-2">
+                Topic chosen: <span className="font-semibold text-[var(--pixel-text)]">{gameSession.topic}</span>
+              </p>
               {gameSession.question ? (
                 <>
                   <p className="font-semibold text-lg mb-3">{gameSession.question.content}</p>
                   {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
                     <div className="space-y-2">
                       {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
-                        <label key={idx} className="flex items-center p-3 bg-pink-50 rounded-lg hover:bg-pink-100 cursor-pointer border-2 border-transparent hover:border-pink-300 transition-all">
+                        <label
+                          key={idx}
+                          className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform"
+                        >
                           <input
                             type="radio"
                             name="gameAnswer"
@@ -561,39 +557,34 @@ export default function ChatPage() {
                       type="text"
                       value={gameAnswer}
                       onChange={(e) => setGameAnswer(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
-                      placeholder="輸入你的答案"
+                      className="w-full"
+                      placeholder="Your answer"
                     />
                   )}
-                  <button
-                    onClick={submitAnswer}
-                    disabled={!gameAnswer}
-                    className="w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white py-3 rounded-full font-bold hover:from-pink-500 hover:to-purple-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    提交答案
+                  <button onClick={submitAnswer} disabled={!gameAnswer} className="w-full">
+                    Submit answer
                   </button>
                 </>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">載入題目中...</p>
-                  <button
-                    onClick={checkActiveGameSession}
-                    className="text-primary-500 hover:underline text-sm"
-                  >
-                    重新載入
+                  <p className="text-[var(--pixel-text-dim)] mb-2">Loading question...</p>
+                  <button onClick={checkActiveGameSession} className="underline text-sm text-[var(--pixel-text)]">
+                    Reload
                   </button>
                 </div>
               )}
             </div>
           ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
-            // 发起者：猜测答案
-            <div className="space-y-3 bg-white rounded-lg p-4 border-2 border-purple-200">
-              <p className="text-sm text-gray-600 mb-2">對方已回答，現在輪到你猜測答案！</p>
+            <div className="space-y-3 pixel-panel p-4">
+              <p className="text-sm text-[var(--pixel-text-dim)] mb-2">They answered, your turn to guess!</p>
               <p className="font-semibold text-lg mb-3">{gameSession.question?.content}</p>
               {gameSession.question?.type === 'multiple_choice' && gameSession.question?.options ? (
                 <div className="space-y-2">
                   {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
-                    <label key={idx} className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 cursor-pointer border-2 border-transparent hover:border-purple-300 transition-all">
+                    <label
+                      key={idx}
+                      className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform"
+                    >
                       <input
                         type="radio"
                         name="gameGuess"
@@ -611,31 +602,24 @@ export default function ChatPage() {
                   type="text"
                   value={gameGuess}
                   onChange={(e) => setGameGuess(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none"
-                  placeholder="猜測對方的答案"
+                  className="w-full"
+                  placeholder="Your guess"
                 />
               )}
-              <button
-                onClick={submitGuess}
-                disabled={!gameGuess}
-                className="w-full bg-gradient-to-r from-purple-400 to-pink-400 text-white py-3 rounded-full font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                提交猜測
+              <button onClick={submitGuess} disabled={!gameGuess} className="w-full">
+                Submit guess
               </button>
             </div>
           ) : gameSession.status === 'completed' ? (
-            // 游戏完成
-            <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+            <div className="pixel-panel p-4 text-center">
               <div className="text-4xl mb-2">
                 {gameSession.winnerId === user?.id ? '🎉' : '💪'}
               </div>
               <p className="font-bold text-lg mb-2">
-                {gameSession.winnerId === user?.id 
-                  ? '你獲得了鑰匙！' 
-                  : '再接再厲！'}
+                {gameSession.winnerId === user?.id ? 'You earned a key!' : 'Next time!'}
               </p>
-              <p className="text-sm text-gray-600 mb-3">
-                正確答案：{gameSession.responderAnswer}
+              <p className="text-sm text-[var(--pixel-text-dim)] mb-3">
+                Correct answer: {gameSession.responderAnswer}
               </p>
               <button
                 onClick={() => {
@@ -643,16 +627,15 @@ export default function ChatPage() {
                   setGameAnswer('')
                   setGameGuess('')
                 }}
-                className="bg-gradient-to-r from-pink-400 to-purple-400 text-white px-6 py-2 rounded-full font-semibold hover:from-pink-500 hover:to-purple-500 transition-all"
+                className="px-6 py-2"
               >
-                再玩一次
+                Play again
               </button>
             </div>
           ) : (
-            // 等待对方操作
-            <div className="bg-white rounded-lg p-4 border-2 border-yellow-200 text-center">
+            <div className="pixel-panel p-4 text-center">
               <div className="text-3xl mb-2">⏳</div>
-              <p className="font-semibold">等待對方操作...</p>
+              <p className="font-semibold">Waiting for the other side...</p>
             </div>
           )}
         </div>
@@ -662,7 +645,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">載入中...</p>
+            <p className="text-[var(--pixel-text-dim)]">Loading...</p>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
@@ -670,22 +653,22 @@ export default function ChatPage() {
               <p className="text-red-500 mb-2">{error}</p>
               <button
                 onClick={() => router.back()}
-                className="text-primary-500 hover:underline"
+                className="underline text-[var(--pixel-text)]"
               >
-                返回
+                Back
               </button>
             </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-gray-500 mb-4">還沒有訊息，開始聊天吧！</p>
+              <p className="text-[var(--pixel-text-dim)] mb-4">No messages yet. Say hi!</p>
               <button
                 onClick={getOpeningLines}
                 disabled={!otherUser?.id}
-                className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🐕 獲取開場白建議
+                🐕 Get opener
               </button>
             </div>
           </div>
@@ -768,7 +751,7 @@ export default function ChatPage() {
                 >
                   <p className="text-sm">{message.content}</p>
                   <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
-                    {new Date(message.createdAt).toLocaleTimeString('zh-TW', {
+                    {new Date(message.createdAt).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -782,21 +765,21 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
-      <div className="bg-white border-t p-4">
+      <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4">
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="輸入訊息..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="Type a message..."
+            className="flex-1"
           />
           <button
             type="submit"
             disabled={!input.trim()}
-            className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2"
           >
-            發送
+            Send
           </button>
         </form>
       </div>

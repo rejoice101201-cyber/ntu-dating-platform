@@ -47,7 +47,7 @@ export default function DiscoverPage() {
       } else if (!error.response) {
         // Network error - API not available
         console.error('API not available. Check NEXT_PUBLIC_API_URL environment variable.')
-        alert('無法連接到伺服器。請檢查 API 配置。')
+        alert('Server is unavailable. Please check API config.')
       }
     } finally {
       setLoading(false)
@@ -79,9 +79,9 @@ export default function DiscoverPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+        <div className="text-center text-gray-700">
           <div className="text-4xl mb-4">🐕</div>
-          <p>載入中...</p>
+          <p>Loading...</p>
         </div>
       </div>
     )
@@ -90,9 +90,10 @@ export default function DiscoverPage() {
   if (recommendations.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+        <div className="text-center text-gray-700">
           <div className="text-4xl mb-4">🐕</div>
-          <p className="text-gray-600">暫時沒有推薦，請稍後再試</p>
+          <p className="text-sm uppercase tracking-wide">No recommendations yet</p>
+          <p className="text-xs text-gray-500">Try again later</p>
         </div>
       </div>
     )
@@ -101,27 +102,25 @@ export default function DiscoverPage() {
   const current = recommendations[currentIndex]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
-      <div className="max-w-md mx-auto pt-8 pb-20">
+    <div className="min-h-screen">
+      <div className="max-w-2xl mx-auto pt-8 pb-24 px-4 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 mb-4">
-          <h1 className="text-2xl font-bold">🐕 探索</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">體力:</span>
-            <span className="font-bold text-primary-500">{user?.energy || 0}</span>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold uppercase tracking-wide">Discover</h1>
+          <div className="flex items-center gap-2 text-sm text-[var(--pixel-text-dim)]">
+            <span>Energy</span>
+            <span className="px-2 py-1 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold text-[var(--pixel-text)]">
+              {user?.energy ?? 0}
+            </span>
           </div>
         </div>
 
         {/* Card */}
-        <div className="mx-4 mb-4">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Photo */}
-            <div className="relative h-96 bg-gray-200">
-              {current.photos[0] && (() => {
-                // Vercel Blob URLs are already absolute
-                const photoUrl = current.photos[0].url;
-                
-                return (
+        <div className="pixel-panel overflow-hidden">
+          <div className="relative h-96 bg-[var(--pixel-surface)]">
+            {current.photos[0] && (() => {
+              const photoUrl = current.photos[0].url
+              return (
                 <div
                   className="w-full h-full"
                   style={{
@@ -131,66 +130,56 @@ export default function DiscoverPage() {
                     backgroundPosition: 'center',
                   }}
                 />
-                );
-              })()}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                <h2 className="text-white text-2xl font-bold mb-1">{current.name}</h2>
-                {current.bio && (
-                  <p className="text-white/90 text-sm">{current.bio}</p>
-                )}
-                {current.matchScore > 0 && (
-                  <div className="mt-2">
-                    <span className="text-yellow-300 text-sm">匹配度: {current.matchScore}%</span>
-                  </div>
-                )}
+              )
+            })()}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+              <h2 className="text-white text-2xl font-bold mb-1">{current.name}</h2>
+              {current.bio && <p className="text-white/90 text-sm">{current.bio}</p>}
+              {current.matchScore > 0 && (
+                <div className="mt-2 text-sm text-yellow-300">
+                  Match score: {current.matchScore}%
+                </div>
+              )}
+            </div>
+          </div>
+
+          {current.tags.length > 0 && (
+            <div className="p-4">
+              <div className="flex flex-wrap gap-2">
+                {current.tags.slice(0, 5).map((ut, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-xs uppercase tracking-wide text-[var(--pixel-text)]"
+                  >
+                    {ut.tag.name}
+                  </span>
+                ))}
               </div>
             </div>
-
-            {/* Tags */}
-            {current.tags.length > 0 && (
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {current.tags.slice(0, 5).map((ut, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"
-                    >
-                      {ut.tag.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Actions */}
-        <div className="flex justify-center gap-4 px-4 mb-4">
-          <button
-            onClick={() => router.push(`/profile/${current.id}`)}
-            className="px-6 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
-          >
-            <span>ℹ️</span>
-            <span>查看資料</span>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => router.push(`/profile/${current.id}`)} className="w-full">
+            Info
           </button>
-          <button
-            onClick={() => router.push(`/profile/${current.id}`)}
-            className="px-6 py-2 bg-primary-100 text-primary-600 rounded-lg hover:bg-primary-200 transition-colors flex items-center gap-2"
-          >
-            <span>🐕</span>
-            <span>玩問答解鎖</span>
+          <button onClick={() => router.push(`/profile/${current.id}`)} className="w-full">
+            Q&A unlock
           </button>
         </div>
 
         {/* Rating buttons */}
-        <div className="px-4">
-          <p className="text-center text-sm text-gray-600 mb-3">評分 (1-5分)</p>
+        <div className="text-center space-y-3">
+          <p className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)]">
+            Rate (1-5)
+          </p>
           <div className="flex justify-center gap-3">
             {[1, 2, 3, 4, 5].map((score) => (
               <button
                 key={score}
                 onClick={() => handleRate(score)}
-                className="w-14 h-14 bg-white rounded-full border-2 border-gray-200 hover:bg-primary-50 hover:border-primary-500 hover:text-primary-600 transition-colors text-lg font-semibold shadow-sm"
+                className="w-14 h-14 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] text-lg font-bold"
               >
                 {score}
               </button>
