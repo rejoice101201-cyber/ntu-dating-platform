@@ -464,8 +464,8 @@ export default function ChatPage() {
       {/* Q&A Game Panel */}
       {showQAGame && otherUser && (
         <div className="bg-[var(--pixel-surface)] border-b-3 border-[var(--pixel-border)] p-4 max-h-96 overflow-y-auto">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-lg text-[var(--pixel-text)]">🎮 Q&A game</h3>
+          <div className="flex justify-between items-center mb-3 text-[var(--pixel-text)]">
+            <h3 className="font-bold text-lg">🎮 Q&A game</h3>
             <button
               onClick={() => {
                 setShowQAGame(false)
@@ -473,15 +473,15 @@ export default function ChatPage() {
                 setGameAnswer('')
                 setGameGuess('')
               }}
-              className="text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)] text-xl"
+              className="text-xl px-2 py-1 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:-translate-y-0.5 transition-transform"
             >
               ✕
             </button>
           </div>
           
           {unlockProgress && (
-            <div className="mb-3 space-y-2 pixel-panel p-3">
-              <div className="w-full bg-gray-200 h-3 mb-1">
+            <div className="mb-3 space-y-2 pixel-panel p-3 text-[var(--pixel-text)]">
+              <div className="w-full bg-[#d9dce1] h-3 mb-1">
                 <div
                   className="h-3"
                   style={{ width: `${unlockProgress.unlockLevel}%`, backgroundColor: 'var(--pixel-highlight)' }}
@@ -512,7 +512,7 @@ export default function ChatPage() {
                   <button
                     key={topic}
                     onClick={() => initiateGame(topic)}
-                    className="pixel-panel p-4 text-left hover:-translate-y-0.5 transition-transform"
+                    className="pixel-panel p-4 text-left hover:-translate-y-0.5 transition-transform text-[var(--pixel-text)]"
                   >
                     <div className="text-2xl mb-1">
                       {topic === 'interest' && '🎨'}
@@ -526,7 +526,7 @@ export default function ChatPage() {
               </div>
             </div>
           ) : gameSession.status === 'waiting_answer' && gameSession.responderId === user?.id ? (
-            <div className="space-y-3 pixel-panel p-4">
+            <div className="space-y-3 pixel-panel p-4 text-[var(--pixel-text)]">
               <p className="text-sm text-[var(--pixel-text-dim)] mb-2">
                 Topic chosen: <span className="font-semibold text-[var(--pixel-text)]">{gameSession.topic}</span>
               </p>
@@ -538,7 +538,7 @@ export default function ChatPage() {
                       {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
                         <label
                           key={idx}
-                          className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform"
+                          className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform text-[var(--pixel-text)]"
                         >
                           <input
                             type="radio"
@@ -561,7 +561,7 @@ export default function ChatPage() {
                       placeholder="Your answer"
                     />
                   )}
-                  <button onClick={submitAnswer} disabled={!gameAnswer} className="w-full">
+                  <button onClick={submitAnswer} disabled={!gameAnswer} className="w-full text-[var(--pixel-text)]">
                     Submit answer
                   </button>
                 </>
@@ -575,7 +575,7 @@ export default function ChatPage() {
               )}
             </div>
           ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
-            <div className="space-y-3 pixel-panel p-4">
+            <div className="space-y-3 pixel-panel p-4 text-[var(--pixel-text)]">
               <p className="text-sm text-[var(--pixel-text-dim)] mb-2">They answered, your turn to guess!</p>
               <p className="font-semibold text-lg mb-3">{gameSession.question?.content}</p>
               {gameSession.question?.type === 'multiple_choice' && gameSession.question?.options ? (
@@ -583,7 +583,7 @@ export default function ChatPage() {
                   {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
                     <label
                       key={idx}
-                      className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform"
+                      className="flex items-center p-3 bg-[var(--pixel-surface)] cursor-pointer border-3 border-[var(--pixel-border)] hover:-translate-y-0.5 transition-transform text-[var(--pixel-text)]"
                     >
                       <input
                         type="radio"
@@ -606,12 +606,12 @@ export default function ChatPage() {
                   placeholder="Your guess"
                 />
               )}
-              <button onClick={submitGuess} disabled={!gameGuess} className="w-full">
+              <button onClick={submitGuess} disabled={!gameGuess} className="w-full text-[var(--pixel-text)]">
                 Submit guess
               </button>
             </div>
           ) : gameSession.status === 'completed' ? (
-            <div className="pixel-panel p-4 text-center">
+            <div className="pixel-panel p-4 text-center text-[var(--pixel-text)]">
               <div className="text-4xl mb-2">
                 {gameSession.winnerId === user?.id ? '🎉' : '💪'}
               </div>

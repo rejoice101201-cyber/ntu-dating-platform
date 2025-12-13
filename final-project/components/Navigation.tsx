@@ -14,9 +14,9 @@ export default function Navigation() {
   if (pathname?.startsWith('/chat/')) return null
 
   const navItems = [
-    { href: '/discover', label: 'Discover', icon: '🔍' },
-    { href: '/matches', label: 'Matches', icon: '💕' },
-    { href: '/profile/me', label: 'Profile', icon: '👤' },
+    { href: '/discover', label: 'Discover', glyph: 'D' },
+    { href: '/matches', label: 'Matches', glyph: 'M' },
+    { href: '/profile/me', label: 'Profile', glyph: 'P' },
   ]
 
   return (
@@ -34,8 +34,12 @@ export default function Navigation() {
                   : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)]'
               }`}
             >
-              <span className="text-3xl mb-1">{item.icon}</span>
-              <span className="text-[10px] font-bold uppercase tracking-wide">{item.label}</span>
+              <span
+                className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold"
+              >
+                {item.glyph}
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>
           )
         })}
@@ -43,8 +47,10 @@ export default function Navigation() {
           onClick={logout}
           className="flex flex-col items-center py-2 px-5 text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)] transition-all"
         >
-          <span className="text-3xl mb-1">🚪</span>
-          <span className="text-[10px] font-bold uppercase tracking-wide">Logout</span>
+          <span className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold">
+            L
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">Logout</span>
         </button>
       </div>
     </nav>
