@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Press_Start_2P } from 'next/font/google'
 import './globals.css'
 import dynamic from 'next/dynamic'
 
 const Navigation = dynamic(() => import('@/components/Navigation'), { ssr: false })
 
-const inter = Inter({ subsets: ['latin'] })
+const pixelFont = Press_Start_2P({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'NTU Dating Platform - 找到你的另一半',
@@ -19,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-TW">
-      <body className={inter.className}>
+      <body className={pixelFont.className}>
         {children}
         <Navigation />
       </body>

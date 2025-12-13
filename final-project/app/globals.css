@@ -3,31 +3,124 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 255, 240, 245;
-  --background-end-rgb: 255, 250, 255;
+  --pixel-bg: #0f172a;
+  --pixel-panel: #1f2937;
+  --pixel-surface: #111827;
+  --pixel-border: #0b1021;
+  --pixel-highlight: #f97316;
+  --pixel-highlight-2: #22d3ee;
+  --pixel-text: #f8fafc;
+  --pixel-text-dim: #cbd5e1;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      rgba(255, 240, 245, 0.8),
-      rgba(255, 250, 255, 0.9)
-    ),
-    linear-gradient(
-      135deg,
-      rgba(255, 182, 193, 0.1) 0%,
-      rgba(221, 160, 221, 0.1) 50%,
-      rgba(176, 224, 230, 0.1) 100%
-    );
   min-height: 100vh;
+  color: var(--pixel-text);
+  background-color: var(--pixel-bg);
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 0);
+  background-size: 16px 16px, 16px 16px, 8px 8px;
+  background-position: 0 0, 0 0, 0 0;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  a {
+    color: var(--pixel-highlight-2);
+    text-decoration: none;
+    text-shadow: 0 0 6px rgba(34, 211, 238, 0.35);
+  }
+
+  a:hover {
+    color: #67e8f9;
+    text-shadow: 0 0 10px rgba(103, 232, 249, 0.6);
+  }
+
+  button,
+  .btn {
+    background: var(--pixel-panel);
+    color: var(--pixel-text);
+    border: 3px solid var(--pixel-border);
+    box-shadow:
+      inset -4px -4px 0 rgba(0, 0, 0, 0.35),
+      inset 4px 4px 0 rgba(255, 255, 255, 0.08),
+      6px 6px 0 rgba(0, 0, 0, 0.45);
+    padding: 0.85rem 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: 0;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
+  }
+
+  button:hover,
+  .btn:hover {
+    background: var(--pixel-highlight);
+    box-shadow:
+      inset -3px -3px 0 rgba(0, 0, 0, 0.4),
+      inset 3px 3px 0 rgba(255, 255, 255, 0.12),
+      4px 4px 0 rgba(0, 0, 0, 0.5);
+    transform: translate(-1px, -1px);
+  }
+
+  button:active,
+  .btn:active {
+    transform: translate(1px, 1px);
+    box-shadow:
+      inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+      inset 2px 2px 0 rgba(255, 255, 255, 0.16),
+      2px 2px 0 rgba(0, 0, 0, 0.55);
+  }
+
+  input,
+  select,
+  textarea {
+    background: var(--pixel-surface);
+    color: var(--pixel-text);
+    border: 3px solid var(--pixel-border);
+    box-shadow:
+      inset -4px -4px 0 rgba(0, 0, 0, 0.35),
+      inset 4px 4px 0 rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    padding: 0.85rem 1rem;
+    transition: box-shadow 0.08s ease, border-color 0.1s ease;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--pixel-highlight);
+    box-shadow:
+      inset -4px -4px 0 rgba(0, 0, 0, 0.4),
+      inset 4px 4px 0 rgba(255, 255, 255, 0.1),
+      0 0 0 3px rgba(249, 115, 22, 0.25);
+  }
+
+  .pixel-panel,
+  .card,
+  .panel {
+    background: var(--pixel-panel);
+    border: 3px solid var(--pixel-border);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+    border-radius: 0;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Blur effect for photos */
+.photo-blur {
+  filter: blur(var(--blur-level, 20px));
+  transition: filter 0.3s ease;
 }
 
 /* Blur effect for photos */
