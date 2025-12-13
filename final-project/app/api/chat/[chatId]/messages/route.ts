@@ -45,7 +45,7 @@ export async function POST(
     const fiveSecondsAgo = new Date(now.getTime() - 5000);
     const trimmedContent = content.trim();
     
-    console.log('[後端] 收到發送請求:', {
+    console.error('🟡 [後端] 收到發送請求:', {
       chatId,
       senderId: session.user.id,
       content: trimmedContent,
@@ -60,9 +60,10 @@ export async function POST(
     }).sort({ createdAt: -1 }); // 取最新的
 
     if (existing) {
-      console.log('[後端] 發現重複訊息，返回現有訊息:', {
+      console.error('⚠️ [後端] 發現重複訊息，返回現有訊息:', {
         messageId: existing._id,
         createdAt: existing.createdAt,
+        timeDiff: now.getTime() - new Date(existing.createdAt).getTime(),
       });
       return NextResponse.json({ message: existing, duplicate: true });
     }
@@ -74,9 +75,10 @@ export async function POST(
       type,
     });
 
-    console.log('[後端] 建立新訊息:', {
+    console.error('✅ [後端] 建立新訊息:', {
       messageId: message._id,
       content: message.content,
+      timestamp: message.createdAt,
     });
 
     // 更新聊天室的最後訊息時間
@@ -99,7 +101,11 @@ export async function POST(
             createdAt: message.createdAt,
           }
         );
-        console.log('[後端] Pusher 事件已推播:', `chat-${chatId}`, 'new-message');
+        console.error('📡 [後端] Pusher 事件已推播:', {
+          channel: `chat-${chatId}`,
+          event: 'new-message',
+          messageId: message._id,
+        });
       } catch (pusherError) {
         console.error('[後端] Pusher 推播失敗:', pusherError);
       }

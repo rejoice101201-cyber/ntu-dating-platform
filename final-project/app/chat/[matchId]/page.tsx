@@ -76,8 +76,18 @@ export default function ChatPage() {
         // Subscribe to chat channel (與後端事件一致)
         const channel = newPusher.subscribe(`chat-${matchId}`)
         
-        // 後端推播的事件名稱是 'new-message'（連字號），不是 'new_message'
-        channel.bind('new-message', (data: any) => {
+        // 先 unbind 避免重複綁定（React StrictMode 或 useEffect 重新執行時）
+        channel.unbind('new-message')
+        channel.unbind('game_state_update')
+        
+        // 定義處理函數（使用命名函數以便後續 unbind）
+        const handleNewMessage = (data: any) => {
+          console.error('🔵 [Pusher] 收到 new-message 事件:', {
+            messageId: data._id || data.id,
+            content: data.content,
+            timestamp: new Date().toISOString(),
+          })
+          
           // 後端推播的格式是 { _id, chatId, senderId, content, type, createdAt }
           // 需要轉換成前端 Message 格式
           const message: Message = {
@@ -96,14 +106,15 @@ export default function ChatPage() {
             const incomingId = message.id
             // 嚴格去重：用 id 檢查，如果已存在就不加入
             if (incomingId && prev.some(m => m.id === incomingId)) {
+              console.warn('⚠️ [Pusher] 訊息已存在，跳過:', incomingId)
               return prev
             }
+            console.error('✅ [Pusher] 加入新訊息到列表:', incomingId)
             return [...prev, message]
           })
-        })
+        }
         
-        // 监听游戏状态更新
-        channel.bind('game_state_update', (data: any) => {
+        const handleGameStateUpdate = (data: any) => {
           console.log('Game state update received:', data)
           if (data.gameSession) {
             console.log('Updating game session:', {
@@ -122,11 +133,30 @@ export default function ChatPage() {
               loadOtherUserProfile(otherUser.id)
             }
           }
-        })
+        }
+        
+        // 後端推播的事件名稱是 'new-message'（連字號），不是 'new_message'
+        channel.bind('new-message', handleNewMessage)
+        
+        // 监听游戏状态更新
+        channel.bind('game_state_update', handleGameStateUpdate)
+        
+        console.error('🔵 [Pusher] 已訂閱頻道並綁定事件:', `chat-${matchId}`)
 
         setPusher(newPusher)
 
         return () => {
+          console.error('🔴 [Pusher] 清理：取消訂閱並斷開連接')
+          try {
+            const cleanupChannel = newPusher.channel(`chat-${matchId}`)
+            if (cleanupChannel) {
+              cleanupChannel.unbind('new-message')
+              cleanupChannel.unbind('game_state_update')
+              newPusher.unsubscribe(`chat-${matchId}`)
+            }
+          } catch (e) {
+            console.error('清理 Pusher 時出錯:', e)
+          }
           newPusher.disconnect()
         }
       } catch (error) {
@@ -237,13 +267,13 @@ export default function ChatPage() {
     
     // 檢查 ref（同步，避免 state 異步問題）
     if (isSendingRef.current) {
-      console.warn('[防重] 正在發送中，忽略重複請求')
+      console.error('❌ [防重] 正在發送中，忽略重複請求 (isSendingRef)')
       return
     }
     
     // 檢查 state（雙重保險）
     if (sending) {
-      console.warn('[防重] sending state 為 true，忽略重複請求')
+      console.error('❌ [防重] sending state 為 true，忽略重複請求')
       return
     }
     
@@ -254,7 +284,11 @@ export default function ChatPage() {
       lastSendRef.current.content === messageContent &&
       now - lastSendRef.current.timestamp < 5000
     ) {
-      console.warn('[防重] 5秒內相同內容已發送，忽略:', messageContent)
+      console.error('❌ [防重] 5秒內相同內容已發送，忽略:', {
+        content: messageContent,
+        lastSend: lastSendRef.current.timestamp,
+        timeDiff: now - lastSendRef.current.timestamp,
+      })
       return
     }
 
@@ -264,7 +298,11 @@ export default function ChatPage() {
     setSending(true)
     setInput('')
 
-    console.log('[發送] 開始發送訊息:', messageContent, '時間:', new Date().toISOString())
+    console.error('🟢 [前端] 開始發送訊息:', {
+      content: messageContent,
+      matchId,
+      timestamp: new Date().toISOString(),
+    })
 
     try {
       // Send via API (which will trigger Pusher)
@@ -273,7 +311,11 @@ export default function ChatPage() {
         type: 'text',
       })
       
-      console.log('[發送] API 回應成功:', response.data)
+      console.error('🟢 [前端] API 回應成功:', {
+        messageId: response.data?.message?._id || response.data?.message?.id,
+        duplicate: response.data?.duplicate,
+        timestamp: new Date().toISOString(),
+      })
 
       // 完全依賴 Pusher 事件更新，不再手動 loadMessages 避免重複
       // 只有在 Pusher 未連線時才延遲補拉（作為保險）
@@ -297,7 +339,7 @@ export default function ChatPage() {
       setTimeout(() => {
         isSendingRef.current = false
         setSending(false)
-        console.log('[發送] 重置發送狀態')
+        console.error('🟢 [前端] 重置發送狀態，允許再次發送')
       }, 1000) // 1秒後才允許再次發送
     }
   }
