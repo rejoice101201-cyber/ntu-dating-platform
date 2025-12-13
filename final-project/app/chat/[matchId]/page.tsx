@@ -46,6 +46,7 @@ export default function ChatPage() {
   const [keys, setKeys] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const lastSendRef = useRef<{ content: string; timestamp: number } | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -74,25 +75,26 @@ export default function ChatPage() {
         // Subscribe to chat channel (與後端事件一致)
         const channel = newPusher.subscribe(`chat-${matchId}`)
         
-        channel.bind('new_message', (message: Message) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/c35992e1-5f2f-4cd5-beb1-b43e292cbe5b',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-              sessionId:'debug-session',
-              runId:'pre-fix',
-              hypothesisId:'H1',
-              location:'app/chat/[matchId]/page.tsx:match-channel',
-              message:'pusher match new_message',
-              data:{incomingId:(message as any)?.id || (message as any)?._id},
-              timestamp:Date.now()
-            })
-          }).catch(()=>{});
-          // #endregion
+        // 後端推播的事件名稱是 'new-message'（連字號），不是 'new_message'
+        channel.bind('new-message', (data: any) => {
+          // 後端推播的格式是 { _id, chatId, senderId, content, type, createdAt }
+          // 需要轉換成前端 Message 格式
+          const message: Message = {
+            id: data._id?.toString() || data.id,
+            content: data.content,
+            type: data.type || 'text',
+            senderId: data.senderId?.toString() || data.senderId,
+            sender: {
+              id: data.senderId?.toString() || data.senderId,
+              name: data.senderId?.name || 'User',
+            },
+            createdAt: data.createdAt || new Date().toISOString(),
+          }
+          
           setMessages(prev => {
-            const incomingId = (message as any)?.id || (message as any)?._id
-            if (incomingId && prev.some(m => ((m as any)?.id || (m as any)?._id) === incomingId)) {
+            const incomingId = message.id
+            // 嚴格去重：用 id 檢查，如果已存在就不加入
+            if (incomingId && prev.some(m => m.id === incomingId)) {
               return prev
             }
             return [...prev, message]
@@ -226,6 +228,19 @@ export default function ChatPage() {
     if (!input.trim() || !user || sending) return
 
     const messageContent = input.trim()
+    
+    // 嚴格防重：3秒內相同內容不允許再送
+    const now = Date.now()
+    if (
+      lastSendRef.current &&
+      lastSendRef.current.content === messageContent &&
+      now - lastSendRef.current.timestamp < 3000
+    ) {
+      console.warn('Duplicate send prevented:', messageContent)
+      return
+    }
+
+    lastSendRef.current = { content: messageContent, timestamp: now }
     setSending(true)
     setInput('')
 
@@ -236,15 +251,22 @@ export default function ChatPage() {
         type: 'text',
       })
 
-      // 交由 Pusher 事件加入；為避免與即時事件重疊造成瞬間重複，延遲補拉一次
-      setTimeout(() => {
-        loadMessages(false)
+      // 完全依賴 Pusher 事件更新，不再手動 loadMessages 避免重複
+      // 只有在 Pusher 未連線時才延遲補拉（作為保險）
+      if (!hasRealPusher || !pusher) {
+        setTimeout(() => {
+          loadMessages(false)
+          checkActiveGameSession()
+        }, 2000)
+      } else {
+        // 有 Pusher 時只更新遊戲狀態，不拉訊息
         checkActiveGameSession()
-      }, 1200)
+      }
     } catch (error) {
       console.error('Failed to send message:', error)
       // 發送失敗時把輸入還原，讓使用者可重送
       setInput(messageContent)
+      lastSendRef.current = null // 清除防重記錄，允許重試
       alert('發送失敗，請稍後再試')
     } finally {
       setSending(false)

@@ -40,15 +40,15 @@ export async function POST(
       return NextResponse.json({ error: '無權限' }, { status: 403 });
     }
 
-    // 以 senderId + content + chatId + 近1秒內的訊息去重，避免前端/事件重送
+    // 以 senderId + content + chatId + 近3秒內的訊息去重，避免前端/事件重送
     const now = new Date();
-    const oneSecondAgo = new Date(now.getTime() - 1000);
+    const threeSecondsAgo = new Date(now.getTime() - 3000);
     const existing = await Message.findOne({
       chatId,
       senderId: session.user.id,
-      content,
-      createdAt: { $gte: oneSecondAgo },
-    });
+      content: content.trim(),
+      createdAt: { $gte: threeSecondsAgo },
+    }).sort({ createdAt: -1 }); // 取最新的
 
     const message =
       existing ||
