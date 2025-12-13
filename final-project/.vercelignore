@@ -1,0 +1,6 @@
+# Ignore frontend directory to avoid Prisma conflicts
+../frontend/
+../backend/
+node_modules/
+.next/
+.env.local
