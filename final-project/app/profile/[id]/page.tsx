@@ -44,18 +44,18 @@ function getZodiacSign(birthday: string): string {
   const month = date.getMonth() + 1
   const day = date.getDate()
   
-  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return '牡羊座'
-  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return '金牛座'
-  if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) return '雙子座'
-  if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) return '巨蟹座'
-  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return '獅子座'
-  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return '處女座'
-  if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) return '天秤座'
-  if ((month === 10 && day >= 24) || (month === 11 && day <= 22)) return '天蠍座'
-  if ((month === 11 && day >= 23) || (month === 12 && day <= 21)) return '射手座'
-  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return '摩羯座'
-  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return '水瓶座'
-  return '雙魚座'
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'Aries'
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'Taurus'
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) return 'Gemini'
+  if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) return 'Cancer'
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return 'Leo'
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return 'Virgo'
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) return 'Libra'
+  if ((month === 10 && day >= 24) || (month === 11 && day <= 22)) return 'Scorpio'
+  if ((month === 11 && day >= 23) || (month === 12 && day <= 21)) return 'Sagittarius'
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'Capricorn'
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'Aquarius'
+  return 'Pisces'
 }
 
 export default function ProfilePage() {
@@ -106,7 +106,7 @@ export default function ProfilePage() {
 
   const useKeyToUnlock = async () => {
     if (!profile?.id || keys < 1) {
-      alert('鑰匙不足！')
+      alert('Not enough keys!')
       return
     }
 
@@ -116,12 +116,12 @@ export default function ProfilePage() {
       })
       setUnlockProgress(response.data.unlockProgress)
       setKeys(response.data.unlockProgress.keys)
-      // 重新加载资料以更新模糊度
+      // reload to update blur levels
       await loadProfile()
-      alert('解鎖成功！')
+      alert('Unlocked!')
     } catch (error: any) {
       console.error('Failed to unlock:', error)
-      alert(error.response?.data?.error || '解鎖失敗')
+      alert(error.response?.data?.error || 'Unlock failed')
     }
   }
 
@@ -168,7 +168,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        <p className="text-gray-500">載入中...</p>
+        <p className="text-gray-500">Loading...</p>
       </div>
     )
   }
@@ -176,7 +176,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        <p className="text-gray-500">用戶不存在</p>
+        <p className="text-gray-500">User not found</p>
       </div>
     )
   }
@@ -277,53 +277,53 @@ export default function ProfilePage() {
 
       {/* Content Sections */}
       <div className="px-4 mt-6 space-y-6 pb-20">
-        {/* 基本資料 (Basic Info) */}
+        {/* Basic Info */}
         <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-bold mb-3">基本資料</h3>
+          <h3 className="text-lg font-bold mb-3">Basic info</h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {profile.height && (
               <div>
-                <span className="text-gray-600">身高：</span>
+                <span className="text-gray-600">Height: </span>
                 <span className="font-medium">{profile.height} cm</span>
               </div>
             )}
             {profile.weight && (
               <div>
-                <span className="text-gray-600">體重：</span>
+                <span className="text-gray-600">Weight: </span>
                 <span className="font-medium">{profile.weight} kg</span>
               </div>
             )}
             {profile.occupation && (
               <div>
-                <span className="text-gray-600">職業：</span>
+                <span className="text-gray-600">Occupation: </span>
                 <span className="font-medium">{profile.occupation}</span>
               </div>
             )}
             {profile.school && (
               <div>
-                <span className="text-gray-600">學校：</span>
+                <span className="text-gray-600">School: </span>
                 <span className="font-medium">{profile.school}</span>
               </div>
             )}
             {profile.bloodType && (
               <div>
-                <span className="text-gray-600">血型：</span>
+                <span className="text-gray-600">Blood type: </span>
                 <span className="font-medium">{profile.bloodType}</span>
               </div>
             )}
             {profile.location && (
               <div>
-                <span className="text-gray-600">出沒地點：</span>
+                <span className="text-gray-600">Location: </span>
                 <span className="font-medium">{profile.location}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* 個性 (Personality) */}
+        {/* Personality */}
         {tagsByCategory['personality'] && tagsByCategory['personality'].length > 0 && (
           <div>
-            <h3 className="text-lg font-bold mb-2">個性</h3>
+            <h3 className="text-lg font-bold mb-2">Personality</h3>
             <div className="flex flex-wrap gap-2">
               {tagsByCategory['personality'].map((tag, idx) => (
                 <span
@@ -337,10 +337,10 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 興趣 (Interests) */}
+        {/* Interests */}
         {tagsByCategory['interest'] && tagsByCategory['interest'].length > 0 && (
           <div>
-            <h3 className="text-lg font-bold mb-2">興趣</h3>
+            <h3 className="text-lg font-bold mb-2">Interests</h3>
             <div className="flex flex-wrap gap-2">
               {tagsByCategory['interest'].map((tag, idx) => (
                 <span
@@ -354,10 +354,10 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 外貌 (Appearance) */}
+        {/* Appearance */}
         {tagsByCategory['appearance'] && tagsByCategory['appearance'].length > 0 && (
           <div>
-            <h3 className="text-lg font-bold mb-2">外貌</h3>
+            <h3 className="text-lg font-bold mb-2">Appearance</h3>
             <div className="flex flex-wrap gap-2">
               {tagsByCategory['appearance'].map((tag, idx) => (
                 <span
@@ -371,10 +371,10 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 感情 (Relationship) */}
+        {/* Lifestyle */}
         {tagsByCategory['lifestyle'] && tagsByCategory['lifestyle'].length > 0 && (
           <div>
-            <h3 className="text-lg font-bold mb-2">感情</h3>
+            <h3 className="text-lg font-bold mb-2">Lifestyle</h3>
             <div className="flex flex-wrap gap-2">
               {tagsByCategory['lifestyle'].map((tag, idx) => (
                 <span
@@ -388,24 +388,24 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 自我介紹 (Self-introduction) */}
+        {/* Bio */}
         {profile.bio && (
           <div>
-            <h3 className="text-lg font-bold mb-2">自我介紹</h3>
+            <h3 className="text-lg font-bold mb-2">Bio</h3>
             <p className="text-gray-700 text-sm leading-relaxed">{profile.bio}</p>
           </div>
         )}
 
-        {/* 交友筆記 (Dating Notes) - 只有自己看得到 */}
+        {/* Notes (only visible to self) */}
         {isOwnProfile && (
           <div className="border-t pt-4 mt-4">
-            <h3 className="text-lg font-bold mb-2">交友筆記</h3>
+            <h3 className="text-lg font-bold mb-2">My notes</h3>
             <div className="relative">
               <input
                 type="text"
                 value={datingNote}
                 onChange={(e) => setDatingNote(e.target.value)}
-                placeholder="你可以在這裡作筆記,只有自己看得到。"
+                placeholder="Keep a private note here (only you can see it)"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
               <span className="absolute right-3 top-3 text-gray-400">✏️</span>
@@ -421,11 +421,11 @@ export default function ProfilePage() {
                 href={`/chat/${matchId}`}
                 className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg text-center font-bold hover:bg-yellow-500 transition-colors"
               >
-                開始聊天
+                  Start chat
               </Link>
             ) : (
               <div className="flex-1 bg-gray-200 text-gray-600 py-3 rounded-lg text-center font-bold">
-                需要先配對才能聊天
+                Match first to chat
               </div>
             )}
           </div>
@@ -438,14 +438,14 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">🔑</div>
-              <h2 className="text-2xl font-bold mb-2">解鎖照片</h2>
-              <p className="text-gray-600">使用鑰匙來解鎖對方的照片</p>
+              <h2 className="text-2xl font-bold mb-2">Unlock photos</h2>
+              <p className="text-gray-600">Use a key to unlock photos</p>
             </div>
 
             {unlockProgress && (
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">解鎖進度</span>
+                    <span className="text-sm text-gray-600">Unlock progress</span>
                   <span className="text-sm font-semibold">{unlockProgress.unlockLevel}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
@@ -459,7 +459,7 @@ export default function ProfilePage() {
 
             <div className="text-center mb-6">
               <div className="text-3xl mb-2">🔑</div>
-              <p className="text-2xl font-bold text-yellow-600">{keys} 把鑰匙</p>
+              <p className="text-2xl font-bold text-yellow-600">{keys} keys</p>
             </div>
 
             <div className="flex gap-3">
@@ -467,14 +467,14 @@ export default function ProfilePage() {
                 onClick={() => setShowUnlockModal(false)}
                 className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors"
               >
-                取消
+                Cancel
               </button>
               <button
                 onClick={useKeyToUnlock}
                 disabled={keys < 1}
                 className="flex-1 bg-yellow-400 text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                使用鑰匙解鎖
+                Use key to unlock
               </button>
             </div>
           </div>

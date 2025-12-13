@@ -95,7 +95,7 @@ export default function MyProfilePage() {
 
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('請先登入')
+        alert('Please sign in first.')
         router.push('/auth/login')
         return
       }
@@ -111,7 +111,7 @@ export default function MyProfilePage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
         console.error('Upload failed:', errorData)
-        alert(`照片上傳失敗：${errorData.error || errorData.details || '未知錯誤'}`)
+        alert(`Photo upload failed: ${errorData.error || errorData.details || 'Unknown error'}`)
         return
       }
 
@@ -122,26 +122,26 @@ export default function MyProfilePage() {
       e.target.value = ''
     } catch (error) {
       console.error('Failed to upload photo:', error)
-      alert(`照片上傳失敗：${error instanceof Error ? error.message : '請重試'}`)
+      alert(`Photo upload failed: ${error instanceof Error ? error.message : 'Please try again'}`)
     }
   }
 
   const handleDeletePhoto = async (photoId: string) => {
-    if (!confirm('確定要刪除這張照片嗎？')) return
+    if (!confirm('Delete this photo?')) return
 
     try {
       await api.delete(`/photos/${photoId}`)
       await loadProfile()
     } catch (error) {
       console.error('Failed to delete photo:', error)
-      alert('刪除照片失敗，請重試')
+      alert('Delete failed, please try again')
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p>載入中...</p>
+        <p>Loading...</p>
       </div>
     )
   }
@@ -151,13 +151,13 @@ export default function MyProfilePage() {
       <div className="max-w-2xl mx-auto py-8 px-4">
         <div className="bg-white rounded-lg p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold">我的資料</h1>
+            <h1 className="text-2xl font-bold">My profile</h1>
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
                 className="text-primary-500 hover:text-primary-600"
               >
-                編輯
+                Edit
               </button>
             ) : (
               <div className="flex gap-2">
@@ -168,13 +168,13 @@ export default function MyProfilePage() {
                   }}
                   className="text-gray-600"
                 >
-                  取消
+                  Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   className="text-primary-500 hover:text-primary-600"
                 >
-                  儲存
+                  Save
                 </button>
               </div>
             )}
@@ -183,7 +183,7 @@ export default function MyProfilePage() {
           {editing ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">姓名</label>
+                <label className="block text-sm font-medium mb-1">Name</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -192,7 +192,7 @@ export default function MyProfilePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">自我介紹</label>
+                <label className="block text-sm font-medium mb-1">Bio</label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -202,7 +202,7 @@ export default function MyProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">地區</label>
+                  <label className="block text-sm font-medium mb-1">Location</label>
                   <input
                     type="text"
                     value={formData.location}
@@ -211,7 +211,7 @@ export default function MyProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">身高 (cm)</label>
+                  <label className="block text-sm font-medium mb-1">Height (cm)</label>
                   <input
                     type="number"
                     value={formData.height}
@@ -222,7 +222,7 @@ export default function MyProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">體重 (kg)</label>
+                  <label className="block text-sm font-medium mb-1">Weight (kg)</label>
                   <input
                     type="number"
                     value={formData.weight}
@@ -231,13 +231,13 @@ export default function MyProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">血型</label>
+                  <label className="block text-sm font-medium mb-1">Blood type</label>
                   <select
                     value={formData.bloodType}
                     onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                   >
-                    <option value="">請選擇</option>
+                    <option value="">Select</option>
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="AB">AB</option>
@@ -247,7 +247,7 @@ export default function MyProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">職業</label>
+                  <label className="block text-sm font-medium mb-1">Occupation</label>
                   <input
                     type="text"
                     value={formData.occupation}
@@ -256,7 +256,7 @@ export default function MyProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">學校</label>
+                  <label className="block text-sm font-medium mb-1">School</label>
                   <input
                     type="text"
                     value={formData.school}
@@ -269,37 +269,37 @@ export default function MyProfilePage() {
           ) : (
             <div className="space-y-4">
               <div>
-                <h2 className="font-semibold mb-2">姓名</h2>
-                <p>{profile?.name || '未填寫'}</p>
+                <h2 className="font-semibold mb-2">Name</h2>
+                <p>{profile?.name || 'Not set'}</p>
               </div>
               <div>
-                <h2 className="font-semibold mb-2">自我介紹</h2>
-                <p className="text-gray-700">{profile?.bio || '未填寫'}</p>
+                <h2 className="font-semibold mb-2">Bio</h2>
+                <p className="text-gray-700">{profile?.bio || 'Not set'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h2 className="font-semibold mb-2">地區</h2>
-                  <p>{profile?.location || '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">Location</h2>
+                  <p>{profile?.location || 'Not set'}</p>
                 </div>
                 <div>
-                  <h2 className="font-semibold mb-2">身高</h2>
-                  <p>{profile?.height ? `${profile.height} cm` : '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">Height</h2>
+                  <p>{profile?.height ? `${profile.height} cm` : 'Not set'}</p>
                 </div>
                 <div>
-                  <h2 className="font-semibold mb-2">體重</h2>
-                  <p>{profile?.weight ? `${profile.weight} kg` : '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">Weight</h2>
+                  <p>{profile?.weight ? `${profile.weight} kg` : 'Not set'}</p>
                 </div>
                 <div>
-                  <h2 className="font-semibold mb-2">職業</h2>
-                  <p>{profile?.occupation || '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">Occupation</h2>
+                  <p>{profile?.occupation || 'Not set'}</p>
                 </div>
                 <div>
-                  <h2 className="font-semibold mb-2">學校</h2>
-                  <p>{profile?.school || '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">School</h2>
+                  <p>{profile?.school || 'Not set'}</p>
                 </div>
                 <div>
-                  <h2 className="font-semibold mb-2">血型</h2>
-                  <p>{profile?.bloodType || '未填寫'}</p>
+                  <h2 className="font-semibold mb-2">Blood type</h2>
+                  <p>{profile?.bloodType || 'Not set'}</p>
                 </div>
               </div>
             </div>
@@ -309,13 +309,13 @@ export default function MyProfilePage() {
         {/* Match Preferences Section */}
         <div className="bg-white rounded-lg p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">配對條件設定</h2>
+            <h2 className="text-xl font-bold">Match preferences</h2>
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
                 className="text-primary-500 hover:text-primary-600"
               >
-                編輯
+                Edit
               </button>
             ) : (
               <div className="flex gap-2">
@@ -331,12 +331,12 @@ export default function MyProfilePage() {
                       setEditing(false)
                     } catch (error) {
                       console.error('Failed to save match preferences:', error)
-                      alert('儲存配對條件失敗，請重試')
+                      alert('Failed to save preferences. Please try again.')
                     }
                   }}
                   className="text-primary-500 hover:text-primary-600"
                 >
-                  儲存
+                  Save
                 </button>
                 <button
                   onClick={() => {
@@ -345,7 +345,7 @@ export default function MyProfilePage() {
                   }}
                   className="text-gray-600"
                 >
-                  取消
+                  Cancel
                 </button>
               </div>
             )}
@@ -354,21 +354,21 @@ export default function MyProfilePage() {
           {editing ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">性別偏好</label>
+                <label className="block text-sm font-medium mb-1">Gender preference</label>
                 <select
                   value={matchPreference.gender || ''}
                   onChange={(e) => setMatchPreference({ ...matchPreference, gender: e.target.value || null })}
                   className="w-full px-4 py-2 border rounded-lg"
                 >
-                  <option value="">不限</option>
-                  <option value="male">男性</option>
-                  <option value="female">女性</option>
-                  <option value="other">其他</option>
+                  <option value="">Any</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">最小年齡</label>
+                  <label className="block text-sm font-medium mb-1">Min age</label>
                   <input
                     type="number"
                     min="18"
@@ -379,11 +379,11 @@ export default function MyProfilePage() {
                       minAge: e.target.value ? parseInt(e.target.value) : null 
                     })}
                     className="w-full px-4 py-2 border rounded-lg"
-                    placeholder="不限"
+                    placeholder="Any"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">最大年齡</label>
+                  <label className="block text-sm font-medium mb-1">Max age</label>
                   <input
                     type="number"
                     min="18"
@@ -394,7 +394,7 @@ export default function MyProfilePage() {
                       maxAge: e.target.value ? parseInt(e.target.value) : null 
                     })}
                     className="w-full px-4 py-2 border rounded-lg"
-                    placeholder="不限"
+                    placeholder="Any"
                   />
                 </div>
               </div>
@@ -402,15 +402,23 @@ export default function MyProfilePage() {
           ) : (
             <div className="space-y-4">
               <div>
-                <h2 className="font-semibold mb-2">性別偏好</h2>
-                <p>{matchPreference.gender === 'male' ? '男性' : matchPreference.gender === 'female' ? '女性' : matchPreference.gender === 'other' ? '其他' : '不限'}</p>
+                <h2 className="font-semibold mb-2">Gender preference</h2>
+                <p>
+                  {matchPreference.gender === 'male'
+                    ? 'Male'
+                    : matchPreference.gender === 'female'
+                    ? 'Female'
+                    : matchPreference.gender === 'other'
+                    ? 'Other'
+                    : 'Any'}
+                </p>
               </div>
               <div>
-                <h2 className="font-semibold mb-2">年齡範圍</h2>
+                <h2 className="font-semibold mb-2">Age range</h2>
                 <p>
-                  {matchPreference.minAge || matchPreference.maxAge 
-                    ? `${matchPreference.minAge || '不限'} 歲 - ${matchPreference.maxAge || '不限'} 歲`
-                    : '不限'}
+                  {matchPreference.minAge || matchPreference.maxAge
+                    ? `${matchPreference.minAge || 'Any'} - ${matchPreference.maxAge || 'Any'}`
+                    : 'Any'}
                 </p>
               </div>
             </div>
@@ -419,13 +427,13 @@ export default function MyProfilePage() {
 
         <div className="bg-white rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">我的照片</h2>
+            <h2 className="text-xl font-bold">My photos</h2>
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
                 className="text-primary-500 hover:text-primary-600 text-sm"
               >
-                編輯
+                Edit
               </button>
             )}
           </div>
