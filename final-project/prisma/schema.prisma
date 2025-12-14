@@ -46,6 +46,7 @@ model User {
   unlockProgress         UnlockProgress[]
   unlockProgressAsTarget UnlockProgress[] @relation("TargetUser")
   matchPreference        MatchPreference?
+  posts                  Post[]
 
   @@index([email])
   @@index([userId])
@@ -215,4 +216,21 @@ model MatchPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  content   String
+  imageUrl  String?  // Vercel Blob URL，可選
+  type      String   @default("FREE") // "FREE" | "TOPIC" (Phase 2 用)
+  topicId   String?  // Phase 2: 關聯到 DailyTopic
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([type])
 }
