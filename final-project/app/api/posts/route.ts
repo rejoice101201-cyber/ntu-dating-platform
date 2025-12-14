@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
     return authResult;
   }
 
+  const { user: authUser } = authResult;
+
   try {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: 'desc' },
@@ -38,22 +40,85 @@ export async function GET(request: NextRequest) {
             name: true,
           },
         },
+        topic: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
+    // 檢查每個貼文作者是否與當前用戶配對
+    const postsWithMatchStatus = await Promise.all(
+      posts.map(async (post) => {
+        // 如果是自己的貼文，直接顯示姓名
+        if (post.authorId === authUser.id) {
+          return {
+            id: post.id,
+            authorId: post.authorId,
+            author: {
+              id: post.author.id,
+              name: post.author.name,
+            },
+            content: post.content,
+            imageUrl: post.imageUrl,
+            type: post.type,
+            topicId: post.topicId,
+            topic: post.topic ? {
+              id: post.topic.id,
+              title: post.topic.title,
+            } : null,
+            createdAt: post.createdAt.toISOString(),
+            isMatched: true, // 自己的貼文視為已配對
+          };
+        }
+
+        // 檢查是否已配對（雙向檢查）
+        const match = await prisma.match.findFirst({
+          where: {
+            OR: [
+              {
+                userId: authUser.id,
+                matchedUserId: post.authorId,
+                status: 'matched',
+              },
+              {
+                userId: post.authorId,
+                matchedUserId: authUser.id,
+                status: 'matched',
+              },
+            ],
+          },
+        });
+
+        const isMatched = !!match;
+
+        return {
+          id: post.id,
+          authorId: post.authorId,
+          author: {
+            id: post.author.id,
+            // Phase 3: 未配對時隱藏姓名
+            name: isMatched ? post.author.name : null,
+          },
+          content: post.content,
+          imageUrl: post.imageUrl,
+          type: post.type,
+          topicId: post.topicId,
+          topic: post.topic ? {
+            id: post.topic.id,
+            title: post.topic.title,
+          } : null,
+          createdAt: post.createdAt.toISOString(),
+          isMatched,
+          matchId: match?.id || null, // 用於聊天室入口
+        };
+      })
+    );
+
     return NextResponse.json({
-      posts: posts.map((post) => ({
-        id: post.id,
-        authorId: post.authorId,
-        author: {
-          id: post.author.id,
-          name: post.author.name,
-        },
-        content: post.content,
-        imageUrl: post.imageUrl,
-        type: post.type,
-        createdAt: post.createdAt.toISOString(),
-      })),
+      posts: postsWithMatchStatus,
     });
   } catch (error) {
     console.error('Get posts error:', error);
@@ -78,12 +143,30 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const content = formData.get('content') as string;
     const image = formData.get('image') as File | null;
+    const topicId = formData.get('topicId') as string | null;
 
     if (!content || !content.trim()) {
       return NextResponse.json(
         { error: 'Content is required' },
         { status: 400 }
       );
+    }
+
+    // 如果提供了 topicId，驗證主題是否存在
+    let postType = 'FREE';
+    if (topicId) {
+      const topic = await prisma.dailyTopic.findUnique({
+        where: { id: topicId },
+      });
+      
+      if (!topic) {
+        return NextResponse.json(
+          { error: 'Topic not found' },
+          { status: 404 }
+        );
+      }
+      
+      postType = 'TOPIC';
     }
 
     let imageUrl: string | null = null;
@@ -133,7 +216,8 @@ export async function POST(request: NextRequest) {
         authorId: authUser.id,
         content: content.trim(),
         imageUrl: imageUrl,
-        type: 'FREE',
+        type: postType,
+        topicId: topicId || null,
       },
       include: {
         author: {
@@ -142,6 +226,12 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
+        topic: topicId ? {
+          select: {
+            id: true,
+            title: true,
+          },
+        } : undefined,
       },
     });
 
@@ -156,6 +246,11 @@ export async function POST(request: NextRequest) {
         content: post.content,
         imageUrl: post.imageUrl,
         type: post.type,
+        topicId: post.topicId,
+        topic: post.topic ? {
+          id: post.topic.id,
+          title: post.topic.title,
+        } : null,
         createdAt: post.createdAt.toISOString(),
       },
     });

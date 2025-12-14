@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 
@@ -10,11 +11,26 @@ interface Post {
   authorId: string
   author: {
     id: string
-    name: string
+    name: string | null // Phase 3: 未配對時為 null
   }
   content: string
   imageUrl: string | null
   type: 'FREE' | 'TOPIC'
+  topicId?: string | null
+  topic?: {
+    id: string
+    title: string
+  } | null
+  createdAt: string
+  isMatched?: boolean // Phase 3: 是否已配對
+  matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
+}
+
+interface DailyTopic {
+  id: string
+  date: string
+  title: string
+  postCount?: number
   createdAt: string
 }
 
@@ -40,11 +56,16 @@ export default function WallPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
+  // 每日主題狀態
+  const [dailyTopic, setDailyTopic] = useState<DailyTopic | null>(null)
+  const [loadingTopic, setLoadingTopic] = useState(true)
+  
   // 發文狀態
   const [content, setContent] = useState('')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
+  const [postingAsTopic, setPostingAsTopic] = useState(false) // 是否針對主題發文
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -56,6 +77,7 @@ export default function WallPage() {
       }
     }
     loadPosts()
+    loadDailyTopic()
   }, [token, router])
 
   const loadPosts = async () => {
@@ -76,6 +98,19 @@ export default function WallPage() {
     }
   }
 
+  const loadDailyTopic = async () => {
+    try {
+      setLoadingTopic(true)
+      const response = await api.get('/daily-topics')
+      setDailyTopic(response.data.topic || null)
+    } catch (error: any) {
+      console.error('Failed to load daily topic:', error)
+      // 載入主題失敗不影響頁面，只記錄錯誤
+    } finally {
+      setLoadingTopic(false)
+    }
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -93,6 +128,48 @@ export default function WallPage() {
     setImagePreview(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const handleMatchFromPost = async (postId: string) => {
+    try {
+      const currentToken = token || localStorage.getItem('token')
+      if (!currentToken) {
+        router.push('/auth/login')
+        return
+      }
+
+      const response = await fetch(`/api/posts/${postId}/match`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: '配對失敗' }))
+        throw new Error(errorData.error || '配對失敗')
+      }
+
+      const data = await response.json()
+      
+      if (data.match.matched) {
+        alert('配對成功！現在可以開始聊天了！')
+        // 重新載入貼文以更新配對狀態
+        await loadPosts()
+      } else if (data.match.pending) {
+        alert('已發送配對請求！等待對方回應...')
+        // 重新載入貼文
+        await loadPosts()
+      } else if (data.match.alreadyMatched) {
+        alert('你們已經配對了！')
+        // 重新載入貼文
+        await loadPosts()
+      }
+    } catch (error: any) {
+      console.error('Failed to match from post:', error)
+      alert(error.message || '配對失敗，請稍後再試')
     }
   }
 
@@ -121,6 +198,10 @@ export default function WallPage() {
       if (selectedImage) {
         formData.append('image', selectedImage)
       }
+      // 如果選擇針對主題發文，且今日有主題，則加入 topicId
+      if (postingAsTopic && dailyTopic) {
+        formData.append('topicId', dailyTopic.id)
+      }
 
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -139,12 +220,13 @@ export default function WallPage() {
       setContent('')
       setSelectedImage(null)
       setImagePreview(null)
+      setPostingAsTopic(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
 
-      // 重新載入 feed
-      await loadPosts()
+      // 重新載入 feed 和主題（更新貼文數量）
+      await Promise.all([loadPosts(), loadDailyTopic()])
     } catch (error: any) {
       console.error('Failed to create post:', error)
       setError(error.message || '發文失敗，請稍後再試')
@@ -172,13 +254,52 @@ export default function WallPage() {
           <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Wall</h1>
         </div>
 
+        {/* 每日主題區塊 */}
+        {dailyTopic && (
+          <div className="pixel-panel p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
+                  今日話題
+                </div>
+                <div className="text-base font-bold text-[var(--pixel-text)] mb-2">
+                  {dailyTopic.title}
+                </div>
+                {dailyTopic.postCount !== undefined && (
+                  <div className="text-xs text-[var(--pixel-text-dim)]">
+                    {dailyTopic.postCount} 則回應
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 發文輸入框 */}
         <div className="pixel-panel p-4 space-y-3">
           <form onSubmit={handleSubmit} className="space-y-3">
+            {/* 每日主題發文選項 */}
+            {dailyTopic && (
+              <div className="flex items-center gap-2 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={postingAsTopic}
+                    onChange={(e) => setPostingAsTopic(e.target.checked)}
+                    disabled={posting}
+                    className="w-4 h-4 border-3 border-[var(--pixel-border)]"
+                  />
+                  <span className="text-sm text-[var(--pixel-text)]">
+                    針對今日話題發文：{dailyTopic.title}
+                  </span>
+                </label>
+              </div>
+            )}
+
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="說說你的想法..."
+              placeholder={postingAsTopic && dailyTopic ? `說說你對「${dailyTopic.title}」的想法...` : "說說你的想法..."}
               className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
               disabled={posting}
             />
@@ -250,18 +371,53 @@ export default function WallPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-bold text-[var(--pixel-text)]">
-                      {post.author.name[0]?.toUpperCase() || '?'}
+                      {post.author.name ? post.author.name[0]?.toUpperCase() : '?'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[var(--pixel-text)] truncate">
-                      {post.author.name}
+                      {/* Phase 3: 未配對時顯示 ???? */}
+                      {post.author.name || '????'}
+                      {!post.author.name && (
+                        <span className="ml-2 text-xs text-[var(--pixel-text-dim)] font-normal">
+                          (配對前能匿名且不顯示)
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-[var(--pixel-text-dim)]">
                       {formatTimeAgo(post.createdAt)}
                     </div>
                   </div>
+                  {/* Phase 3: 配對/聊天按鈕 */}
+                  {post.authorId !== user?.id && (
+                    <div className="flex items-center gap-2">
+                      {post.isMatched && post.matchId ? (
+                        // 已配對：顯示聊天室入口
+                        <Link
+                          href={`/chat/${post.matchId}`}
+                          className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                        >
+                          聊天
+                        </Link>
+                      ) : (
+                        // 未配對：顯示配對按鈕
+                        <button
+                          onClick={() => handleMatchFromPost(post.id)}
+                          className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                        >
+                          想要配對
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                {/* Topic Badge */}
+                {post.type === 'TOPIC' && post.topic && (
+                  <div className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
+                    📌 {post.topic.title}
+                  </div>
+                )}
 
                 {/* Content */}
                 <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">

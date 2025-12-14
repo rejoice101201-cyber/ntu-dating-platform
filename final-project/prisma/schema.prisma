@@ -228,9 +228,23 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topic  DailyTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
 
   @@index([authorId])
   @@index([createdAt])
   @@index([type])
+  @@index([topicId])
+}
+
+model DailyTopic {
+  id        String   @id @default(cuid())
+  date      DateTime @unique // 每天一個主題（只存日期部分，不包含時間）
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts Post[]
+
+  @@index([date])
 }
