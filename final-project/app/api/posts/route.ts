@@ -31,7 +31,17 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
+    // 支援 topicId 查詢參數來篩選今日話題的回覆
+    const { searchParams } = new URL(request.url);
+    const topicId = searchParams.get('topicId');
+
+    const whereClause: any = {};
+    if (topicId) {
+      whereClause.topicId = topicId;
+    }
+
     const posts = await prisma.post.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
         author: {
@@ -163,6 +173,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: 'Topic not found' },
           { status: 404 }
+        );
+      }
+      
+      // Phase 2: 檢查今天是否已經發過主題貼文（一天只能發一個主題貼文）
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const todayTopicPost = await prisma.post.findFirst({
+        where: {
+          authorId: authUser.id,
+          type: 'TOPIC',
+          createdAt: {
+            gte: today,
+            lte: todayEnd,
+          },
+        },
+      });
+
+      if (todayTopicPost) {
+        return NextResponse.json(
+          { 
+            error: '今日主題貼文已發佈',
+            message: '每天只能針對今日話題發文一次',
+            limitReached: true,
+          },
+          { status: 429 }
         );
       }
       

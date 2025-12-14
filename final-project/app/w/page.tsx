@@ -64,6 +64,13 @@ export default function WallPage() {
   // Phase 4: 每日配對上限狀態
   const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
   
+  // Phase 2: 今天是否已發過主題貼文
+  const [hasPostedTopicToday, setHasPostedTopicToday] = useState(false)
+  const [loadingTopicStatus, setLoadingTopicStatus] = useState(true)
+  
+  // 篩選狀態
+  const [filterTopicId, setFilterTopicId] = useState<string | null>(null)
+  
   // 發文狀態
   const [content, setContent] = useState('')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -86,13 +93,15 @@ export default function WallPage() {
     loadPosts()
     loadDailyTopic()
     loadDailyMatchCount()
+    loadTopicStatus()
   }, [token, router])
 
-  const loadPosts = async () => {
+  const loadPosts = async (topicId?: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      const response = await api.get('/posts')
+      const url = topicId ? `/posts?topicId=${topicId}` : '/posts'
+      const response = await api.get(url)
       setPosts(response.data.posts || [])
     } catch (error: any) {
       console.error('Failed to load posts:', error)
@@ -103,6 +112,19 @@ export default function WallPage() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+  
+  const loadTopicStatus = async () => {
+    try {
+      setLoadingTopicStatus(true)
+      const response = await api.get('/posts/topic-status')
+      setHasPostedTopicToday(response.data.hasPostedToday || false)
+    } catch (error: any) {
+      console.error('Failed to load topic status:', error)
+      // 載入失敗不影響頁面
+    } finally {
+      setLoadingTopicStatus(false)
     }
   }
 
@@ -175,15 +197,15 @@ export default function WallPage() {
       if (data.match.matched) {
         setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
         // 重新載入貼文以更新配對狀態和配對次數
-        await Promise.all([loadPosts(), loadDailyMatchCount()])
+        await Promise.all([loadPosts(filterTopicId), loadDailyMatchCount()])
       } else if (data.match.pending) {
         setToast({ message: '已發送配對請求！等待對方回應...', type: 'info' })
         // 重新載入貼文
-        await loadPosts()
+        await loadPosts(filterTopicId)
       } else if (data.match.alreadyMatched) {
         setToast({ message: '你們已經配對了！', type: 'info' })
         // 重新載入貼文
-        await loadPosts()
+        await loadPosts(filterTopicId)
       }
     } catch (error: any) {
       console.error('Failed to match from post:', error)
@@ -237,6 +259,10 @@ export default function WallPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        // Phase 2: 檢查是否是主題貼文限制錯誤
+        if (response.status === 429 && errorData.limitReached) {
+          throw new Error(errorData.message || '每天只能針對今日話題發文一次')
+        }
         throw new Error(errorData.error || '發文失敗')
       }
 
@@ -250,7 +276,7 @@ export default function WallPage() {
       }
 
       // 重新載入 feed 和主題（更新貼文數量）
-      await Promise.all([loadPosts(), loadDailyTopic()])
+      await Promise.all([loadPosts(filterTopicId), loadDailyTopic(), loadTopicStatus()])
     } catch (error: any) {
       console.error('Failed to create post:', error)
       setError(error.message || '發文失敗，請稍後再試')
@@ -295,15 +321,52 @@ export default function WallPage() {
                 <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
                   今日話題
                 </div>
-                <div className="text-base font-bold text-[var(--pixel-text)] mb-2">
+                <button
+                  onClick={() => {
+                    if (filterTopicId === dailyTopic.id) {
+                      setFilterTopicId(null)
+                      loadPosts(null)
+                    } else {
+                      setFilterTopicId(dailyTopic.id)
+                      loadPosts(dailyTopic.id)
+                    }
+                  }}
+                  className="text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors text-left"
+                >
                   {dailyTopic.title}
-                </div>
+                  {filterTopicId === dailyTopic.id && (
+                    <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
+                  )}
+                </button>
                 {dailyTopic.postCount !== undefined && (
                   <div className="text-xs text-[var(--pixel-text-dim)]">
                     {dailyTopic.postCount} 則回應
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 2: 今天是否已發主題貼文的狀態提示 */}
+        {dailyTopic && !loadingTopicStatus && (
+          <div className={`pixel-panel p-3 mb-4 ${hasPostedTopicToday ? 'bg-[var(--pixel-surface)]' : 'bg-[var(--pixel-highlight-2)]/20'}`}>
+            <div className="flex items-center gap-2">
+              {hasPostedTopicToday ? (
+                <>
+                  <span className="text-lg">🔒</span>
+                  <span className="text-sm font-bold text-[var(--pixel-text)]">
+                    你今天已完成主題貼文
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">🟢</span>
+                  <span className="text-sm font-bold text-[var(--pixel-text)]">
+                    今天尚未發表主題貼文
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -319,11 +382,14 @@ export default function WallPage() {
                     type="checkbox"
                     checked={postingAsTopic}
                     onChange={(e) => setPostingAsTopic(e.target.checked)}
-                    disabled={posting}
-                    className="w-4 h-4 border-3 border-[var(--pixel-border)]"
+                    disabled={posting || hasPostedTopicToday}
+                    className="w-4 h-4 border-3 border-[var(--pixel-border)] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <span className="text-sm text-[var(--pixel-text)]">
+                  <span className={`text-sm ${hasPostedTopicToday ? 'text-[var(--pixel-text-dim)]' : 'text-[var(--pixel-text)]'}`}>
                     針對今日話題發文：{dailyTopic.title}
+                    {hasPostedTopicToday && (
+                      <span className="ml-2 text-xs">(今日已發)</span>
+                    )}
                   </span>
                 </label>
               </div>
