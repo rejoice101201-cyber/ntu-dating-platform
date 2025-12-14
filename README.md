@@ -11,7 +11,7 @@
 ntu-dating-platform/
 ├── final-project/          # 生產環境（當前 Vercel 部署）
 │   ├── app/                 # Next.js App Router
-│   ├── components/          # React 組件
+│   ├── components/          # React 組件git add .
 │   ├── lib/                 # 工具函數
 │   ├── prisma/              # Prisma schema
 │   ├── package.json         # Next.js 專案配置

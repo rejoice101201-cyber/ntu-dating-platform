@@ -35,7 +35,7 @@ export default function MatchesPage() {
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token')
       if (!token && !storedToken) {
-        router.push('/auth/login')
+        router.push('/auth/signin')
         return
       }
       if (token || storedToken) {
@@ -89,7 +89,7 @@ export default function MatchesPage() {
       console.error('Failed to load matches:', error)
       if (error.response?.status === 401) {
         // Token expired, redirect to login
-        router.push('/auth/login')
+        router.push('/auth/signin')
       }
     } finally {
       setLoading(false)

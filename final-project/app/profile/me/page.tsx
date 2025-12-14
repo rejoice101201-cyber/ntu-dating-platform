@@ -29,7 +29,7 @@ export default function MyProfilePage() {
 
   useEffect(() => {
     if (!token) {
-      router.push('/auth/login')
+      router.push('/auth/signin')
       return
     }
     loadProfile()
@@ -95,8 +95,8 @@ export default function MyProfilePage() {
 
       const token = localStorage.getItem('token')
       if (!token) {
-        alert('Please sign in first.')
-        router.push('/auth/login')
+        alert('請先登入')
+        router.push('/auth/signin')
         return
       }
 
