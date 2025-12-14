@@ -1,6 +1,1 @@
-{
-  "buildCommand": "cd final-project && npm install && next build --webpack",
-  "devCommand": "cd final-project && npm run dev",
-  "installCommand": "cd final-project && npm install",
-  "framework": "nextjs"
-}
+
