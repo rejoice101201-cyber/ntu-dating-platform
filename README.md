@@ -13,7 +13,7 @@ ntu-dating-platform/
 │   ├── app/                 # Next.js App Router
 │   ├── components/          # React 組件
 │   ├── lib/                 # 工具函數
-│   ├── models/              # Mongoose Models
+│   ├── prisma/              # Prisma schema
 │   ├── package.json         # Next.js 專案配置
 │   └── ...
 ├── frontend/                # 備份版本（保留，不使用）
@@ -28,9 +28,9 @@ ntu-dating-platform/
 
 #### `final-project/` - 生產環境
 - ✅ **當前 Vercel 部署的目錄**
-- ✅ 使用 Next.js 16 (App Router)
-- ✅ 使用 MongoDB + Mongoose
-- ✅ 使用 NextAuth v5
+- ✅ 使用 Next.js 14 (App Router)
+- ✅ 使用 Prisma + PostgreSQL
+- ✅ 使用 JWT（Bearer token）做 API 驗證
 - ✅ 使用 Pusher 即時通訊
 
 #### `frontend/` - 備份版本
@@ -42,6 +42,8 @@ ntu-dating-platform/
 ## 🚀 快速開始
 
 ### 開發環境
+
+> 本地開發務必進入 `final-project/` 目錄再執行指令，避免跑到備份的 `frontend/`。
 
 請進入 `final-project/` 目錄：
 
