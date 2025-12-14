@@ -26,7 +26,9 @@ export default function ChatPage() {
   const matchId = params.matchId as string
   const pusherKey =
     process.env.NEXT_PUBLIC_PUSHER_APP_KEY || process.env.NEXT_PUBLIC_PUSHER_KEY
-  const hasRealPusher = Boolean(pusherKey && pusherKey !== 'dummy')
+  const pusherCluster =
+    process.env.NEXT_PUBLIC_PUSHER_CLUSTER || process.env.PUSHER_CLUSTER
+  const hasRealPusher = Boolean(pusherKey && pusherCluster)
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -45,13 +47,10 @@ export default function ChatPage() {
   const [unlockProgress, setUnlockProgress] = useState<any>(null)
   const [keys, setKeys] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const pollRef = useRef<NodeJS.Timeout | null>(null)
-  const lastSendRef = useRef<{ content: string; timestamp: number } | null>(null)
-  const isSendingRef = useRef<boolean>(false) // 用 ref 追蹤發送狀態，避免 state 異步問題
 
   useEffect(() => {
     if (!token) {
-      router.push('/auth/signin')
+      router.push('/auth/login')
       return
     }
 
@@ -67,54 +66,26 @@ export default function ChatPage() {
     checkActiveGameSession()
 
     // Initialize Pusher if environment variables are set
-    if (hasRealPusher && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
+    if (hasRealPusher) {
       try {
         const newPusher = new Pusher(pusherKey as string, {
-          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+          cluster: pusherCluster as string,
         })
 
-        // Subscribe to chat channel (與後端事件一致)
-        const channel = newPusher.subscribe(`chat-${matchId}`)
+        // Subscribe to match channel
+        const channel = newPusher.subscribe(`match-${matchId}`)
         
-        // 先 unbind 避免重複綁定（React StrictMode 或 useEffect 重新執行時）
-        channel.unbind('new-message')
-        channel.unbind('game_state_update')
-        
-        // 定義處理函數（使用命名函數以便後續 unbind）
-        const handleNewMessage = (data: any) => {
-          console.error('🔵 [Pusher] 收到 new-message 事件:', {
-            messageId: data._id || data.id,
-            content: data.content,
-            timestamp: new Date().toISOString(),
-          })
-          
-          // 後端推播的格式是 { _id, chatId, senderId, content, type, createdAt }
-          // 需要轉換成前端 Message 格式
-          const message: Message = {
-            id: data._id?.toString() || data.id,
-            content: data.content,
-            type: data.type || 'text',
-            senderId: data.senderId?.toString() || data.senderId,
-            sender: {
-              id: data.senderId?.toString() || data.senderId,
-              name: data.senderId?.name || 'User',
-            },
-            createdAt: data.createdAt || new Date().toISOString(),
-          }
-          
-          setMessages(prev => {
-            const incomingId = message.id
-            // 嚴格去重：用 id 檢查，如果已存在就不加入
-            if (incomingId && prev.some(m => m.id === incomingId)) {
-              console.warn('⚠️ [Pusher] 訊息已存在，跳過:', incomingId)
-              return prev
-            }
-            console.error('✅ [Pusher] 加入新訊息到列表:', incomingId)
+        // 避免重複綁定造成訊息重複
+        channel.unbind('new_message')
+        channel.bind('new_message', (message: Message) => {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === message.id)) return prev
             return [...prev, message]
           })
-        }
+        })
         
-        const handleGameStateUpdate = (data: any) => {
+        // 监听游戏状态更新
+        channel.bind('game_state_update', (data: any) => {
           console.log('Game state update received:', data)
           if (data.gameSession) {
             console.log('Updating game session:', {
@@ -133,30 +104,14 @@ export default function ChatPage() {
               loadOtherUserProfile(otherUser.id)
             }
           }
-        }
-        
-        // 後端推播的事件名稱是 'new-message'（連字號），不是 'new_message'
-        channel.bind('new-message', handleNewMessage)
-        
-        // 监听游戏状态更新
-        channel.bind('game_state_update', handleGameStateUpdate)
-        
-        console.error('🔵 [Pusher] 已訂閱頻道並綁定事件:', `chat-${matchId}`)
+        })
+
+        // NOTE: 不要在聊天室頁訂閱 user channel（後端會同時推 match + user），
+        // 否則同一則訊息會被加入兩次。
 
         setPusher(newPusher)
 
         return () => {
-          console.error('🔴 [Pusher] 清理：取消訂閱並斷開連接')
-          try {
-            const cleanupChannel = newPusher.channel(`chat-${matchId}`)
-            if (cleanupChannel) {
-              cleanupChannel.unbind('new-message')
-              cleanupChannel.unbind('game_state_update')
-              newPusher.unsubscribe(`chat-${matchId}`)
-            }
-          } catch (e) {
-            console.error('清理 Pusher 時出錯:', e)
-          }
           newPusher.disconnect()
         }
       } catch (error) {
@@ -167,29 +122,21 @@ export default function ChatPage() {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
       const pollInterval = setInterval(() => {
-        loadMessages(false) // Don't show loading spinner on polling
-        checkActiveGameSession() // 检查游戏状态
-      }, 4000) // Poll every 4 seconds
-      pollRef.current = pollInterval
+        if (!isInitialLoad) {
+          loadMessages(false) // Don't show loading spinner on polling
+          checkActiveGameSession() // 检查游戏状态
+        }
+      }, 5000) // Poll every 5 seconds
 
       return () => {
         clearInterval(pollInterval)
       }
     }
-  }, [matchId, token, user, hasRealPusher])
+  }, [matchId, token, user])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current)
-        pollRef.current = null
-      }
-    }
-  }, [])
 
   const loadMessages = async (showLoading = true) => {
     try {
@@ -256,91 +203,28 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    e.stopPropagation() // 阻止事件冒泡，避免重複觸發
-    
+    if (!input.trim() || !user || sending) return
+
     const messageContent = input.trim()
-    
-    // 多重防重檢查
-    if (!messageContent || !user) {
-      return
-    }
-    
-    // 檢查 ref（同步，避免 state 異步問題）
-    if (isSendingRef.current) {
-      console.error('❌ [防重] 正在發送中，忽略重複請求 (isSendingRef)')
-      return
-    }
-    
-    // 檢查 state（雙重保險）
-    if (sending) {
-      console.error('❌ [防重] sending state 為 true，忽略重複請求')
-      return
-    }
-    
-    // 嚴格防重：5秒內相同內容不允許再送
-    const now = Date.now()
-    if (
-      lastSendRef.current &&
-      lastSendRef.current.content === messageContent &&
-      now - lastSendRef.current.timestamp < 5000
-    ) {
-      console.error('❌ [防重] 5秒內相同內容已發送，忽略:', {
-        content: messageContent,
-        lastSend: lastSendRef.current.timestamp,
-        timeDiff: now - lastSendRef.current.timestamp,
-      })
-      return
-    }
-
-    // 立即設置所有防重標記（同步）
-    lastSendRef.current = { content: messageContent, timestamp: now }
-    isSendingRef.current = true
     setSending(true)
-    setInput('')
-
-    console.error('🟢 [前端] 開始發送訊息:', {
-      content: messageContent,
-      matchId,
-      timestamp: new Date().toISOString(),
-    })
 
     try {
       // Send via API (which will trigger Pusher)
-      const response = await api.post(`/chat/${matchId}/messages`, {
+      await api.post(`/chat/${matchId}`, {
         content: messageContent,
         type: 'text',
       })
       
-      console.error('🟢 [前端] API 回應成功:', {
-        messageId: response.data?.message?._id || response.data?.message?.id,
-        duplicate: response.data?.duplicate,
-        timestamp: new Date().toISOString(),
-      })
-
-      // 完全依賴 Pusher 事件更新，不再手動 loadMessages 避免重複
-      // 只有在 Pusher 未連線時才延遲補拉（作為保險）
+      setInput('')
+      // 如果 Pusher 沒有啟用，保險重拉一次
       if (!hasRealPusher || !pusher) {
-        setTimeout(() => {
-          loadMessages(false)
-          checkActiveGameSession()
-        }, 2000)
-      } else {
-        // 有 Pusher 時只更新遊戲狀態，不拉訊息
-        checkActiveGameSession()
+        await loadMessages(false)
       }
-    } catch (error: any) {
-      console.error('[發送] API 錯誤:', error)
-      // 發送失敗時把輸入還原，讓使用者可重送
-      setInput(messageContent)
-      lastSendRef.current = null // 清除防重記錄，允許重試
+    } catch (error) {
+      console.error('Failed to send message:', error)
       alert('發送失敗，請稍後再試')
     } finally {
-      // 延遲重置，確保不會立即被重複觸發
-      setTimeout(() => {
-        isSendingRef.current = false
-        setSending(false)
-        console.error('🟢 [前端] 重置發送狀態，允許再次發送')
-      }, 1000) // 1秒後才允許再次發送
+      setSending(false)
     }
   }
 
@@ -464,9 +348,6 @@ export default function ChatPage() {
       })
       setGameSession(response.data.gameSession)
       alert('答案已提交！等待對方猜測...')
-      // 保險刷新遊戲/訊息
-      loadMessages(false)
-      checkActiveGameSession()
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit answer:', error)
@@ -493,9 +374,6 @@ export default function ChatPage() {
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
       }
-      // 保險刷新遊戲/訊息
-      loadMessages(false)
-      checkActiveGameSession()
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
       console.error('Failed to submit guess:', error)
@@ -521,9 +399,6 @@ export default function ChatPage() {
       if (otherUser?.id) {
         await loadOtherUserProfile(otherUser.id)
       }
-      // 保險刷新遊戲/訊息
-      loadMessages(false)
-      checkActiveGameSession()
     } catch (error: any) {
       console.error('Failed to unlock:', error)
       alert(error.response?.data?.error || '解鎖失敗')
@@ -880,35 +755,12 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
-<<<<<<< HEAD
       <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4">
         <form onSubmit={handleSend} className="flex gap-2">
-=======
-      <div className="bg-white border-t p-4">
-        <form 
-          onSubmit={handleSend} 
-          className="flex gap-2"
-          onKeyDown={(e) => {
-            // 防止 Enter 鍵觸發兩次提交
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-              // Ctrl+Enter 或 Cmd+Enter 允許提交（多行輸入）
-              return
-            }
-            if (e.key === 'Enter' && !e.shiftKey) {
-              // 普通 Enter 鍵：如果正在發送，阻止默認行為
-              if (isSendingRef.current || sending) {
-                e.preventDefault()
-                e.stopPropagation()
-              }
-            }
-          }}
-        >
->>>>>>> 15885d9 (fix: strengthen duplicate message prevention with ref-based guard and improved dedupe)
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-<<<<<<< HEAD
             placeholder="Type a message..."
             className="flex-1"
           />
@@ -916,31 +768,6 @@ export default function ChatPage() {
             type="submit"
             disabled={!input.trim()}
             className="px-6 py-2"
-=======
-            onKeyDown={(e) => {
-              // 防止 input 的 Enter 鍵和 form 的 onSubmit 同時觸發
-              if (e.key === 'Enter' && !e.shiftKey) {
-                if (isSendingRef.current || sending) {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }
-              }
-            }}
-            placeholder="輸入訊息..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || sending || isSendingRef.current}
-            onClick={(e) => {
-              // 防止 button click 和 form submit 同時觸發
-              if (isSendingRef.current || sending) {
-                e.preventDefault()
-                e.stopPropagation()
-              }
-            }}
-            className="px-6 py-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
->>>>>>> 15885d9 (fix: strengthen duplicate message prevention with ref-based guard and improved dedupe)
           >
             Send
           </button>

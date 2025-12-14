@@ -27,7 +27,7 @@ export default function DiscoverPage() {
       // Check localStorage as fallback
       const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
       if (!storedToken) {
-        router.push('/auth/signin')
+        router.push('/auth/login')
         return
       }
     }
@@ -43,7 +43,7 @@ export default function DiscoverPage() {
       console.error('Failed to fetch recommendations:', error)
       if (error.response?.status === 401) {
         // Token expired, redirect to login
-        router.push('/auth/signin')
+        router.push('/auth/login')
       } else if (!error.response) {
         // Network error - API not available
         console.error('API not available. Check NEXT_PUBLIC_API_URL environment variable.')
