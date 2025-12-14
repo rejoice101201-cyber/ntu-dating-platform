@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
+import Toast from '@/components/Toast'
 
 interface Post {
   id: string
@@ -60,6 +61,9 @@ export default function WallPage() {
   const [dailyTopic, setDailyTopic] = useState<DailyTopic | null>(null)
   const [loadingTopic, setLoadingTopic] = useState(true)
   
+  // Phase 4: 每日配對上限狀態
+  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
+  
   // 發文狀態
   const [content, setContent] = useState('')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -67,6 +71,9 @@ export default function WallPage() {
   const [posting, setPosting] = useState(false)
   const [postingAsTopic, setPostingAsTopic] = useState(false) // 是否針對主題發文
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Toast 通知狀態
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -78,6 +85,7 @@ export default function WallPage() {
     }
     loadPosts()
     loadDailyTopic()
+    loadDailyMatchCount()
   }, [token, router])
 
   const loadPosts = async () => {
@@ -108,6 +116,16 @@ export default function WallPage() {
       // 載入主題失敗不影響頁面，只記錄錯誤
     } finally {
       setLoadingTopic(false)
+    }
+  }
+
+  const loadDailyMatchCount = async () => {
+    try {
+      const response = await api.get('/notifications/daily-match-count')
+      setDailyMatchCount(response.data)
+    } catch (error: any) {
+      console.error('Failed to load daily match count:', error)
+      // 載入失敗不影響頁面
     }
   }
 
@@ -155,21 +173,27 @@ export default function WallPage() {
       const data = await response.json()
       
       if (data.match.matched) {
-        alert('配對成功！現在可以開始聊天了！')
-        // 重新載入貼文以更新配對狀態
-        await loadPosts()
+        setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
+        // 重新載入貼文以更新配對狀態和配對次數
+        await Promise.all([loadPosts(), loadDailyMatchCount()])
       } else if (data.match.pending) {
-        alert('已發送配對請求！等待對方回應...')
+        setToast({ message: '已發送配對請求！等待對方回應...', type: 'info' })
         // 重新載入貼文
         await loadPosts()
       } else if (data.match.alreadyMatched) {
-        alert('你們已經配對了！')
+        setToast({ message: '你們已經配對了！', type: 'info' })
         // 重新載入貼文
         await loadPosts()
       }
     } catch (error: any) {
       console.error('Failed to match from post:', error)
-      alert(error.message || '配對失敗，請稍後再試')
+      // Phase 4: 檢查是否是配對上限錯誤
+      if (error.response?.status === 429) {
+        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 3 個人', type: 'error' })
+        await loadDailyMatchCount() // 更新配對次數顯示
+      } else {
+        setToast({ message: error.message || '配對失敗，請稍後再試', type: 'error' })
+      }
     }
   }
 
@@ -248,6 +272,15 @@ export default function WallPage() {
 
   return (
     <div className="min-h-screen pb-24">
+      {/* Toast 通知 */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      
       <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -400,12 +433,14 @@ export default function WallPage() {
                           聊天
                         </Link>
                       ) : (
-                        // 未配對：顯示配對按鈕
+                        // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
                         <button
                           onClick={() => handleMatchFromPost(post.id)}
-                          className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                          disabled={dailyMatchCount.remaining === 0}
+                          className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
+                          title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
                         >
-                          想要配對
+                          {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
                         </button>
                       )}
                     </div>
@@ -438,6 +473,21 @@ export default function WallPage() {
             ))}
           </div>
         )}
+
+        {/* Phase 4: 每日配對上限提示 */}
+        <div className="pixel-panel p-3 mt-6 text-center">
+          <p className="text-xs text-[var(--pixel-text-dim)]">
+            每天最多只能從貼文中配對 3 人
+          </p>
+          <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
+            今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}
+            {dailyMatchCount.remaining > 0 && (
+              <span className="ml-2 text-[var(--pixel-highlight)]">
+                （還可配對 {dailyMatchCount.remaining} 人）
+              </span>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   )

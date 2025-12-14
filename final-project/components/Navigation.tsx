@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+import NotificationBadge from './NotificationBadge'
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -15,7 +16,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: '/discover', label: 'Discover', glyph: 'D' },
-    { href: '/matches', label: 'Matches', glyph: 'M' },
+    { href: '/matches', label: 'Matches', glyph: 'M', showNotification: true },
     { href: '/profile/me', label: 'Profile', glyph: 'P' },
     { href: '/w', label: 'Wall', glyph: 'W' },
   ]
@@ -29,16 +30,17 @@ export default function Navigation() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center py-2 px-5 transition-all ${
+              className={`flex flex-col items-center py-2 px-5 transition-all relative ${
                 isActive
                   ? 'text-[var(--pixel-highlight)]'
                   : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)]'
               }`}
             >
               <span
-                className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold"
+                className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold relative"
               >
                 {item.glyph}
+                {item.showNotification && <NotificationBadge />}
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>

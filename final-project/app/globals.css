@@ -116,9 +116,19 @@ body {
   transition: filter 0.3s ease;
 }
 
-/* Blur effect for photos */
-.photo-blur {
-  filter: blur(var(--blur-level, 20px));
-  transition: filter 0.3s ease;
+/* Toast animation */
+@keyframes slide-down {
+  from {
+    transform: translate(-50%, -100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
 }
 

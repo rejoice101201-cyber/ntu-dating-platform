@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Link from 'next/link'
+import Toast from '@/components/Toast'
 
 interface Match {
   id: string
@@ -25,11 +26,24 @@ interface Match {
   }
 }
 
+interface PendingMatch {
+  id: string
+  fromUser: {
+    id: string
+    name: string
+    photo: string | null
+  }
+  createdAt: string
+}
+
 export default function MatchesPage() {
   const router = useRouter()
   const { token } = useAuthStore()
   const [matches, setMatches] = useState<Match[]>([])
+  const [pendingMatches, setPendingMatches] = useState<PendingMatch[]>([])
   const [loading, setLoading] = useState(true)
+  const [processingMatch, setProcessingMatch] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -39,7 +53,7 @@ export default function MatchesPage() {
         return
       }
       if (token || storedToken) {
-        await loadMatches()
+        await Promise.all([loadMatches(), loadPendingMatches()])
       }
     }
     checkAuth()
@@ -96,6 +110,50 @@ export default function MatchesPage() {
     }
   }
 
+  const loadPendingMatches = async () => {
+    try {
+      const response = await api.get('/notifications/pending-matches')
+      setPendingMatches(response.data.pendingMatches || [])
+    } catch (error: any) {
+      console.error('Failed to load pending matches:', error)
+      setPendingMatches([])
+    }
+  }
+
+  const handleAcceptMatch = async (matchId: string) => {
+    setProcessingMatch(matchId)
+    try {
+      const response = await api.post(`/matches/${matchId}/accept`)
+      if (response.data.success) {
+        setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
+        // 重新載入
+        await Promise.all([loadMatches(), loadPendingMatches()])
+      }
+    } catch (error: any) {
+      console.error('Failed to accept match:', error)
+      setToast({ message: error.response?.data?.error || '接受配對失敗', type: 'error' })
+    } finally {
+      setProcessingMatch(null)
+    }
+  }
+
+  const handleRejectMatch = async (matchId: string) => {
+    setProcessingMatch(matchId)
+    try {
+      const response = await api.post(`/matches/${matchId}/reject`)
+      if (response.data.success) {
+        setToast({ message: '已拒絕配對請求', type: 'info' })
+        // 重新載入
+        await loadPendingMatches()
+      }
+    } catch (error: any) {
+      console.error('Failed to reject match:', error)
+      setToast({ message: error.response?.data?.error || '拒絕配對失敗', type: 'error' })
+    } finally {
+      setProcessingMatch(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -105,9 +163,82 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24">
+      {/* Toast 通知 */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      
       <div className="max-w-2xl mx-auto py-8 px-4">
         <h1 className="text-xl font-bold uppercase tracking-wide text-center mb-6">Matches</h1>
+
+        {/* 待處理的配對請求 */}
+        {pendingMatches.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm uppercase tracking-wide text-[var(--pixel-text-dim)] mb-3">
+              待處理的配對請求 ({pendingMatches.length})
+            </h2>
+            <div className="space-y-3">
+              {pendingMatches.map((pending) => (
+                <div
+                  key={pending.id}
+                  className="pixel-panel p-4"
+                >
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {pending.fromUser.photo ? (
+                        <img
+                          src={pending.fromUser.photo}
+                          alt={pending.fromUser.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold text-[var(--pixel-text)]">
+                          {pending.fromUser.name[0]?.toUpperCase() || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-[var(--pixel-text)] truncate">
+                        {pending.fromUser.name}
+                      </h3>
+                      <p className="text-xs text-[var(--pixel-text-dim)]">
+                        想要與你配對
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAcceptMatch(pending.id)}
+                      disabled={processingMatch === pending.id}
+                      className="flex-1 px-4 py-2 bg-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processingMatch === pending.id ? '處理中...' : '接受'}
+                    </button>
+                    <button
+                      onClick={() => handleRejectMatch(pending.id)}
+                      disabled={processingMatch === pending.id}
+                      className="flex-1 px-4 py-2 bg-[var(--pixel-text-dim)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      拒絕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 已配對的列表 */}
+        <div>
+          <h2 className="text-sm uppercase tracking-wide text-[var(--pixel-text-dim)] mb-3">
+            已配對 ({matches.length})
+          </h2>
+        </div>
 
         {matches.length === 0 ? (
           <div className="text-center py-12 pixel-panel">

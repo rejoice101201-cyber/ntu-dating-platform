@@ -41,6 +41,36 @@ export async function POST(
       );
     }
 
+    // Phase 4: 檢查今日從貼文配對的數量（限制 3 個）
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // 計算今天已經從貼文配對的數量（matched 狀態）
+    const todayMatchesFromPosts = await prisma.match.count({
+      where: {
+        userId: authUser.id,
+        status: 'matched',
+        matchedAt: {
+          gte: today,
+          lte: todayEnd,
+        },
+      },
+    });
+
+    // 如果今天已經配對 3 個，拒絕新的配對請求
+    if (todayMatchesFromPosts >= 3) {
+      return NextResponse.json(
+        { 
+          error: '今日配對上限已達',
+          message: '每天最多只能從貼文中配對 3 個人',
+          limitReached: true,
+        },
+        { status: 429 }
+      );
+    }
+
     // 檢查是否已經有 Match 記錄
     const existingMatch = await prisma.match.findFirst({
       where: {
