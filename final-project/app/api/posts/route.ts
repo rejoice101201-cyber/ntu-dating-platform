@@ -21,7 +21,7 @@ async function getSharp() {
 // Set runtime to nodejs for server-side execution
 export const runtime = 'nodejs';
 
-// GET: 取得所有貼文（按時間倒序）
+// GET: 取得所有貼文（支援排序與篩選）
 export async function GET(request: NextRequest) {
   const authResult = await requireAuth(request);
   
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
     const topicId = searchParams.get('topicId');
     const authorId = searchParams.get('authorId');
     const boardId = searchParams.get('boardId');
+    const sort = (searchParams.get('sort') || 'latest') as 'latest' | 'trending';
 
     const whereClause: any = {};
     if (topicId) {
@@ -48,10 +49,21 @@ export async function GET(request: NextRequest) {
     if (boardId) {
       whereClause.boardId = boardId;
     }
+    // trending 僅包含最近 7 天的貼文
+    if (sort === 'trending') {
+      const since = new Date();
+      since.setDate(since.getDate() - 7);
+      whereClause.createdAt = { gte: since };
+    }
+
+    const orderBy =
+      sort === 'latest'
+        ? { createdAt: 'desc' }
+        : [{ likeCount: 'desc' }, { createdAt: 'desc' } as any];
 
     const posts = await prisma.post.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       include: {
         author: {
           select: {
@@ -83,6 +95,15 @@ export async function GET(request: NextRequest) {
       select: { postId: true },
     });
     const favoriteSet = new Set(favorites.map((f: any) => f.postId));
+
+    const likes = await prisma.postLike.findMany({
+      where: {
+        userId: authUser.id,
+        postId: { in: postIds },
+      },
+      select: { postId: true },
+    });
+    const likeSet = new Set(likes.map((l: any) => l.postId));
 
     // 檢查每個貼文作者是否與當前用戶配對
     const postsWithMatchStatus = await Promise.all(
@@ -144,6 +165,8 @@ export async function GET(request: NextRequest) {
           content: post.content,
           imageUrl: post.imageUrl,
           type: post.type,
+          likeCount: post.likeCount,
+          hasLiked: likeSet.has(post.id),
           topicId: post.topicId,
           topic: post.topic ? {
             id: post.topic.id,

@@ -227,6 +227,7 @@ model Post {
   type      String   @default("FREE") // "FREE" | "TOPIC" (Phase 2 用)
   topicId   String?  // Phase 2: 關聯到 DailyTopic（每日主題）
   boardId   String?  // Phase 4: 使用者自定主題/看板
+  likeCount Int      @default(0) // Phase 5: 按讚數快取
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -234,6 +235,7 @@ model Post {
   topic  DailyTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
   board  Topic?      @relation(fields: [boardId], references: [id], onDelete: SetNull)
   favorites Favorite[]
+  likes     PostLike[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -268,6 +270,21 @@ model Topic {
   @@index([title])
   @@index([lastActivityAt])
   @@index([createdBy])
+}
+
+// Phase 5: 貼文按讚（匿名）
+model PostLike {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
 
 model Favorite {

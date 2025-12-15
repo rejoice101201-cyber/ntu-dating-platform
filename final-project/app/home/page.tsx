@@ -33,6 +33,8 @@ interface Post {
   matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
   isAuthor?: boolean
   isFavorited?: boolean
+  likeCount: number
+  hasLiked: boolean
 }
 
 interface DailyTopic {
@@ -114,6 +116,7 @@ export default function HomePage() {
   const [boardSearching, setBoardSearching] = useState(false)
   const [selectedBoard, setSelectedBoard] = useState<BoardTopic | null>(null)
   const [creatingBoard, setCreatingBoard] = useState(false)
+  const [sort, setSort] = useState<'latest' | 'trending'>('latest')
 
   useEffect(() => {
     if (!token) {
@@ -134,7 +137,9 @@ export default function HomePage() {
     try {
       setLoading(true)
       setError(null)
-      const url = topicId ? `/posts?topicId=${topicId}` : '/posts'
+      const sortParam = `sort=${sort}`
+      const base = topicId ? `/posts?topicId=${topicId}&${sortParam}` : `/posts?${sortParam}`
+      const url = base
       const response = await api.get(url)
       setPosts(response.data.posts || [])
     } catch (error: any) {
@@ -237,6 +242,46 @@ export default function HomePage() {
       )
       setToast({
         message: error.response?.data?.error || '更新收藏狀態失敗',
+        type: 'error',
+      })
+    }
+  }
+  
+  const toggleLike = async (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              hasLiked: !p.hasLiked,
+              likeCount: p.likeCount + (p.hasLiked ? -1 : 1),
+            }
+          : p
+      )
+    )
+    try {
+      const res = await api.post(`/posts/${postId}/like`)
+      const { likeCount, hasLiked } = res.data
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, likeCount, hasLiked } : p
+        )
+      )
+    } catch (error: any) {
+      console.error('Toggle like failed:', error)
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                hasLiked: !p.hasLiked,
+                likeCount: p.likeCount + (p.hasLiked ? 1 : -1),
+              }
+            : p
+        )
+      )
+      setToast({
+        message: error.response?.data?.error || '更新按讚狀態失敗',
         type: 'error',
       })
     }
@@ -500,6 +545,24 @@ export default function HomePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[var(--pixel-text-dim)]">排序：</span>
+            <button
+              type="button"
+              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              最新
+            </button>
+            <span className="text-[var(--pixel-text-dim)]">/</span>
+            <button
+              type="button"
+              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              熱門
+            </button>
+          </div>
         </div>
 
         {/* 熱門主題 */}
@@ -758,7 +821,7 @@ export default function HomePage() {
                       {formatTimeAgo(post.createdAt)}
                     </div>
                   </div>
-                  {/* 收藏 + 配對/聊天或作者功能 */}
+                  {/* 收藏 + 按讚 + 配對/聊天或作者功能 */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -769,6 +832,17 @@ export default function HomePage() {
                       <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
                         {post.isFavorited ? '❤️' : '🤍'}
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(post.id)}
+                      className="flex items-center gap-1 px-1 text-xs"
+                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
+                    >
+                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
+                        👍
+                      </span>
+                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
                     </button>
                   {post.isAuthor ? (
                     <div className="relative">

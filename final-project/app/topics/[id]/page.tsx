@@ -23,6 +23,8 @@ interface Post {
   board?: { id: string; title: string } | null
   createdAt: string
   isFavorited?: boolean
+  likeCount: number
+  hasLiked: boolean
 }
 
 interface TopicDetail {
@@ -122,6 +124,43 @@ export default function TopicPage() {
     }
   }
 
+  const toggleLike = async (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              hasLiked: !p.hasLiked,
+              likeCount: p.likeCount + (p.hasLiked ? -1 : 1),
+            }
+          : p
+      )
+    )
+    try {
+      const res = await api.post(`/posts/${postId}/like`)
+      const { likeCount, hasLiked } = res.data
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, likeCount, hasLiked } : p
+        )
+      )
+    } catch (err: any) {
+      console.error('Toggle like failed:', err)
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                hasLiked: !p.hasLiked,
+                likeCount: p.likeCount + (p.hasLiked ? 1 : -1),
+              }
+            : p
+        )
+      )
+      setToast({ message: err.response?.data?.error || '更新按讚狀態失敗', type: 'error' })
+    }
+  }
+
   if (loading && posts.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -199,6 +238,17 @@ export default function TopicPage() {
                       <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
                         {post.isFavorited ? '❤️' : '🤍'}
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(post.id)}
+                      className="flex items-center gap-1 px-1 text-xs"
+                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
+                    >
+                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
+                        👍
+                      </span>
+                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
                     </button>
                   </div>
                 </div>

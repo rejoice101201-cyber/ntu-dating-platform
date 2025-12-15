@@ -88,6 +88,42 @@ export default function SavedPage() {
     }
   }
 
+  const handleMatchFromPost = async (postId: string) => {
+    try {
+      const currentToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+      if (!currentToken) {
+        router.push('/auth/login')
+        return
+      }
+
+      const response = await fetch(`/api/posts/${postId}/match`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: '配對失敗' }))
+        throw new Error(errorData.error || '配對失敗')
+      }
+
+      const data = await response.json()
+
+      if (data.match.matched) {
+        setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
+      } else if (data.match.pending) {
+        setToast({ message: '已發送配對請求！等待對方回應...', type: 'info' })
+      } else if (data.match.alreadyMatched) {
+        setToast({ message: '你們已經配對了！', type: 'info' })
+      }
+    } catch (err: any) {
+      console.error('Match from saved failed', err)
+      setToast({ message: err.message || '配對失敗，請稍後再試', type: 'error' })
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -147,14 +183,23 @@ export default function SavedPage() {
                         {formatTimeAgo(fav.post.createdAt)}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleUnfavorite(fav.postId)}
-                      className="px-1"
-                      aria-label="取消收藏"
-                    >
-                      <span className="text-red-500">❤️</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleUnfavorite(fav.postId)}
+                        className="px-1"
+                        aria-label="取消收藏"
+                      >
+                        <span className="text-red-500">❤️</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMatchFromPost(fav.postId)}
+                        className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                      >
+                        想要配對
+                      </button>
+                    </div>
                   </div>
 
                   {fav.post.board && (
