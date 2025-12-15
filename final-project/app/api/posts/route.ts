@@ -35,10 +35,14 @@ export async function GET(request: NextRequest) {
     // 支援 topicId 查詢參數來篩選今日話題的回覆
     const { searchParams } = new URL(request.url);
     const topicId = searchParams.get('topicId');
+    const authorId = searchParams.get('authorId');
 
     const whereClause: any = {};
     if (topicId) {
       whereClause.topicId = topicId;
+    }
+    if (authorId) {
+      whereClause.authorId = authorId;
     }
 
     const posts = await prisma.post.findMany({
@@ -62,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // 檢查每個貼文作者是否與當前用戶配對
     const postsWithMatchStatus = await Promise.all(
-      posts.map(async (post) => {
+      posts.map(async (post: any) => {
         // 如果是自己的貼文，直接顯示姓名
         if (post.authorId === authUser.id) {
           return {
@@ -82,6 +86,7 @@ export async function GET(request: NextRequest) {
             } : null,
             createdAt: post.createdAt.toISOString(),
             isMatched: true, // 自己的貼文視為已配對
+            isAuthor: true,
           };
         }
 
@@ -124,6 +129,7 @@ export async function GET(request: NextRequest) {
           createdAt: post.createdAt.toISOString(),
           isMatched,
           matchId: match?.id || null, // 用於聊天室入口
+          isAuthor: false,
         };
       })
     );

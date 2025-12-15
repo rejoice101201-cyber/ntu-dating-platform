@@ -23,8 +23,10 @@ interface Post {
     title: string
   } | null
   createdAt: string
+  updatedAt?: string
   isMatched?: boolean // Phase 3: 是否已配對
   matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
+  isAuthor?: boolean
 }
 
 interface DailyTopic {
@@ -78,6 +80,13 @@ export default function WallPage() {
   const [posting, setPosting] = useState(false)
   const [postingAsTopic, setPostingAsTopic] = useState(false) // 是否針對主題發文
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 編輯/刪除狀態
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
   
   // Toast 通知狀態
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
@@ -112,6 +121,70 @@ export default function WallPage() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleStartEdit = (post: Post) => {
+    setOpenMenuPostId(null)
+    setEditingPostId(post.id)
+    setEditContent(post.content)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingPostId(null)
+    setEditContent('')
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingPostId) return
+    const trimmed = editContent.trim()
+    if (!trimmed) {
+      setToast({ message: '內容不可為空', type: 'error' })
+      return
+    }
+    try {
+      setSavingEdit(true)
+      const res = await api.patch(`/posts/${editingPostId}`, { content: trimmed })
+      const updated = res.data.post
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editingPostId
+            ? { ...p, content: updated.content, updatedAt: updated.updatedAt }
+            : p
+        )
+      )
+      setEditingPostId(null)
+      setEditContent('')
+      setToast({ message: '已更新貼文', type: 'success' })
+    } catch (error: any) {
+      console.error('Update post failed:', error)
+      setToast({
+        message: error.response?.data?.error || '更新貼文失敗',
+        type: 'error',
+      })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (deletingPostId) return
+    const confirmed = typeof window !== 'undefined' ? window.confirm('確定要刪除這則貼文嗎？') : true
+    if (!confirmed) return
+    try {
+      setDeletingPostId(postId)
+      await api.delete(`/posts/${postId}`)
+      setPosts((prev) => prev.filter((p) => p.id !== postId))
+      setToast({ message: '已刪除貼文', type: 'success' })
+    } catch (error: any) {
+      console.error('Delete post failed:', error)
+      setToast({
+        message: error.response?.data?.error || '刪除貼文失敗',
+        type: 'error',
+      })
+    } finally {
+      setDeletingPostId(null)
+      setOpenMenuPostId(null)
     }
   }
   
@@ -464,10 +537,10 @@ export default function WallPage() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="pixel-panel p-4 space-y-3"
+                className="pixel-panel p-4 space-y-3 relative"
               >
-                {/* Author Info */}
-                <div className="flex items-center gap-3">
+                {/* Author Info & Actions */}
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-bold text-[var(--pixel-text)]">
                       {post.author.name ? post.author.name[0]?.toUpperCase() : '?'}
@@ -487,29 +560,57 @@ export default function WallPage() {
                       {formatTimeAgo(post.createdAt)}
                     </div>
                   </div>
-                  {/* Phase 3: 配對/聊天按鈕 */}
-                  {post.authorId !== user?.id && (
-                    <div className="flex items-center gap-2">
-                      {post.isMatched && post.matchId ? (
-                        // 已配對：顯示聊天室入口
-                        <Link
-                          href={`/chat/${post.matchId}`}
-                          className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
-                        >
-                          聊天
-                        </Link>
-                      ) : (
-                        // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
-                        <button
-                          onClick={() => handleMatchFromPost(post.id)}
-                          disabled={dailyMatchCount.remaining === 0}
-                          className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
-                          title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
-                        >
-                          {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
-                        </button>
+                  {/* 配對/聊天或作者功能 */}
+                  {post.isAuthor ? (
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                        className="px-2 py-1 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
+                      >
+                        ⋯
+                      </button>
+                      {openMenuPostId === post.id && (
+                        <div className="absolute right-0 mt-2 w-28 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10">
+                          <button
+                            onClick={() => handleStartEdit(post)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
+                          >
+                            編輯
+                          </button>
+                          <button
+                            onClick={() => handleDeletePost(post.id)}
+                            disabled={deletingPostId === post.id}
+                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {deletingPostId === post.id ? '刪除中...' : '刪除'}
+                          </button>
+                        </div>
                       )}
                     </div>
+                  ) : (
+                    post.authorId !== user?.id && (
+                      <div className="flex items-center gap-2">
+                        {post.isMatched && post.matchId ? (
+                          // 已配對：顯示聊天室入口
+                          <Link
+                            href={`/chat/${post.matchId}`}
+                            className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                          >
+                            聊天
+                          </Link>
+                        ) : (
+                          // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
+                          <button
+                            onClick={() => handleMatchFromPost(post.id)}
+                            disabled={dailyMatchCount.remaining === 0}
+                            className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
+                            title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
+                          >
+                            {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
+                          </button>
+                        )}
+                      </div>
+                    )
                   )}
                 </div>
 
@@ -520,10 +621,37 @@ export default function WallPage() {
                   </div>
                 )}
 
-                {/* Content */}
-                <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
-                  {post.content}
-                </div>
+                {/* Content / Edit */}
+                {editingPostId === post.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
+                      disabled={savingEdit}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSaveEdit}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+                      >
+                        {savingEdit ? '儲存中...' : '儲存'}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-[var(--pixel-panel)] text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:bg-[var(--pixel-surface)] transition-all"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
+                    {post.content}
+                  </div>
+                )}
 
                 {/* Image */}
                 {post.imageUrl && (

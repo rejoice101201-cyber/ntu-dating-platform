@@ -7,6 +7,7 @@ import api from '@/lib/api'
 
 interface Post {
   id: string
+  authorId: string
   content: string
   imageUrl: string | null
   type: 'FREE' | 'TOPIC'
@@ -15,6 +16,7 @@ interface Post {
     title: string
   } | null
   createdAt: string
+  updatedAt?: string
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -37,6 +39,11 @@ export default function MyPage() {
   const { user, token } = useAuthStore()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -52,7 +59,11 @@ export default function MyPage() {
   const loadMyPosts = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/posts?authorId=' + user?.id)
+      if (!user?.id) {
+        setPosts([])
+        return
+      }
+      const response = await api.get('/posts?authorId=' + user.id)
       setPosts(response.data.posts || [])
     } catch (error: any) {
       console.error('Failed to load my posts:', error)
@@ -91,8 +102,63 @@ export default function MyPage() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="pixel-panel p-4 space-y-3"
+                className="pixel-panel p-4 space-y-3 relative"
               >
+                {/* Header with actions */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-[var(--pixel-text-dim)]">
+                      {formatTimeAgo(post.createdAt)}
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                      className="px-2 py-1 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
+                    >
+                      ⋯
+                    </button>
+                    {openMenuPostId === post.id && (
+                      <div className="absolute right-0 mt-2 w-28 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10">
+                        <button
+                          onClick={() => {
+                            setEditingPostId(post.id)
+                            setEditContent(post.content)
+                            setOpenMenuPostId(null)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
+                        >
+                          編輯
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (deletingPostId) return
+                            const confirmed = typeof window !== 'undefined'
+                              ? window.confirm('確定要刪除這則貼文嗎？')
+                              : true
+                            if (!confirmed) return
+                            try {
+                              setDeletingPostId(post.id)
+                              await api.delete(`/posts/${post.id}`)
+                              setPosts((prev) => prev.filter((p) => p.id !== post.id))
+                            } catch (error: any) {
+                              console.error('Delete post failed:', error)
+                              alert(error.response?.data?.error || '刪除貼文失敗')
+                            } finally {
+                              setDeletingPostId(null)
+                              setOpenMenuPostId(null)
+                            }
+                          }}
+                          disabled={deletingPostId === post.id}
+                          className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {deletingPostId === post.id ? '刪除中...' : '刪除'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Topic Badge */}
                 {post.type === 'TOPIC' && post.topic && (
                   <div className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
@@ -100,10 +166,66 @@ export default function MyPage() {
                   </div>
                 )}
 
-                {/* Content */}
-                <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
-                  {post.content}
-                </div>
+                {/* Content / Edit */}
+                {editingPostId === post.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
+                      disabled={savingEdit}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!editingPostId) return
+                          const trimmed = editContent.trim()
+                          if (!trimmed) {
+                            alert('內容不可為空')
+                            return
+                          }
+                          try {
+                            setSavingEdit(true)
+                            const res = await api.patch(`/posts/${editingPostId}`, { content: trimmed })
+                            const updated = res.data.post
+                            setPosts((prev) =>
+                              prev.map((p) =>
+                                p.id === editingPostId
+                                  ? { ...p, content: updated.content, updatedAt: updated.updatedAt }
+                                  : p
+                              )
+                            )
+                            setEditingPostId(null)
+                            setEditContent('')
+                          } catch (error: any) {
+                            console.error('Update post failed:', error)
+                            alert(error.response?.data?.error || '更新貼文失敗')
+                          } finally {
+                            setSavingEdit(false)
+                          }
+                        }}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+                      >
+                        {savingEdit ? '儲存中...' : '儲存'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingPostId(null)
+                          setEditContent('')
+                        }}
+                        disabled={savingEdit}
+                        className="px-4 py-2 bg-[var(--pixel-panel)] text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:bg-[var(--pixel-surface)] transition-all"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
+                    {post.content}
+                  </div>
+                )}
 
                 {/* Image */}
                 {post.imageUrl && (
