@@ -331,7 +331,7 @@ export default function WallPage() {
                       loadPosts(dailyTopic.id)
                     }
                   }}
-                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words"
+                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
                 >
                   <span>{dailyTopic.title}</span>
                   {filterTopicId === dailyTopic.id && (
