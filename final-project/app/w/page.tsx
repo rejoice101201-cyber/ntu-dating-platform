@@ -32,6 +32,7 @@ interface Post {
   isMatched?: boolean // Phase 3: 是否已配對
   matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
   isAuthor?: boolean
+  isFavorited?: boolean
 }
 
 interface DailyTopic {
@@ -209,6 +210,36 @@ export default function WallPage() {
     } finally {
       setDeletingPostId(null)
       setOpenMenuPostId(null)
+    }
+  }
+  
+  const toggleFavorite = async (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
+      )
+    )
+    try {
+      const target = posts.find((p) => p.id === postId)
+      if (!target?.isFavorited) {
+        await api.post('/favorites', { postId })
+        setToast({ message: '已加入收藏', type: 'success' })
+      } else {
+        await api.delete(`/favorites/${postId}`)
+        setToast({ message: '已取消收藏', type: 'info' })
+      }
+    } catch (error: any) {
+      console.error('Toggle favorite failed:', error)
+      // rollback
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
+        )
+      )
+      setToast({
+        message: error.response?.data?.error || '更新收藏狀態失敗',
+        type: 'error',
+      })
     }
   }
   
@@ -728,7 +759,18 @@ export default function WallPage() {
                       {formatTimeAgo(post.createdAt)}
                     </div>
                   </div>
-                  {/* 配對/聊天或作者功能 */}
+                  {/* 收藏 + 配對/聊天或作者功能 */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(post.id)}
+                      className="px-1"
+                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
+                    >
+                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
+                        {post.isFavorited ? '❤️' : '🤍'}
+                      </span>
+                    </button>
                   {post.isAuthor ? (
                     <div className="relative">
                       <button
@@ -780,6 +822,7 @@ export default function WallPage() {
                       </div>
                     )
                   )}
+                  </div>
                 </div>
 
                 {/* Topic Badge */}

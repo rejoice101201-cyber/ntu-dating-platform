@@ -74,6 +74,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    const postIds = posts.map((p: any) => p.id);
+    const favorites = await prisma.favorite.findMany({
+      where: {
+        userId: authUser.id,
+        postId: { in: postIds },
+      },
+      select: { postId: true },
+    });
+    const favoriteSet = new Set(favorites.map((f: any) => f.postId));
+
     // 檢查每個貼文作者是否與當前用戶配對
     const postsWithMatchStatus = await Promise.all(
       posts.map(async (post: any) => {
@@ -99,6 +109,7 @@ export async function GET(request: NextRequest) {
             createdAt: post.createdAt.toISOString(),
             isMatched: true, // 自己的貼文視為已配對
             isAuthor: true,
+            isFavorited: favoriteSet.has(post.id),
           };
         }
 
@@ -144,6 +155,7 @@ export async function GET(request: NextRequest) {
           isMatched,
           matchId: match?.id || null, // 用於聊天室入口
           isAuthor: false,
+          isFavorited: favoriteSet.has(post.id),
         };
       })
     );

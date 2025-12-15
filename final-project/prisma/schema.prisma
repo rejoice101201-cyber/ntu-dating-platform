@@ -47,6 +47,7 @@ model User {
   unlockProgressAsTarget UnlockProgress[] @relation("TargetUser")
   matchPreference        MatchPreference?
   posts                  Post[]
+  favorites              Favorite[]
 
   @@index([email])
   @@index([userId])
@@ -232,6 +233,7 @@ model Post {
   author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   topic  DailyTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
   board  Topic?      @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  favorites Favorite[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -266,4 +268,18 @@ model Topic {
   @@index([title])
   @@index([lastActivityAt])
   @@index([createdBy])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }

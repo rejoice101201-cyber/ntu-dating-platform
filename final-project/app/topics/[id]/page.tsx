@@ -21,6 +21,7 @@ interface Post {
   boardId?: string | null
   board?: { id: string; title: string } | null
   createdAt: string
+  isFavorited?: boolean
 }
 
 interface TopicDetail {
@@ -47,13 +48,14 @@ function formatTimeAgo(dateString: string): string {
 export default function TopicPage() {
   const params = useParams()
   const router = useRouter()
-  const { token } = useAuthStore()
+  const { user, token } = useAuthStore()
   const topicId = params?.id as string
 
   const [topic, setTopic] = useState<TopicDetail | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -93,6 +95,32 @@ export default function TopicPage() {
     }
   }
 
+  const toggleFavorite = async (postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
+      )
+    )
+    try {
+      const target = posts.find((p) => p.id === postId)
+      if (!target?.isFavorited) {
+        await api.post('/favorites', { postId })
+        setToast({ message: '已加入收藏', type: 'success' })
+      } else {
+        await api.delete(`/favorites/${postId}`)
+        setToast({ message: '已取消收藏', type: 'info' })
+      }
+    } catch (err: any) {
+      console.error('Toggle favorite failed:', err)
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
+        )
+      )
+      setToast({ message: err.response?.data?.error || '更新收藏狀態失敗', type: 'error' })
+    }
+  }
+
   if (loading && posts.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -106,6 +134,14 @@ export default function TopicPage() {
 
   return (
     <div className="min-h-screen pb-24">
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">
@@ -132,7 +168,7 @@ export default function TopicPage() {
           <div className="space-y-4">
             {posts.map((post) => (
               <div key={post.id} className="pixel-panel p-4 space-y-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-bold text-[var(--pixel-text)]">
                       {post.author.name ? post.author.name[0]?.toUpperCase() : '?'}
@@ -149,6 +185,17 @@ export default function TopicPage() {
                     </div>
                     <div className="text-xs text-[var(--pixel-text-dim)]">{formatTimeAgo(post.createdAt)}</div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleFavorite(post.id)}
+                      className="px-1"
+                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
+                    >
+                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
+                        {post.isFavorited ? '❤️' : '🤍'}
+                      </span>
+                    </button>
                 </div>
 
                 {/* board badge */}
