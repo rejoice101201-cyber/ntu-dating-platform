@@ -4,6 +4,7 @@ import './globals.css'
 import dynamic from 'next/dynamic'
 
 const Navigation = dynamic(() => import('@/components/Navigation'), { ssr: false })
+const LeftSidebar = dynamic(() => import('@/components/LeftSidebar'), { ssr: false })
 
 const pixelFont = Press_Start_2P({
   subsets: ['latin'],
@@ -24,7 +25,10 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body className={pixelFont.className}>
-        {children}
+        <LeftSidebar />
+        <div className="ml-20">
+          {children}
+        </div>
         <Navigation />
       </body>
     </html>
