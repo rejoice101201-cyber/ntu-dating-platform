@@ -49,7 +49,7 @@ function formatTimeAgo(dateString: string): string {
 export default function TopicPage() {
   const params = useParams()
   const router = useRouter()
-  const { user, token } = useAuthStore()
+  const { token } = useAuthStore()
   const topicId = params?.id as string
 
   const [topic, setTopic] = useState<TopicDetail | null>(null)
@@ -126,7 +126,9 @@ export default function TopicPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center text-gray-700">
-          <div className="text-4xl mb-4">⏳</div>
+          <div className="text-4xl mb-4">
+            ⏳
+          </div>
           <p>Loading...</p>
         </div>
       </div>
@@ -135,7 +137,6 @@ export default function TopicPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Toast */}
       {toast && (
         <Toast
           message={toast.message}
@@ -184,7 +185,9 @@ export default function TopicPage() {
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-[var(--pixel-text-dim)]">{formatTimeAgo(post.createdAt)}</div>
+                    <div className="text-xs text-[var(--pixel-text-dim)]">
+                      {formatTimeAgo(post.createdAt)}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -197,15 +200,15 @@ export default function TopicPage() {
                         {post.isFavorited ? '❤️' : '🤍'}
                       </span>
                     </button>
+                  </div>
                 </div>
 
-                {/* board badge */}
                 {post.board && (
                   <div className="px-3 py-1 bg-[var(--pixel-panel)] text-[var(--pixel-text)] text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
                     📌 主題：{post.board.title}
                   </div>
                 )}
-                {/* daily topic badge if present */}
+
                 {post.type === 'TOPIC' && post.topic && (
                   <div className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
                     📌 {post.topic.title}
