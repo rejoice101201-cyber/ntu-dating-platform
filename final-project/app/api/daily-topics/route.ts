@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getTodayInTaiwan } from '@/lib/dateUtils';
 
 // 使用 Gemini 生成每日主題
 async function generateDailyTopicWithGemini(): Promise<string> {
@@ -67,11 +68,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 取得今天的日期（只取日期部分，不包含時間）
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
+    // 取得台灣時間的今天日期
+    const { start: today, end: todayEnd } = getTodayInTaiwan();
 
     // 查詢今日主題
     const topic = await prisma.dailyTopic.findFirst({
@@ -167,11 +165,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 取得今天的日期（只取日期部分）
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
+    // 取得台灣時間的今天日期
+    const { start: today, end: todayEnd } = getTodayInTaiwan();
 
     // 檢查今天是否已有主題
     const existingTopic = await prisma.dailyTopic.findFirst({

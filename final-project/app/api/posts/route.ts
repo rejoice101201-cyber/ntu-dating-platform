@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
+import { getTodayInTaiwan } from '@/lib/dateUtils';
 
 // Lazy load sharp to handle platform-specific issues
 let sharp: any;
@@ -177,10 +178,8 @@ export async function POST(request: NextRequest) {
       }
       
       // Phase 2: 檢查今天是否已經發過主題貼文（一天只能發一個主題貼文）
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayEnd = new Date(today);
-      todayEnd.setHours(23, 59, 59, 999);
+      // 取得台灣時間的今天日期
+      const { start: today, end: todayEnd } = getTodayInTaiwan();
 
       const todayTopicPost = await prisma.post.findFirst({
         where: {

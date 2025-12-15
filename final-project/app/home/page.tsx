@@ -331,9 +331,9 @@ export default function HomePage() {
                       loadPosts(dailyTopic.id)
                     }
                   }}
-                  className="text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors text-left"
+                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words"
                 >
-                  {dailyTopic.title}
+                  <span>{dailyTopic.title}</span>
                   {filterTopicId === dailyTopic.id && (
                     <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
                   )}
