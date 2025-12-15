@@ -22,6 +22,11 @@ interface Post {
     id: string
     title: string
   } | null
+  boardId?: string | null
+  board?: {
+    id: string
+    title: string
+  } | null
   createdAt: string
   updatedAt?: string
   isMatched?: boolean // Phase 3: 是否已配對
@@ -35,6 +40,13 @@ interface DailyTopic {
   title: string
   postCount?: number
   createdAt: string
+}
+
+interface BoardTopic {
+  id: string
+  title: string
+  postCount?: number
+  lastActivityAt?: string
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -62,6 +74,10 @@ export default function HomePage() {
   // 每日主題狀態
   const [dailyTopic, setDailyTopic] = useState<DailyTopic | null>(null)
   const [loadingTopic, setLoadingTopic] = useState(true)
+
+  // 使用者主題 (board) trending
+  const [trendingTopics, setTrendingTopics] = useState<BoardTopic[]>([])
+  const [loadingTrending, setLoadingTrending] = useState(true)
   
   // Phase 4: 每日配對上限狀態
   const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
@@ -91,6 +107,13 @@ export default function HomePage() {
   // Toast 通知狀態
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
 
+  // 發文選擇主題 (使用者主題 board)
+  const [boardQuery, setBoardQuery] = useState('')
+  const [boardResults, setBoardResults] = useState<BoardTopic[]>([])
+  const [boardSearching, setBoardSearching] = useState(false)
+  const [selectedBoard, setSelectedBoard] = useState<BoardTopic | null>(null)
+  const [creatingBoard, setCreatingBoard] = useState(false)
+
   useEffect(() => {
     if (!token) {
       const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -103,6 +126,7 @@ export default function HomePage() {
     loadDailyTopic()
     loadDailyMatchCount()
     loadTopicStatus()
+    loadTrendingTopics()
   }, [token, router])
 
   const loadPosts = async (topicId?: string | null) => {
@@ -224,6 +248,18 @@ export default function HomePage() {
     }
   }
 
+  const loadTrendingTopics = async () => {
+    try {
+      setLoadingTrending(true)
+      const res = await api.get('/topics?sort=trending')
+      setTrendingTopics(res.data.topics || [])
+    } catch (error) {
+      console.error('Failed to load trending topics:', error)
+    } finally {
+      setLoadingTrending(false)
+    }
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -241,6 +277,50 @@ export default function HomePage() {
     setImagePreview(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  // 搜尋/建立使用者主題 (board)
+  useEffect(() => {
+    let active = true
+    const doSearch = async () => {
+      if (!boardQuery.trim()) {
+        setBoardResults([])
+        return
+      }
+      try {
+        setBoardSearching(true)
+        const res = await api.get(`/topics/search?q=${encodeURIComponent(boardQuery.trim())}`)
+        if (!active) return
+        setBoardResults(res.data.topics || [])
+      } catch (error) {
+        console.error('Search topics error:', error)
+      } finally {
+        if (active) setBoardSearching(false)
+      }
+    }
+    const handler = setTimeout(doSearch, 300)
+    return () => {
+      active = false
+      clearTimeout(handler)
+    }
+  }, [boardQuery])
+
+  const handleCreateBoard = async () => {
+    const title = boardQuery.trim()
+    if (!title) return
+    try {
+      setCreatingBoard(true)
+      const res = await api.post('/topics', { title })
+      const topic = res.data.topic
+      setSelectedBoard(topic)
+      setBoardResults([])
+      setToast({ message: res.data.existed ? '已使用既有主題' : '已建立新主題', type: 'success' })
+    } catch (error: any) {
+      console.error('Create topic error:', error)
+      setToast({ message: error.response?.data?.error || '建立主題失敗', type: 'error' })
+    } finally {
+      setCreatingBoard(false)
     }
   }
 
@@ -321,6 +401,9 @@ export default function HomePage() {
       if (postingAsTopic && dailyTopic) {
         formData.append('topicId', dailyTopic.id)
       }
+      if (selectedBoard?.id) {
+        formData.append('boardId', selectedBoard.id)
+      }
 
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -344,6 +427,9 @@ export default function HomePage() {
       setSelectedImage(null)
       setImagePreview(null)
       setPostingAsTopic(false)
+      setSelectedBoard(null)
+      setBoardQuery('')
+      setBoardResults([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -384,6 +470,29 @@ export default function HomePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+        </div>
+
+        {/* 熱門主題 */}
+        <div className="pixel-panel p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-bold text-[var(--pixel-text)]">熱門主題</div>
+            <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '載入中...' : ''}</div>
+          </div>
+          {trendingTopics.length === 0 && !loadingTrending && (
+            <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {trendingTopics.map((t) => (
+              <Link
+                key={t.id}
+                href={`/topics/${t.id}`}
+                className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
+              >
+                {t.title}
+                {typeof t.postCount === 'number' && <span className="ml-1 text-[var(--pixel-text-dim)]">({t.postCount})</span>}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* 每日主題區塊 */}
@@ -467,6 +576,65 @@ export default function HomePage() {
                 </label>
               </div>
             )}
+
+            {/* 使用者主題選擇/建立 */}
+            <div className="space-y-2">
+              <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)]">主題（可選）</div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={boardQuery}
+                  onChange={(e) => {
+                    setBoardQuery(e.target.value)
+                    setSelectedBoard(null)
+                  }}
+                  placeholder="搜尋或建立主題，如：美食、運動"
+                  className="flex-1 px-3 py-2 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none focus:ring-0"
+                  disabled={posting}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateBoard}
+                  disabled={creatingBoard || !boardQuery.trim()}
+                  className="px-3 py-2 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+                >
+                  {creatingBoard ? '建立中...' : '建立/套用'}
+                </button>
+              </div>
+              {boardSearching && <div className="text-xs text-[var(--pixel-text-dim)]">搜尋中...</div>}
+              {selectedBoard && (
+                <div className="text-xs text-[var(--pixel-text)]">
+                  已選主題：<span className="font-bold">{selectedBoard.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBoard(null)}
+                    className="ml-2 text-[var(--pixel-highlight)] underline"
+                  >
+                    清除
+                  </button>
+                </div>
+              )}
+              {!selectedBoard && boardResults.length > 0 && (
+                <div className="border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] divide-y-3 divide-[var(--pixel-border)]">
+                  {boardResults.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBoard(t)
+                        setBoardResults([])
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
+                    >
+                      {t.title}
+                      {typeof t.postCount === 'number' && (
+                        <span className="ml-2 text-[var(--pixel-text-dim)] text-xs">({t.postCount})</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <textarea
               value={content}
@@ -619,6 +787,15 @@ export default function HomePage() {
                   <div className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
                     📌 {post.topic.title}
                   </div>
+                )}
+                {/* Board Badge */}
+                {post.board && (
+                  <Link
+                    href={`/topics/${post.board.id}`}
+                    className="px-3 py-1 bg-[var(--pixel-panel)] text-[var(--pixel-text)] text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2 hover:bg-[var(--pixel-surface)]"
+                  >
+                    📌 主題：{post.board.title}
+                  </Link>
                 )}
 
                 {/* Content / Edit */}
