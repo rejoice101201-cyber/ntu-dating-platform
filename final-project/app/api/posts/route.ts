@@ -32,10 +32,11 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    // 支援 topicId 查詢參數來篩選今日話題的回覆
+    // 支援 topicId (每日主題) / boardId (使用者自定主題) 查詢參數
     const { searchParams } = new URL(request.url);
     const topicId = searchParams.get('topicId');
     const authorId = searchParams.get('authorId');
+    const boardId = searchParams.get('boardId');
 
     const whereClause: any = {};
     if (topicId) {
@@ -43,6 +44,9 @@ export async function GET(request: NextRequest) {
     }
     if (authorId) {
       whereClause.authorId = authorId;
+    }
+    if (boardId) {
+      whereClause.boardId = boardId;
     }
 
     const posts = await prisma.post.findMany({
@@ -56,6 +60,12 @@ export async function GET(request: NextRequest) {
           },
         },
         topic: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        board: {
           select: {
             id: true,
             title: true,
@@ -84,6 +94,8 @@ export async function GET(request: NextRequest) {
               id: post.topic.id,
               title: post.topic.title,
             } : null,
+            boardId: post.boardId,
+            board: post.board ? { id: post.board.id, title: post.board.title } : null,
             createdAt: post.createdAt.toISOString(),
             isMatched: true, // 自己的貼文視為已配對
             isAuthor: true,
@@ -126,6 +138,8 @@ export async function GET(request: NextRequest) {
             id: post.topic.id,
             title: post.topic.title,
           } : null,
+          boardId: post.boardId,
+          board: post.board ? { id: post.board.id, title: post.board.title } : null,
           createdAt: post.createdAt.toISOString(),
           isMatched,
           matchId: match?.id || null, // 用於聊天室入口
@@ -160,7 +174,8 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const content = formData.get('content') as string;
     const image = formData.get('image') as File | null;
-    const topicId = formData.get('topicId') as string | null;
+    const topicId = formData.get('topicId') as string | null; // daily topic (old)
+    const boardId = formData.get('boardId') as string | null; // user-created topic/board
 
     if (!content || !content.trim()) {
       return NextResponse.json(
@@ -169,7 +184,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 如果提供了 topicId，驗證主題是否存在
+    // 如果提供了每日主題 topicId，驗證主題是否存在
     let postType = 'FREE';
     if (topicId) {
       const topic = await prisma.dailyTopic.findUnique({
@@ -210,6 +225,19 @@ export async function POST(request: NextRequest) {
       }
       
       postType = 'TOPIC';
+    }
+
+    // 如果提供 boardId，驗證存在
+    if (boardId) {
+      const board = await prisma.topic.findUnique({
+        where: { id: boardId },
+      });
+      if (!board) {
+        return NextResponse.json(
+          { error: 'Board (topic) not found' },
+          { status: 404 }
+        );
+      }
     }
 
     let imageUrl: string | null = null;
@@ -261,6 +289,7 @@ export async function POST(request: NextRequest) {
         imageUrl: imageUrl,
         type: postType,
         topicId: topicId || null,
+        boardId: boardId || null,
       },
       include: {
         author: {
@@ -275,8 +304,21 @@ export async function POST(request: NextRequest) {
             title: true,
           },
         } : undefined,
+        board: boardId ? {
+          select: {
+            id: true,
+            title: true,
+          },
+        } : undefined,
       },
     });
+
+    if (boardId) {
+      await prisma.topic.update({
+        where: { id: boardId },
+        data: { lastActivityAt: new Date() },
+      });
+    }
 
     return NextResponse.json({
       post: {
@@ -293,6 +335,11 @@ export async function POST(request: NextRequest) {
         topic: post.topic ? {
           id: post.topic.id,
           title: post.topic.title,
+        } : null,
+        boardId: post.boardId,
+        board: post.board ? {
+          id: post.board.id,
+          title: post.board.title,
         } : null,
         createdAt: post.createdAt.toISOString(),
       },
