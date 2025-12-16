@@ -56,14 +56,11 @@ export async function GET(request: NextRequest) {
       whereClause.createdAt = { gte: since };
     }
 
-    const orderBy =
-      sort === 'latest'
-        ? { createdAt: 'desc' }
-        : [{ likeCount: 'desc' }, { createdAt: 'desc' } as any];
-
     const posts = await prisma.post.findMany({
       where: whereClause,
-      orderBy,
+      orderBy: sort === 'latest'
+        ? { createdAt: 'desc' as const }
+        : [{ likeCount: 'desc' as const }, { createdAt: 'desc' as const }],
       include: {
         author: {
           select: {
