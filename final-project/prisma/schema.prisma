@@ -48,6 +48,7 @@ model User {
   matchPreference        MatchPreference?
   posts                  Post[]
   favorites              Favorite[]
+  likes                  PostLike[]
 
   @@index([email])
   @@index([userId])
