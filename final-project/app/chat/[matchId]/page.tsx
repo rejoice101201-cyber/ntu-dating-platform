@@ -114,9 +114,7 @@ export default function ChatPage() {
 
         // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
         pollInterval = setInterval(() => {
-          if (!isInitialLoad) {
-            loadMessages(false)
-          }
+          loadMessages(false)
         }, 5000)
 
         setPusher(newPusher)
@@ -133,10 +131,8 @@ export default function ChatPage() {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
         pollInterval = setInterval(() => {
-        if (!isInitialLoad) {
-          loadMessages(false) // Don't show loading spinner on polling
-          checkActiveGameSession() // 检查游戏状态
-        }
+        loadMessages(false) // Don't show loading spinner on polling
+        checkActiveGameSession() // 检查游戏状态
       }, 5000) // Poll every 5 seconds
 
       return () => {
