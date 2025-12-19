@@ -14,10 +14,10 @@ export default function LeftSidebar() {
   if (pathname?.startsWith('/chat/')) return null
 
   const navItems = [
-    { href: '/home', label: 'Home', emoji: '🏠' },
-    { href: '/search', label: 'Search', emoji: '🔍' },
-    { href: '/saved', label: 'Saved', emoji: '❤️' },
-    { href: '/my', label: 'My', emoji: '👤' },
+    { href: '/home', label: 'Home', glyph: 'H' },
+    { href: '/search', label: 'Search', glyph: 'S' },
+    { href: '/saved', label: 'Saved', glyph: 'V' },
+    { href: '/my', label: 'My', glyph: 'M' },
   ]
 
   return (
@@ -35,7 +35,9 @@ export default function LeftSidebar() {
                   : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)]'
               }`}
             >
-              <span className="text-2xl mb-1">{item.emoji}</span>
+              <span className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold">
+                {item.glyph}
+              </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>
           )
