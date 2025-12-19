@@ -65,7 +65,8 @@ export default function ChatPage() {
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
 
-    let pollInterval: NodeJS.Timer | undefined
+    // 使用 ReturnType<typeof setInterval> 兼容瀏覽器與 Node 型別
+    let pollInterval: ReturnType<typeof setInterval> | undefined
 
     // Initialize Pusher if environment variables are set
     if (hasRealPusher) {
@@ -131,7 +132,7 @@ export default function ChatPage() {
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
-      pollInterval = setInterval(() => {
+        pollInterval = setInterval(() => {
         if (!isInitialLoad) {
           loadMessages(false) // Don't show loading spinner on polling
           checkActiveGameSession() // 检查游戏状态
@@ -139,7 +140,7 @@ export default function ChatPage() {
       }, 5000) // Poll every 5 seconds
 
       return () => {
-        clearInterval(pollInterval)
+        if (pollInterval) clearInterval(pollInterval)
       }
     }
   }, [matchId, token, user])
