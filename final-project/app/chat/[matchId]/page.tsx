@@ -210,16 +210,23 @@ export default function ChatPage() {
 
     try {
       // Send via API (which will trigger Pusher)
-      await api.post(`/chat/${matchId}`, {
+      const response = await api.post(`/chat/${matchId}`, {
         content: messageContent,
         type: 'text',
       })
-      
-      setInput('')
-      // 如果 Pusher 沒有啟用，保險重拉一次
-      if (!hasRealPusher || !pusher) {
-        await loadMessages(false)
+
+      // 樂觀更新：即便 Pusher 未即時回推也先呈現
+      const newMessage = response.data?.message as Message | undefined
+      if (newMessage) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === newMessage.id)) return prev
+          return [...prev, newMessage]
+        })
       }
+
+      setInput('')
+      // 仍保險重拉一次，確保排序/狀態一致
+      await loadMessages(false)
     } catch (error) {
       console.error('Failed to send message:', error)
       alert('發送失敗，請稍後再試')
