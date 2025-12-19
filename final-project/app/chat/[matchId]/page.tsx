@@ -56,14 +56,16 @@ export default function ChatPage() {
 
     // Load messages first (even without Pusher)
     loadMessages(true)
-    
+
     // Load current user's profile to get photos
     if (user?.id) {
       loadCurrentUserProfile(user.id)
     }
-    
+
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
+
+    let pollInterval: NodeJS.Timer | undefined
 
     // Initialize Pusher if environment variables are set
     if (hasRealPusher) {
@@ -74,7 +76,7 @@ export default function ChatPage() {
 
         // Subscribe to match channel
         const channel = newPusher.subscribe(`match-${matchId}`)
-        
+
         // 避免重複綁定造成訊息重複
         channel.unbind('new_message')
         channel.bind('new_message', (message: Message) => {
@@ -83,7 +85,7 @@ export default function ChatPage() {
             return [...prev, message]
           })
         })
-        
+
         // 监听游戏状态更新
         channel.bind('game_state_update', (data: any) => {
           console.log('Game state update received:', data)
@@ -109,10 +111,18 @@ export default function ChatPage() {
         // NOTE: 不要在聊天室頁訂閱 user channel（後端會同時推 match + user），
         // 否則同一則訊息會被加入兩次。
 
+        // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
+        pollInterval = setInterval(() => {
+          if (!isInitialLoad) {
+            loadMessages(false)
+          }
+        }, 5000)
+
         setPusher(newPusher)
 
         return () => {
           newPusher.disconnect()
+          if (pollInterval) clearInterval(pollInterval)
         }
       } catch (error) {
         console.error('Failed to initialize Pusher:', error)
@@ -121,7 +131,7 @@ export default function ChatPage() {
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
-      const pollInterval = setInterval(() => {
+      pollInterval = setInterval(() => {
         if (!isInitialLoad) {
           loadMessages(false) // Don't show loading spinner on polling
           checkActiveGameSession() // 检查游戏状态
