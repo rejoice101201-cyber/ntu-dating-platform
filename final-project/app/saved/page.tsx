@@ -6,6 +6,9 @@ import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Link from 'next/link'
 import Toast from '@/components/Toast'
+import { motion } from 'framer-motion'
+import { MessageCircle } from 'lucide-react'
+import IconButton from '@/components/IconButton'
 
 interface Post {
   id: string
@@ -20,6 +23,10 @@ interface Post {
   topic?: { id: string; title: string } | null
   board?: { id: string; title: string } | null
   createdAt: string
+  isMatched?: boolean
+  matchId?: string | null
+  likeCount?: number
+  hasLiked?: boolean
 }
 
 interface Favorite {
@@ -113,10 +120,14 @@ export default function SavedPage() {
 
       if (data.match.matched) {
         setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
+        // 重新載入收藏列表以更新配對狀態
+        await loadFavorites()
       } else if (data.match.pending) {
         setToast({ message: '已發送配對請求！等待對方回應...', type: 'info' })
       } else if (data.match.alreadyMatched) {
         setToast({ message: '你們已經配對了！', type: 'info' })
+        // 重新載入收藏列表以更新配對狀態
+        await loadFavorites()
       }
     } catch (err: any) {
       console.error('Match from saved failed', err)
@@ -184,21 +195,84 @@ export default function SavedPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
+                      <IconButton
+                        icon="heart"
+                        active={true}
                         onClick={() => handleUnfavorite(fav.postId)}
-                        className="px-1"
+                        variant="default"
+                        size="md"
                         aria-label="取消收藏"
-                      >
-                        <span className="text-red-500">❤️</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMatchFromPost(fav.postId)}
-                        className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
-                      >
-                        想要配對
-                      </button>
+                      />
+                      
+                      {fav.post.likeCount !== undefined && (
+                        <IconButton
+                          icon="thumbsUp"
+                          count={fav.post.likeCount}
+                          active={fav.post.hasLiked}
+                          onClick={async () => {
+                            try {
+                              await api.post(`/posts/${fav.postId}/like`)
+                              // 重新載入收藏列表以更新點讚狀態
+                              await loadFavorites()
+                            } catch (err: any) {
+                              console.error('Toggle like failed', err)
+                            }
+                          }}
+                          variant="primary"
+                          size="md"
+                          aria-label={fav.post.hasLiked ? '取消按讚' : '按讚'}
+                        />
+                      )}
+
+                      {fav.post.isMatched && fav.post.matchId ? (
+                        // 已配對：顯示聊天室入口
+                        <motion.div
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Link
+                            href={`/chat/${fav.post.matchId}`}
+                            className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight)] via-[#0284c7] to-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all flex items-center gap-2 group relative overflow-hidden"
+                          >
+                            {/* 光效背景 */}
+                            <motion.span
+                              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                              initial={{ x: '-100%' }}
+                              animate={{ x: ['-100%', '200%'] }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                repeatDelay: 1,
+                                ease: 'linear',
+                              }}
+                            />
+                            <MessageCircle size={16} className="relative z-10 group-hover:scale-110 transition-transform" />
+                            <span className="relative z-10">聊天</span>
+                          </Link>
+                        </motion.div>
+                      ) : (
+                        // 未配對：顯示配對按鈕
+                        <motion.button
+                          onClick={() => handleMatchFromPost(fav.postId)}
+                          className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight-2)] via-[#0ea5e9] to-[var(--pixel-highlight-2)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all relative overflow-hidden group"
+                          whileHover={{ scale: 1.02, y: -1, x: -1 }}
+                          whileTap={{ scale: 0.98, y: 0, x: 0 }}
+                        >
+                          {/* 光效背景 */}
+                          <motion.span
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: ['-100%', '200%'] }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              repeatDelay: 1,
+                              ease: 'linear',
+                            }}
+                          />
+                          <span className="relative z-10">想要配對</span>
+                        </motion.button>
+                      )}
                     </div>
                   </div>
 

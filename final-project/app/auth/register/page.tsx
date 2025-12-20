@@ -53,7 +53,7 @@ export default function RegisterPage() {
       return
     }
 
-    // 檢查是否上传了照片
+    // 檢查是否上傳了照片
     if (!photo) {
       setError('請上傳至少一張照片')
       return
@@ -67,7 +67,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      // 先注册用户
+      // 先註冊用戶
       await register({
         ...formData,
         userId: formData.userId.trim(),
@@ -81,7 +81,7 @@ export default function RegisterPage() {
       // 等待token更新
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      // 上传照片
+      // 上傳照片
       const currentToken = localStorage.getItem('token')
       if (!currentToken) {
         throw new Error('註冊成功但無法獲取token')
@@ -89,7 +89,7 @@ export default function RegisterPage() {
 
       const photoFormData = new FormData()
       photoFormData.append('photo', photo)
-      photoFormData.append('isCover', 'true') // 第一张照片设为封面
+      photoFormData.append('isCover', 'true') // 第一張照片設為封面
 
       const uploadResponse = await fetch('/api/users/me/photos', {
         method: 'POST',
@@ -104,7 +104,7 @@ export default function RegisterPage() {
         throw new Error(`照片上傳失敗：${errorData.error || '未知錯誤'}`)
       }
 
-      // 注册和照片上传都成功，跳转到探索页面
+      // 註冊和照片上傳都成功，跳轉到探索頁面
       setTimeout(() => {
         router.push('/discover')
       }, 100)
@@ -162,7 +162,7 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              密码 *
+              密碼 *
             </label>
             <input
               type="password"
