@@ -431,7 +431,7 @@ export default function HomePage() {
       const response = await fetch(`/api/posts/${postId}/match`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${currentToken}`,
+          Authorization: `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
       })
@@ -442,26 +442,22 @@ export default function HomePage() {
       }
 
       const data = await response.json()
-      
+
       if (data.match.matched) {
         setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
-        // 重新載入貼文以更新配對狀態和配對次數
         await Promise.all([loadPosts(filterTopicId), loadDailyMatchCount()])
       } else if (data.match.pending) {
         setToast({ message: '已發送配對請求！等待對方回應...', type: 'info' })
-        // 重新載入貼文
         await loadPosts(filterTopicId)
       } else if (data.match.alreadyMatched) {
         setToast({ message: '你們已經配對了！', type: 'info' })
-        // 重新載入貼文
         await loadPosts(filterTopicId)
       }
     } catch (error: any) {
       console.error('Failed to match from post:', error)
-      // Phase 4: 檢查是否是配對上限錯誤
       if (error.response?.status === 429) {
         setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 3 個人', type: 'error' })
-        await loadDailyMatchCount() // 更新配對次數顯示
+        await loadDailyMatchCount()
       } else {
         setToast({ message: error.message || '配對失敗，請稍後再試', type: 'error' })
       }
@@ -1055,4 +1051,3 @@ export default function HomePage() {
     </div>
   )
 }
-
