@@ -566,7 +566,12 @@ export default function ChatPage() {
               </p>
               {gameSession.question ? (
                 <>
-                  <p className="font-semibold text-lg mb-3">{gameSession.question.content}</p>
+              <p
+                className="text-lg mb-3"
+                style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+              >
+                {gameSession.question.content}
+              </p>
                   {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
                     <div className="space-y-2">
                       {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
@@ -611,7 +616,12 @@ export default function ChatPage() {
           ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
             <div className="space-y-3 pixel-panel p-4 text-[var(--pixel-text)]">
               <p className="text-sm text-[var(--pixel-text-dim)] mb-2">They answered, your turn to guess!</p>
-              <p className="font-semibold text-lg mb-3">{gameSession.question?.content}</p>
+              <p
+                className="text-lg mb-3"
+                style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+              >
+                {gameSession.question?.content}
+              </p>
               {gameSession.question?.type === 'multiple_choice' && gameSession.question?.options ? (
                 <div className="space-y-2">
                   {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
