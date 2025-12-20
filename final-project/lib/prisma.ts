@@ -21,6 +21,8 @@ if (!process.env.PRISMA_DATABASE_URL && !process.env.DATABASE_URL) {
   }
 }
 
+// 在构建时（NODE_ENV 未设置或为其他值），使用延迟连接
+// 只有在实际运行时才连接数据库
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   datasources: {
     db: {
@@ -28,6 +30,10 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     },
   },
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  // 在构建时跳过连接验证
+  ...(process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && !process.env.PRISMA_DATABASE_URL
+    ? { errorFormat: 'minimal' }
+    : {}),
 });
 
 if (process.env.NODE_ENV !== 'production') {
