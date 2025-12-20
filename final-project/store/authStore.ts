@@ -22,6 +22,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  setAuth: (user: User, token: string) => void;
   logout: () => void;
   updateUser: (user: User) => void;
 }
@@ -77,6 +78,12 @@ export const useAuthStore = create<AuthState>()(
         },
         updateUser: (user: User) => {
           set({ user });
+        },
+        setAuth: (user: User, token: string) => {
+          set({ user, token });
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('token', token);
+          }
         },
       };
     },
