@@ -600,14 +600,21 @@ export default function ChatPage() {
                       placeholder="Your answer"
                     />
                   )}
-                  <button onClick={submitAnswer} disabled={!gameAnswer} className="w-full text-[var(--pixel-text)]">
+                  <button
+                    onClick={submitAnswer}
+                    disabled={!gameAnswer}
+                    className="w-full text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold py-2 hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Submit answer
                   </button>
                 </>
               ) : (
                 <div className="text-center py-4">
                   <p className="text-[var(--pixel-text-dim)] mb-2">Loading question...</p>
-                  <button onClick={checkActiveGameSession} className="underline text-sm text-[var(--pixel-text)]">
+                  <button
+                    onClick={checkActiveGameSession}
+                    className="px-4 py-2 text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)]"
+                  >
                     Reload
                   </button>
                 </div>
@@ -650,7 +657,11 @@ export default function ChatPage() {
                   placeholder="Your guess"
                 />
               )}
-              <button onClick={submitGuess} disabled={!gameGuess} className="w-full text-[var(--pixel-text)]">
+              <button
+                onClick={submitGuess}
+                disabled={!gameGuess}
+                className="w-full text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold py-2 hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Submit guess
               </button>
             </div>
