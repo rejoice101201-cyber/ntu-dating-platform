@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
@@ -63,7 +63,7 @@ export default function MatchesPage() {
     checkAuth()
   }, [token, router])
 
-  const loadMatches = async () => {
+  const loadMatches = useCallback(async () => {
     try {
       const response = await api.get('/matches')
       console.log('Matches response:', response.data)
@@ -112,7 +112,7 @@ export default function MatchesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
 
   // 监听新消息，自动刷新 matches 列表以更新排序
   useEffect(() => {
