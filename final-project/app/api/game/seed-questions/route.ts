@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 
-// 添加所有类别的问题（用于初始化数据库）
-// 这个端点可以被调用以确保所有题目都存在
+// 添加所有類別的問題（用於初始化資料庫）
+// 這個端點可以被調用以確保所有題目都存在
 export async function POST(request: NextRequest) {
-  // 可选：需要认证（如果需要的话）
+  // 可選：需要認證（如果需要的話）
   // const authResult = await requireAuth(request);
   // if (authResult instanceof Response) {
   //   return authResult;
   // }
   try {
     const questions = [
-      // Interest 类别
+      // Interest 類別
       {
         content: '你最喜欢的电影类型是？',
         category: 'interest',
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         isActive: true,
       },
       
-      // Personality 类别
+      // Personality 類別
       {
         content: '在聚会上，你通常是？',
         category: 'personality',
@@ -54,25 +54,25 @@ export async function POST(request: NextRequest) {
         content: '面对压力时，你通常会？',
         category: 'personality',
         type: 'multiple_choice',
-        options: JSON.stringify(['冷静分析', '寻求帮助', '独自承受', '逃避问题']),
+        options: JSON.stringify(['冷靜分析', '尋求幫助', '獨自承受', '逃避問題']),
         isActive: true,
       },
       {
         content: '你更倾向于？',
         category: 'personality',
         type: 'multiple_choice',
-        options: JSON.stringify(['计划一切', '随性而为', '看情况', '两者都有']),
+        options: JSON.stringify(['計畫一切', '隨性而為', '看情況', '兩者都有']),
         isActive: true,
       },
       {
         content: '你更喜欢？',
         category: 'personality',
         type: 'multiple_choice',
-        options: JSON.stringify(['独处', '和朋友在一起', '两者都喜欢', '看心情']),
+        options: JSON.stringify(['獨處', '和朋友在一起', '兩者都喜歡', '看心情']),
         isActive: true,
       },
       
-      // Lifestyle 类别
+      // Lifestyle 類別
       {
         content: '你更喜欢哪种周末活动？',
         category: 'lifestyle',
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         content: '你更喜欢早睡早起还是夜猫子？',
         category: 'lifestyle',
         type: 'multiple_choice',
-        options: JSON.stringify(['早睡早起', '夜猫子', '看情况']),
+        options: JSON.stringify(['早睡早起', '夜貓子', '看情況']),
         isActive: true,
       },
       {
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         isActive: true,
       },
       
-      // Icebreaker 类别
+      // Icebreaker 類別
       {
         content: '第一次约会，你更倾向于？',
         category: 'icebreaker',
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // 使用 findFirst + create/update 的方式来避免重复创建
+    // 使用 findFirst + create/update 的方式來避免重複創建
     const createdQuestions = [];
     const updatedQuestions = [];
     
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         });
         createdQuestions.push(created);
       } else {
-        // 如果已存在，更新它以确保 isActive 为 true
+        // 如果已存在，更新它以確保 isActive 為 true
         await prisma.question.update({
           where: { id: existing.id },
           data: { 
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 返回每个类别的统计
+    // 返回每個類別的統計
     const categoryStats = await prisma.question.groupBy({
       by: ['category'],
       where: { isActive: true },

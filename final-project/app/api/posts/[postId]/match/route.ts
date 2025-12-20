@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getTodayInTaiwan } from '@/lib/dateUtils';
+
+// 每日從貼文配對的限制（改為 5 人）
+const DAILY_POST_MATCH_LIMIT = 5;
 
 // POST: 從貼文配對（點擊「想要配對」按鈕）
 export async function POST(
@@ -41,30 +45,31 @@ export async function POST(
       );
     }
 
-    // Phase 4: 檢查今日從貼文配對的數量（限制 3 個）
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(today);
-    todayEnd.setHours(23, 59, 59, 999);
+    // Phase 4: 檢查今日從貼文配對的數量（限制 5 個）
+    // 使用台灣時間計算今天
+    const { start: today, end: todayEnd } = getTodayInTaiwan();
 
-    // 計算今天已經從貼文配對的數量（matched 狀態）
+    // 計算今天已經從貼文配對的數量
+    // 重要：只計算今天「創建」的匹配（createdAt 在今天），而不是今天「變成 matched」的匹配
+    // 這樣可以確保只計算今天從貼文配對的匹配，而不會計算之前創建但今天才變成 matched 的匹配
     const todayMatchesFromPosts = await prisma.match.count({
       where: {
         userId: authUser.id,
         status: 'matched',
-        matchedAt: {
+        // 只計算今天創建的匹配
+        createdAt: {
           gte: today,
           lte: todayEnd,
         },
       },
     });
 
-    // 如果今天已經配對 3 個，拒絕新的配對請求
-    if (todayMatchesFromPosts >= 3) {
+    // 如果今天已經配對 5 個，拒絕新的配對請求
+    if (todayMatchesFromPosts >= DAILY_POST_MATCH_LIMIT) {
       return NextResponse.json(
         { 
           error: '今日配對上限已達',
-          message: '每天最多只能從貼文中配對 3 個人',
+          message: `每天最多只能從貼文中配對 ${DAILY_POST_MATCH_LIMIT} 個人`,
           limitReached: true,
         },
         { status: 429 }

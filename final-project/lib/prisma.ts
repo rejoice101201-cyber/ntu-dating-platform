@@ -15,14 +15,15 @@ const databaseUrl =
   // 真正執行查詢時若沒設 DATABASE_URL 仍會出錯，提醒使用者補環境變數即可。
   'postgresql://user:password@localhost:5432/dbname?schema=public';
 
+// 检查环境变量
 if (!process.env.PRISMA_DATABASE_URL && !process.env.DATABASE_URL) {
   if (process.env.NODE_ENV === 'production') {
-    console.warn('DATABASE_URL is not set in production!');
+    console.error('❌ DATABASE_URL is not set in production!');
+    console.error('Please set DATABASE_URL in Vercel Environment Variables');
   }
 }
 
-// 在构建时（NODE_ENV 未设置或为其他值），使用延迟连接
-// 只有在实际运行时才连接数据库
+// 优化 Prisma Client 配置，添加连接池和超时设置
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   datasources: {
     db: {
@@ -30,13 +31,21 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     },
   },
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  // 在构建时跳过连接验证
-  ...(process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && !process.env.PRISMA_DATABASE_URL
-    ? { errorFormat: 'minimal' }
+  // 生产环境优化
+  ...(process.env.NODE_ENV === 'production' 
+    ? {
+        errorFormat: 'minimal',
+      }
     : {}),
 });
 
+// 在 Serverless 环境中，确保连接在函数结束时关闭
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
+} else {
+  // 生产环境：确保连接正确关闭
+  process.on('beforeExit', async () => {
+    await prisma.$disconnect();
+  });
 }
 

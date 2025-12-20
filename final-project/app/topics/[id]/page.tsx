@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
+import IconButton from '@/components/IconButton'
 
 interface Post {
   id: string
@@ -229,27 +230,24 @@ export default function TopicPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
+                    <IconButton
+                      icon="heart"
+                      active={post.isFavorited}
                       onClick={() => toggleFavorite(post.id)}
-                      className="px-1"
+                      variant="default"
+                      size="md"
                       aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    >
-                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
-                        {post.isFavorited ? '❤️' : '🤍'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
+                    />
+                    
+                    <IconButton
+                      icon="thumbsUp"
+                      count={post.likeCount}
+                      active={post.hasLiked}
                       onClick={() => toggleLike(post.id)}
-                      className="flex items-center gap-1 px-1 text-xs"
+                      variant="primary"
+                      size="md"
                       aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    >
-                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
-                        👍
-                      </span>
-                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
-                    </button>
+                    />
                   </div>
                 </div>
 

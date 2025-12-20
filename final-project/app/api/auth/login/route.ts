@@ -30,18 +30,20 @@ export async function POST(request: NextRequest) {
     const data = loginSchema.parse(body);
     const email = data.email.trim().toLowerCase();
 
-    // Check database connection
-    try {
-      await prisma.$connect();
-      console.log('Database connected successfully');
-    } catch (dbError) {
-      console.error('Database connection error:', dbError);
+    // 检查环境变量
+    if (!process.env.DATABASE_URL && !process.env.PRISMA_DATABASE_URL) {
+      console.error('DATABASE_URL is not set!');
       return NextResponse.json(
-        { error: 'Database connection failed' },
+        { 
+          error: 'Database configuration error. DATABASE_URL is not set.',
+          hint: 'Please check Vercel Environment Variables'
+        },
         { status: 500 }
       );
     }
 
+    // Prisma 会在第一次查询时自动连接，不需要显式调用 $connect()
+    // 直接进行查询，让 Prisma 自动处理连接
     const user = await prisma.user.findFirst({
       where: { email },
     });
@@ -92,7 +94,28 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
     console.error('Login error:', error);
+    
+    // 检查是否是数据库连接错误
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isConnectionError = 
+      errorMessage.includes('connect') || 
+      errorMessage.includes('ECONNREFUSED') ||
+      errorMessage.includes('P1001') ||
+      errorMessage.includes('timeout') ||
+      errorMessage.includes('Can\'t reach database');
+    
+    if (isConnectionError) {
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed. Please check your DATABASE_URL environment variable.',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Login failed' },
       { status: 500 }
