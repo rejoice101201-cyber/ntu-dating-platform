@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Link from 'next/link'
 import Toast from '@/components/Toast'
+import { useUnreadMessages } from '@/components/hooks/useUnreadMessages'
 
 interface Match {
   id: string
@@ -44,6 +45,7 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true)
   const [processingMatch, setProcessingMatch] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const { getUnreadCount } = useUnreadMessages()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -253,77 +255,87 @@ export default function MatchesPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.map((match) => (
-              <Link
-                key={match.id}
-                href={`/chat/${match.id}`}
-                className="block pixel-panel p-4 hover:translate-y-[-2px] transition-transform"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-none overflow-hidden flex-shrink-0 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)]">
-                    {(() => {
-                      if (!match.user?.photos || match.user.photos.length === 0) {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
-                            {match.user?.name?.[0]?.toUpperCase() || '?'}
-                          </div>
-                        )
-                      }
-
-                      const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
-                      const photoUrl = coverPhoto?.url
-                      const blurLevel = coverPhoto?.blurLevel ?? 20
-
-                      if (!photoUrl) {
-                        return (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
-                            {match.user?.name?.[0]?.toUpperCase() || '?'}
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <div
-                          className="w-full h-full"
-                          style={{
-                            filter: `blur(${blurLevel}px)`,
-                            backgroundImage: `url(${photoUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                          }}
-                        />
-                      )
-                    })()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg truncate text-[var(--pixel-text)]">{match.user.name}</h3>
-                    {match.lastMessage && (
-                      <p className="text-sm text-[var(--pixel-text-dim)] truncate mt-1">
-                        {match.lastMessage.content}
-                      </p>
-                    )}
-                    <p className="text-xs text-[var(--pixel-text-dim)] mt-2 flex items-center gap-2">
-                      <span>🗓</span>
+            {matches.map((match) => {
+              const unreadCount = getUnreadCount(match.id)
+              
+              return (
+                <Link
+                  key={match.id}
+                  href={`/chat/${match.id}`}
+                  className="block pixel-panel p-4 hover:translate-y-[-2px] transition-transform relative"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-none overflow-hidden flex-shrink-0 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)] relative">
                       {(() => {
-                        const dateToShow = match.matchedAt || match.createdAt
-                        if (dateToShow) {
-                          const date = new Date(dateToShow)
-                          const timestamp = date.getTime()
-                          if (timestamp > 0 && !isNaN(timestamp) && timestamp > 86400000) {
-                            return date.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          }
+                        if (!match.user?.photos || match.user.photos.length === 0) {
+                          return (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
+                              {match.user?.name?.[0]?.toUpperCase() || '?'}
+                            </div>
+                          )
                         }
-                        return 'Matching'
+
+                        const coverPhoto = match.user.photos.find((p: any) => p.isCover) || match.user.photos[0]
+                        const photoUrl = coverPhoto?.url
+                        const blurLevel = coverPhoto?.blurLevel ?? 20
+
+                        if (!photoUrl) {
+                          return (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--pixel-text)]">
+                              {match.user?.name?.[0]?.toUpperCase() || '?'}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div
+                            className="w-full h-full"
+                            style={{
+                              filter: `blur(${blurLevel}px)`,
+                              backgroundImage: `url(${photoUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          />
+                        )
                       })()}
-                    </p>
+                      {/* 未读消息徽章 */}
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold border-2 border-white rounded-full flex items-center justify-center shadow-[2px_2px_0_rgba(0,0,0,0.25)] z-10">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg truncate text-[var(--pixel-text)]">{match.user.name}</h3>
+                      {match.lastMessage && (
+                        <p className="text-sm text-[var(--pixel-text-dim)] truncate mt-1">
+                          {match.lastMessage.content}
+                        </p>
+                      )}
+                      <p className="text-xs text-[var(--pixel-text-dim)] mt-2 flex items-center gap-2">
+                        <span>🗓</span>
+                        {(() => {
+                          const dateToShow = match.matchedAt || match.createdAt
+                          if (dateToShow) {
+                            const date = new Date(dateToShow)
+                            const timestamp = date.getTime()
+                            if (timestamp > 0 && !isNaN(timestamp) && timestamp > 86400000) {
+                              return date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              })
+                            }
+                          }
+                          return 'Matching'
+                        })()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         )}
       </div>

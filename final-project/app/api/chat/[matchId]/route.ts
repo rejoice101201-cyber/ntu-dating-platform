@@ -139,6 +139,53 @@ export async function POST(
         ...message,
         matchId, // Include matchId for filtering
       });
+
+      // Send unread count update via Pusher
+      // 获取接收者的所有匹配的未读消息统计
+      const allMatches = await prisma.match.findMany({
+        where: {
+          OR: [
+            { userId: otherUserId },
+            { matchedUserId: otherUserId },
+          ],
+          status: 'matched',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const allMatchIds = allMatches.map(m => m.id);
+
+      if (allMatchIds.length > 0) {
+        // 统计每个匹配的未读消息数量
+        const unreadMessages = await prisma.message.groupBy({
+          by: ['matchId'],
+          where: {
+            matchId: { in: allMatchIds },
+            senderId: { not: otherUserId }, // 只统计别人发给接收者的
+            isRead: false,
+          },
+          _count: {
+            id: true,
+          },
+        });
+
+        // 转换为对象格式：{ matchId: count }
+        const unreadCounts: Record<string, number> = {};
+        let totalUnread = 0;
+
+        unreadMessages.forEach((item) => {
+          unreadCounts[item.matchId] = item._count.id;
+          totalUnread += item._count.id;
+        });
+
+        // 推送未读消息更新给接收者
+        await pusher.trigger(`user-${otherUserId}`, 'unread_messages_update', {
+          unreadCounts,
+          totalUnread,
+        });
+      }
     } catch (pusherError) {
       // If Pusher is not configured, log but don't fail the request
       console.warn('Pusher not configured, message saved but not broadcast:', pusherError);

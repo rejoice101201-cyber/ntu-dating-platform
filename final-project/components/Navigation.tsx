@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import NotificationBadge from './NotificationBadge'
+import { useUnreadMessages } from './hooks/useUnreadMessages'
 
 export default function Navigation() {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
+  const { totalUnread } = useUnreadMessages()
 
   if (!user) return null
   
@@ -26,6 +28,8 @@ export default function Navigation() {
       <div className="max-w-md mx-auto flex justify-around items-center py-3">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href)
+          const showUnreadBadge = item.href === '/matches' && totalUnread > 0
+          
           return (
             <Link
               key={item.href}
@@ -41,6 +45,12 @@ export default function Navigation() {
               >
                 {item.glyph}
                 {item.showNotification && <NotificationBadge />}
+                {/* 显示未读消息总数 */}
+                {showUnreadBadge && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-white text-xs font-bold border-2 border-white rounded-full flex items-center justify-center shadow-[2px_2px_0_rgba(0,0,0,0.25)] z-10">
+                    {totalUnread > 9 ? '9+' : totalUnread}
+                  </span>
+                )}
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>

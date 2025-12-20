@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import Pusher from 'pusher-js'
 import api from '@/lib/api'
+import { useUnreadMessages } from '@/components/hooks/useUnreadMessages'
 
 interface Message {
   id: string
@@ -29,6 +30,7 @@ export default function ChatPage() {
   const pusherCluster =
     process.env.NEXT_PUBLIC_PUSHER_CLUSTER || process.env.PUSHER_CLUSTER
   const hasRealPusher = Boolean(pusherKey && pusherCluster)
+  const { clearUnreadCount } = useUnreadMessages()
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -156,6 +158,9 @@ export default function ChatPage() {
       const response = await api.get(`/chat/${matchId}`)
       console.log('Messages response:', response.data)
       setMessages(response.data.messages || [])
+
+      // 清除该匹配的未读数（因为消息已被标记为已读）
+      clearUnreadCount(matchId)
 
       // Get match info to find other user (only on initial load)
       if (isInitialLoad) {
