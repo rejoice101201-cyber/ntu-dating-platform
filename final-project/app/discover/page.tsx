@@ -112,14 +112,8 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center text-gray-700 space-y-3">
           <div className="text-4xl mb-2">🐕</div>
-          <p className="text-sm uppercase tracking-wide">No recommendations yet</p>
-          <p className="text-xs text-gray-500">Try again later</p>
-          <button
-            onClick={fetchRecommendations}
-            className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)]"
-          >
-            重新配對
-          </button>
+          <p className="text-sm uppercase tracking-wide">已經沒有可配對的人了</p>
+          <p className="text-xs text-gray-500">稍後再試</p>
         </div>
       </div>
     )
