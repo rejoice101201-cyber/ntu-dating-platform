@@ -83,7 +83,7 @@ export async function POST(
     // Deduct energy
     await prisma.user.update({
       where: { id: authUser.id },
-      data: { energy: { decrement: 10 } },
+      data: { energy: Math.max(user.energy - 10, 0) },
     });
 
     return NextResponse.json({
