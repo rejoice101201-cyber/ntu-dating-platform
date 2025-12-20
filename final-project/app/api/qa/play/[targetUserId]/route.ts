@@ -32,7 +32,7 @@ export async function POST(
       select: { energy: true },
     });
 
-    if (!user || user.energy < 10) {
+    if (!user || user.energy < 5) {
       return NextResponse.json(
         { error: 'Not enough energy' },
         { status: 400 }
@@ -83,7 +83,7 @@ export async function POST(
     // Deduct energy
     await prisma.user.update({
       where: { id: authUser.id },
-      data: { energy: Math.max(user.energy - 10, 0) },
+      data: { energy: Math.max(user.energy - 5, 0) },
     });
 
     return NextResponse.json({
