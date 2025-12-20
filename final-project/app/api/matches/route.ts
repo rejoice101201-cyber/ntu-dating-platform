@@ -59,6 +59,16 @@ export async function GET(request: NextRequest) {
         },
       });
 
+      // Get the last message for this match
+      const lastMessage = await prisma.message.findFirst({
+        where: { matchId: match.id },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          content: true,
+          createdAt: true,
+        },
+      });
+
       // Apply blur to photos based on unlock progress
       // Map unlock level to blur stages: 0% → 20px, 10% → 15px, 30% → 10px, 50% → 5px, 100% → 0px
       // Using smaller blur values to maintain color visibility
@@ -92,16 +102,36 @@ export async function GET(request: NextRequest) {
         } : null,
         createdAt: match.createdAt,
         matchedAt: match.matchedAt,
+        lastMessage: lastMessage ? {
+          content: lastMessage.content,
+          createdAt: lastMessage.createdAt.toISOString(),
+        } : null,
+        // 用于排序：如果有最后一条消息，使用消息时间；否则使用匹配时间
+        sortTime: lastMessage ? lastMessage.createdAt : (match.matchedAt || match.createdAt),
       };
     }));
 
-    console.log('Formatted matches:', formattedMatches.map((m: any) => ({
+    // 按最后消息时间排序（最新的在最上面）
+    formattedMatches.sort((a: any, b: any) => {
+      const timeA = new Date(a.sortTime).getTime();
+      const timeB = new Date(b.sortTime).getTime();
+      return timeB - timeA; // 降序：最新的在前
+    });
+
+    // 移除 sortTime，不需要返回给前端
+    const finalMatches = formattedMatches.map((match: any) => {
+      const { sortTime, ...rest } = match;
+      return rest;
+    });
+
+    console.log('Formatted matches:', finalMatches.map((m: any) => ({
       id: m.id,
       userName: m.user.name,
       photosCount: m.user.photos?.length || 0,
+      lastMessageTime: m.lastMessage?.createdAt,
     })));
 
-    return NextResponse.json({ matches: formattedMatches });
+    return NextResponse.json({ matches: finalMatches });
   } catch (error) {
     console.error('Get matches error:', error);
     return NextResponse.json(
