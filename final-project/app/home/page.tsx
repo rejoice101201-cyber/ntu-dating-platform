@@ -139,22 +139,32 @@ export default function HomePage() {
     loadLeaderboard()
   }, [token, router])
 
-  const loadPosts = async (topicId?: string | null) => {
+  const loadPosts = async (
+    topicId?: string | null,
+    options?: { authorId?: string; showNoPostToast?: boolean }
+  ) => {
     try {
       setLoading(true)
       setError(null)
-      const sortParam = `sort=${sort}`
+      const effectiveAuthorId = options?.authorId ?? filterAuthorId
+      if (options?.authorId !== undefined) {
+        setFilterAuthorId(options.authorId)
+      }
       const params = new URLSearchParams()
       params.set('sort', sort)
       if (topicId) params.set('topicId', topicId)
-      if (filterAuthorId) params.set('authorId', filterAuthorId)
+      if (effectiveAuthorId) params.set('authorId', effectiveAuthorId)
       const url = `/posts?${params.toString()}`
       const response = await api.get(url)
-      setPosts(response.data.posts || [])
+      const fetched = response.data.posts || []
+      setPosts(fetched)
+      if (options?.showNoPostToast && effectiveAuthorId && fetched.length === 0) {
+        setToast({ message: 'This user has no posts yet.', type: 'info' })
+      }
     } catch (error: any) {
       console.error('Failed to load posts:', error)
       if (error.response?.status === 401) {
-        router.push('/auth/login')
+        setToast({ message: 'Session expired, please login again.', type: 'error' })
       } else {
         setError('載入貼文失敗，請稍後再試')
       }
@@ -616,8 +626,8 @@ export default function HomePage() {
                     {u.bio && <div className="text-[11px] text-[var(--pixel-text-dim)] truncate">{u.bio}</div>}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => { setFilterAuthorId(u.id); loadPosts(filterTopicId) }}
+                  <button
+                    onClick={() => loadPosts(filterTopicId, { authorId: u.id, showNoPostToast: true })}
                       className="px-2 py-1 text-[10px]"
                     >
                       查看貼文
