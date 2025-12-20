@@ -10,9 +10,9 @@ import Toast from '@/components/Toast'
 interface Post {
   id: string
   authorId: string
-  author: {
+  author?: {
     id: string
-    name: string | null // Phase 3: 未配對時為 null
+    name: string | null
   }
   content: string
   imageUrl: string | null
@@ -29,8 +29,8 @@ interface Post {
   } | null
   createdAt: string
   updatedAt?: string
-  isMatched?: boolean // Phase 3: 是否已配對
-  matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
+  isMatched?: boolean
+  matchId?: string | null
   isAuthor?: boolean
   isFavorited?: boolean
   likeCount: number
@@ -53,6 +53,7 @@ interface BoardTopic {
 }
 
 function formatTimeAgo(dateString: string): string {
+  if (!dateString) return ''
   const date = new Date(dateString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -102,7 +103,7 @@ export default function HomePage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
-  const [postingAsTopic, setPostingAsTopic] = useState(false) // 是否針對主題發文
+  const [postingAsTopic, setPostingAsTopic] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 編輯/刪除狀態
@@ -124,13 +125,12 @@ export default function HomePage() {
   const [sort, setSort] = useState<'latest' | 'trending'>('latest')
 
   useEffect(() => {
-    if (!token) {
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      if (!storedToken) {
-        router.push('/auth/login')
-        return
-      }
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    if (!storedToken && !token) {
+      router.push('/auth/login')
+      return
     }
+    
     loadPosts()
     loadDailyTopic()
     loadDailyMatchCount()
@@ -139,34 +139,24 @@ export default function HomePage() {
     loadLeaderboard()
   }, [token, router])
 
-  const loadPosts = async (
-    topicId?: string | null,
-    options?: { authorId?: string; showNoPostToast?: boolean }
-  ) => {
+  const loadPosts = async (topicId?: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      const effectiveAuthorId = options?.authorId ?? filterAuthorId
-      if (options?.authorId !== undefined) {
-        setFilterAuthorId(options.authorId)
-      }
       const params = new URLSearchParams()
       params.set('sort', sort)
       if (topicId) params.set('topicId', topicId)
-      if (effectiveAuthorId) params.set('authorId', effectiveAuthorId)
+      if (filterAuthorId) params.set('authorId', filterAuthorId)
       const url = `/posts?${params.toString()}`
+      
       const response = await api.get(url)
-      const fetched = response.data.posts || []
-      setPosts(fetched)
-      if (options?.showNoPostToast && effectiveAuthorId && fetched.length === 0) {
-        setToast({ message: 'This user has no posts yet.', type: 'info' })
-      }
+      setPosts(Array.isArray(response.data.posts) ? response.data.posts : [])
     } catch (error: any) {
       console.error('Failed to load posts:', error)
       if (error.response?.status === 401) {
-        setToast({ message: 'Session expired, please login again.', type: 'error' })
+        router.push('/auth/login')
       } else {
-        setError('載入貼文失敗，請稍後再試')
+        setError('載入貼文失敗')
       }
     } finally {
       setLoading(false)
@@ -311,10 +301,6 @@ export default function HomePage() {
             : p
         )
       )
-      setToast({
-        message: error.response?.data?.error || '更新按讚狀態失敗',
-        type: 'error',
-      })
     }
   }
   
@@ -325,7 +311,6 @@ export default function HomePage() {
       setHasPostedTopicToday(response.data.hasPostedToday || false)
     } catch (error: any) {
       console.error('Failed to load topic status:', error)
-      // 載入失敗不影響頁面
     } finally {
       setLoadingTopicStatus(false)
     }
@@ -338,7 +323,6 @@ export default function HomePage() {
       setDailyTopic(response.data.topic || null)
     } catch (error: any) {
       console.error('Failed to load daily topic:', error)
-      // 載入主題失敗不影響頁面，只記錄錯誤
     } finally {
       setLoadingTopic(false)
     }
@@ -350,7 +334,6 @@ export default function HomePage() {
       setDailyMatchCount(response.data)
     } catch (error: any) {
       console.error('Failed to load daily match count:', error)
-      // 載入失敗不影響頁面
     }
   }
 
@@ -386,7 +369,6 @@ export default function HomePage() {
     }
   }
 
-  // 搜尋/建立使用者主題 (board)
   useEffect(() => {
     let active = true
     const doSearch = async () => {
@@ -441,7 +423,7 @@ export default function HomePage() {
       const response = await fetch(`/api/posts/${postId}/match`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${currentToken}`,
+          'Authorization': `Bearer ${currentToken}`,
           'Content-Type': 'application/json',
         },
       })
@@ -452,7 +434,7 @@ export default function HomePage() {
       }
 
       const data = await response.json()
-
+      
       if (data.match.matched) {
         setToast({ message: '配對成功！現在可以開始聊天了！', type: 'success' })
         await Promise.all([loadPosts(filterTopicId), loadDailyMatchCount()])
@@ -476,12 +458,10 @@ export default function HomePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!content.trim()) {
       alert('請輸入貼文內容')
       return
     }
-
     if (posting) return
 
     setPosting(true)
@@ -499,7 +479,6 @@ export default function HomePage() {
       if (selectedImage) {
         formData.append('image', selectedImage)
       }
-      // 如果選擇針對主題發文，且今日有主題，則加入 topicId
       if (postingAsTopic && dailyTopic) {
         formData.append('topicId', dailyTopic.id)
       }
@@ -517,14 +496,12 @@ export default function HomePage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
-        // Phase 2: 檢查是否是主題貼文限制錯誤
         if (response.status === 429 && errorData.limitReached) {
           throw new Error(errorData.message || '每天只能針對今日話題發文一次')
         }
         throw new Error(errorData.error || '發文失敗')
       }
 
-      // 清空輸入
       setContent('')
       setSelectedImage(null)
       setImagePreview(null)
@@ -536,7 +513,6 @@ export default function HomePage() {
         fileInputRef.current.value = ''
       }
 
-      // 重新載入 feed 和主題（更新貼文數量）
       await Promise.all([loadPosts(filterTopicId), loadDailyTopic(), loadTopicStatus()])
     } catch (error: any) {
       console.error('Failed to create post:', error)
@@ -546,20 +522,8 @@ export default function HomePage() {
     }
   }
 
-  if (loading && posts.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center text-gray-700">
-          <div className="text-4xl mb-4">🐕</div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen pb-36">
-      {/* Toast 通知 */}
+    <div className="min-h-screen pb-24">
       {toast && (
         <Toast
           message={toast.message}
@@ -569,37 +533,12 @@ export default function HomePage() {
       )}
       
       <div className="max-w-6xl mx-auto pt-8 px-4 flex gap-6">
-        {/* 主內容 */}
-        <div className="flex-1 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[var(--pixel-text-dim)]">排序：</span>
-            <button
-              type="button"
-              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              最新
-            </button>
-            <span className="text-[var(--pixel-text-dim)]">/</span>
-            <button
-              type="button"
-              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              熱門
-            </button>
-          </div>
-        </div>
-
-        {/* 右側側欄：主題列表 + 配對排行榜 */}
+        {/* 左側側欄 */}
         <aside className="w-72 space-y-4">
           <div className="pixel-panel p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm font-bold text-[var(--pixel-text)]">熱門主題</div>
-              <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '載入中...' : ''}</div>
+              <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '...' : ''}</div>
             </div>
             {trendingTopics.length === 0 && !loadingTrending && (
               <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
@@ -621,10 +560,10 @@ export default function HomePage() {
           </div>
 
           <div className="pixel-panel p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items中心 justify-between">
               <div className="text-sm font-bold text-[var(--pixel-text)]">配對排行榜 Top 10</div>
               <div className="text-xs text-[var(--pixel-text-dim)]">
-                {loadingLeaderboard ? '載入中...' : ''}
+                {loadingLeaderboard ? '...' : ''}
               </div>
             </div>
             {leaderboard.length === 0 && !loadingLeaderboard && (
@@ -652,10 +591,10 @@ export default function HomePage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <button
-                      onClick={() => loadPosts(filterTopicId, { authorId: u.id, showNoPostToast: true })}
+                      onClick={() => { setFilterAuthorId(u.id); loadPosts(filterTopicId) }}
                       className="px-2 py-1 text-[10px]"
                     >
-                      查看貼文
+                      查看
                     </button>
                     <button
                       onClick={() => router.push(`/profile/${u.id}`)}
@@ -670,395 +609,395 @@ export default function HomePage() {
           </div>
         </aside>
 
-        {/* 每日主題區塊 */}
-        {dailyTopic && (
-          <div className="pixel-panel p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
-                  今日話題
-                </div>
-                <button
-                  onClick={() => {
-                    if (filterTopicId === dailyTopic.id) {
-                      setFilterTopicId(null)
-                      loadPosts(null)
-                    } else {
-                      setFilterTopicId(dailyTopic.id)
-                      loadPosts(dailyTopic.id)
-                    }
-                  }}
-                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
-                >
-                  <span>{dailyTopic.title}</span>
-                  {filterTopicId === dailyTopic.id && (
-                    <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
-                  )}
-                </button>
-                {dailyTopic.postCount !== undefined && (
-                  <div className="text-xs text-[var(--pixel-text-dim)]">
-                    {dailyTopic.postCount} 則回應
+        {/* 主內容區塊 */}
+        <div className="flex-1 space-y-4">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[var(--pixel-text-dim)]">排序：</span>
+              <button
+                type="button"
+                onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+                className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+              >
+                最新
+              </button>
+              <span className="text-[var(--pixel-text-dim)]">/</span>
+              <button
+                type="button"
+                onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+                className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+              >
+                熱門
+              </button>
+            </div>
+          </div>
+
+          {/* 每日主題區塊 */}
+          {dailyTopic && (
+            <div className="pixel-panel p-4 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
+                    今日話題
                   </div>
+                  <button
+                    onClick={() => {
+                      if (filterTopicId === dailyTopic.id) {
+                        setFilterTopicId(null)
+                        loadPosts(null)
+                      } else {
+                        setFilterTopicId(dailyTopic.id)
+                        loadPosts(dailyTopic.id)
+                      }
+                    }}
+                    className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors"
+                  >
+                    <span>{dailyTopic.title}</span>
+                    {filterTopicId === dailyTopic.id && (
+                      <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
+                    )}
+                  </button>
+                  <div className="text-xs text-[var(--pixel-text-dim)]">
+                    {dailyTopic.postCount || 0} 則回應
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 發文狀態 */}
+          {dailyTopic && !loadingTopicStatus && (
+            <div className={`pixel-panel p-3 mb-4 ${hasPostedTopicToday ? 'bg-[var(--pixel-surface)]' : 'bg-[var(--pixel-highlight-2)]/20'}`}>
+              <div className="flex items-center gap-2">
+                {hasPostedTopicToday ? (
+                  <>
+                    <span className="text-lg">🔒</span>
+                    <span className="text-sm font-bold text-[var(--pixel-text)]">
+                      你今天已完成主題貼文
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg">🟢</span>
+                    <span className="text-sm font-bold text-[var(--pixel-text)]">
+                      今天尚未發表主題貼文
+                    </span>
+                  </>
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Phase 2: 今天是否已發主題貼文的狀態提示 */}
-        {dailyTopic && !loadingTopicStatus && (
-          <div className={`pixel-panel p-3 mb-4 ${hasPostedTopicToday ? 'bg-[var(--pixel-surface)]' : 'bg-[var(--pixel-highlight-2)]/20'}`}>
-            <div className="flex items-center gap-2">
-              {hasPostedTopicToday ? (
-                <>
-                  <span className="text-lg">🔒</span>
-                  <span className="text-sm font-bold text-[var(--pixel-text)]">
-                    你今天已完成主題貼文
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-lg">🟢</span>
-                  <span className="text-sm font-bold text-[var(--pixel-text)]">
-                    今天尚未發表主題貼文
-                  </span>
-                </>
+          {/* 發文輸入框 */}
+          <div className="pixel-panel p-4 space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {dailyTopic && (
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={postingAsTopic}
+                      onChange={(e) => setPostingAsTopic(e.target.checked)}
+                      disabled={posting || hasPostedTopicToday}
+                      className="w-4 h-4 border-3 border-[var(--pixel-border)] disabled:opacity-50"
+                    />
+                    <span className={`text-sm ${hasPostedTopicToday ? 'text-[var(--pixel-text-dim)]' : 'text-[var(--pixel-text)]'}`}>
+                      針對今日話題發文：{dailyTopic.title}
+                    </span>
+                  </label>
+                </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {/* 發文輸入框 */}
-        <div className="pixel-panel p-4 space-y-3">
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* 每日主題發文選項 */}
-            {dailyTopic && (
-              <div className="flex items-center gap-2 mb-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="space-y-2">
+                <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)]">主題（可選）</div>
+                <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
-                    checked={postingAsTopic}
-                    onChange={(e) => setPostingAsTopic(e.target.checked)}
-                    disabled={posting || hasPostedTopicToday}
-                    className="w-4 h-4 border-3 border-[var(--pixel-border)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="text"
+                    value={boardQuery}
+                    onChange={(e) => {
+                      setBoardQuery(e.target.value)
+                      setSelectedBoard(null)
+                    }}
+                    placeholder="搜尋或建立主題"
+                    className="flex-1 px-3 py-2 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none"
+                    disabled={posting}
                   />
-                  <span className={`text-sm ${hasPostedTopicToday ? 'text-[var(--pixel-text-dim)]' : 'text-[var(--pixel-text)]'}`}>
-                    針對今日話題發文：{dailyTopic.title}
-                    {hasPostedTopicToday && (
-                      <span className="ml-2 text-xs">(今日已發)</span>
-                    )}
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {/* 使用者主題選擇/建立 */}
-            <div className="space-y-2">
-              <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)]">主題（可選）</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={boardQuery}
-                  onChange={(e) => {
-                    setBoardQuery(e.target.value)
-                    setSelectedBoard(null)
-                  }}
-                  placeholder="搜尋或建立主題，如：美食、運動"
-                  className="flex-1 px-3 py-2 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none focus:ring-0"
-                  disabled={posting}
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateBoard}
-                  disabled={creatingBoard || !boardQuery.trim()}
-                  className="px-3 py-2 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
-                >
-                  {creatingBoard ? '建立中...' : '建立/套用'}
-                </button>
-              </div>
-              {boardSearching && <div className="text-xs text-[var(--pixel-text-dim)]">搜尋中...</div>}
-              {selectedBoard && (
-                <div className="text-xs text-[var(--pixel-text)]">
-                  已選主題：<span className="font-bold">{selectedBoard.title}</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedBoard(null)}
-                    className="ml-2 text-[var(--pixel-highlight)] underline"
+                    onClick={handleCreateBoard}
+                    disabled={creatingBoard || !boardQuery.trim()}
+                    className="px-3 py-2 bg-[var(--pixel-highlight)] text白 text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50"
                   >
-                    清除
+                    {creatingBoard ? '...' : '建立'}
+                  </button>
+                </div>
+                {selectedBoard && (
+                  <div className="text-xs text-[var(--pixel-text)]">
+                    已選：<span className="font-bold">{selectedBoard.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBoard(null)}
+                      className="ml-2 text-[var(--pixel-highlight)] underline"
+                    >
+                      清除
+                    </button>
+                  </div>
+                )}
+                {!selectedBoard && boardResults.length > 0 && (
+                  <div className="border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)]">
+                    {boardResults.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedBoard(t)
+                          setBoardResults([])
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
+                      >
+                        {t.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder={postingAsTopic && dailyTopic ? `說說你對「${dailyTopic.title}」的想法...` : "說說你的想法..."}
+                className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none"
+                disabled={posting}
+              />
+              
+              {imagePreview && (
+                <div className="relative">
+                  <img src={imagePreview} alt="Preview" className="w-full max-h-64 object-cover border-3 border-[var(--pixel-border)]" />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold"
+                  >
+                    ×
                   </button>
                 </div>
               )}
-              {!selectedBoard && boardResults.length > 0 && (
-                <div className="border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] divide-y-3 divide-[var(--pixel-border)]">
-                  {boardResults.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedBoard(t)
-                        setBoardResults([])
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
-                    >
-                      {t.title}
-                      {typeof t.postCount === 'number' && (
-                        <span className="ml-2 text-[var(--pixel-text-dim)] text-xs">({t.postCount})</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={postingAsTopic && dailyTopic ? `說說你對「${dailyTopic.title}」的想法...` : "說說你的想法..."}
-              className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
-              disabled={posting}
-            />
-            
-            {/* 圖片預覽 */}
-            {imagePreview && (
-              <div className="relative">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full max-h-64 object-cover border-3 border-[var(--pixel-border)]"
-                />
+              <div className="flex items-center justify-between gap-3">
+                <label className="cursor-pointer">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    disabled={posting}
+                  />
+                  <span className="px-4 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors inline-block">
+                    📷 圖片
+                  </span>
+                </label>
+                
                 <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold hover:bg-red-600"
+                  type="submit"
+                  disabled={posting || !content.trim()}
+                  className="px-6 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
                 >
-                  ×
+                  {posting ? '...' : '發佈'}
                 </button>
               </div>
-            )}
-
-            {/* 錯誤訊息 */}
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
-
-            <div className="flex items-center justify-between gap-3">
-              <label className="cursor-pointer">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  disabled={posting}
-                />
-                <span className="px-4 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors inline-block">
-                  📷 選擇圖片
-                </span>
-              </label>
-              
-              <button
-                type="submit"
-                disabled={posting || !content.trim()}
-                className="px-6 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {posting ? '發佈中...' : '發佈'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Feed */}
-        {posts.length === 0 ? (
-          <div className="text-center py-12 pixel-panel">
-            <div className="text-5xl mb-3">📝</div>
-            <p className="text-sm uppercase tracking-wide text-[var(--pixel-text-dim)] mb-2">No posts yet</p>
-            <p className="text-xs text-[var(--pixel-text-dim)]">Be the first to post!</p>
+            </form>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="pixel-panel p-4 space-y-3 relative"
-              >
-                {/* Author Info & Actions */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-[var(--pixel-text)]">
-                      {post.author.name ? post.author.name[0]?.toUpperCase() : '?'}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[var(--pixel-text)] truncate">
-                      {/* Phase 3: 未配對時顯示 ???? */}
-                      {post.author.name || '????'}
-                      {!post.author.name && (
-                        <span className="ml-2 text-xs text-[var(--pixel-text-dim)] font-normal">
-                          (配對前能匿名且不顯示)
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-[var(--pixel-text-dim)]">
-                      {formatTimeAgo(post.createdAt)}
-                    </div>
-                  </div>
-                  {/* 收藏 + 按讚 + 配對/聊天或作者功能 */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorite(post.id)}
-                      className="px-1"
-                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    >
-                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
-                        {post.isFavorited ? '❤️' : '🤍'}
+
+          {/* Feed */}
+          {loading && posts.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center text-gray-700">
+                <div className="text-4xl mb-4">🐕</div>
+                <p>Loading...</p>
+              </div>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-12 pixel-panel">
+              <div className="text-5xl mb-3">📝</div>
+              <p className="text-sm uppercase tracking-wide text-[var(--pixel-text-dim)] mb-2">No posts yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <div
+                  key={post.id}
+                  className="pixel-panel p-4 space-y-3 relative"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-[var(--pixel-text)]">
+                        {post.author?.name ? post.author.name[0]?.toUpperCase() : '?'}
                       </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleLike(post.id)}
-                      className="flex items-center gap-1 px-1 text-xs"
-                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    >
-                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
-                        👍
-                      </span>
-                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
-                    </button>
-                  {post.isAuthor ? (
-                    <div className="relative">
-                      <button
-                        onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
-                        className="px-2 py-1 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
-                      >
-                        ⋯
-                      </button>
-                      {openMenuPostId === post.id && (
-                        <div className="absolute right-0 mt-2 w-28 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10">
-                          <button
-                            onClick={() => handleStartEdit(post)}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
-                          >
-                            編輯
-                          </button>
-                          <button
-                            onClick={() => handleDeletePost(post.id)}
-                            disabled={deletingPostId === post.id}
-                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            {deletingPostId === post.id ? '刪除中...' : '刪除'}
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  ) : (
-                    post.authorId !== user?.id && (
-                      <div className="flex items-center gap-2">
-                        {post.isMatched && post.matchId ? (
-                          // 已配對：顯示聊天室入口
-                          <Link
-                            href={`/chat/${post.matchId}`}
-                            className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
-                          >
-                            聊天
-                          </Link>
-                        ) : (
-                          // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
-                          <button
-                            onClick={() => handleMatchFromPost(post.id)}
-                            disabled={dailyMatchCount.remaining === 0}
-                            className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
-                            title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
-                          >
-                            {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
-                          </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-[var(--pixel-text)] truncate">
+                        {post.author?.name || '????'}
+                        {!post.author?.name && (
+                          <span className="ml-2 text-xs text-[var(--pixel-text-dim)] font-normal">
+                            (匿名)
+                          </span>
                         )}
                       </div>
-                    )
-                  )}
-                  </div>
-                </div>
-
-                {/* Topic Badge */}
-                {post.type === 'TOPIC' && post.topic && (
-                  <div className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
-                    📌 {post.topic.title}
-                  </div>
-                )}
-                {/* Board Badge */}
-                {post.board && (
-                  <Link
-                    href={`/topics/${post.board.id}`}
-                    className="px-3 py-1 bg-[var(--pixel-panel)] text-[var(--pixel-text)] text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2 hover:bg-[var(--pixel-surface)]"
-                  >
-                    📌 主題：{post.board.title}
-                  </Link>
-                )}
-
-                {/* Content / Edit */}
-                {editingPostId === post.id ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
-                      disabled={savingEdit}
-                    />
+                      <div className="text-xs text-[var(--pixel-text-dim)]">
+                        {formatTimeAgo(post.createdAt)}
+                      </div>
+                    </div>
+                    
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={handleSaveEdit}
-                        disabled={savingEdit}
-                        className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+                        type="button"
+                        onClick={() => toggleFavorite(post.id)}
+                        className="px-1"
                       >
-                        {savingEdit ? '儲存中...' : '儲存'}
+                        <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
+                          {post.isFavorited ? '❤️' : '🤍'}
+                        </span>
                       </button>
                       <button
-                        onClick={handleCancelEdit}
-                        disabled={savingEdit}
-                        className="px-4 py-2 bg-[var(--pixel-panel)] text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:bg-[var(--pixel-surface)] transition-all"
+                        type="button"
+                        onClick={() => toggleLike(post.id)}
+                        className="flex items-center gap-1 px-1 text-xs"
                       >
-                        取消
+                        <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
+                          👍
+                        </span>
+                        <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
                       </button>
+                    {post.isAuthor ? (
+                      <div className="relative">
+                        <button
+                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                          className="px-2 py-1 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
+                        >
+                          ⋯
+                        </button>
+                        {openMenuPostId === post.id && (
+                          <div className="absolute right-0 mt-2 w-28 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10">
+                            <button
+                              onClick={() => handleStartEdit(post)}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
+                            >
+                              編輯
+                            </button>
+                            <button
+                              onClick={() => handleDeletePost(post.id)}
+                              disabled={deletingPostId === post.id}
+                              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              刪除
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      post.authorId !== user?.id && (
+                        <div className="flex items-center gap-2">
+                          {post.isMatched && post.matchId ? (
+                            <Link
+                              href={`/chat/${post.matchId}`}
+                              className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                            >
+                              聊天
+                            </Link>
+                          ) : (
+                            <button
+                              onClick={() => handleMatchFromPost(post.id)}
+                              disabled={dailyMatchCount.remaining === 0}
+                              className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+                            >
+                              {dailyMatchCount.remaining === 0 ? '上限' : '配對'}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    )}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
-                    {post.content}
-                  </div>
-                )}
 
-                {/* Image */}
-                {post.imageUrl && (
-                  <div className="mt-3 rounded-none overflow-hidden border-3 border-[var(--pixel-border)]">
-                    <img
-                      src={post.imageUrl}
-                      alt="Post"
-                      className="w-full h-auto object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+                  {post.type === 'TOPIC' && post.topic?.title && (
+                    <div className="px-3 py-1 bg-[var(--pixel-highlight)] text白 text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2">
+                      📌 {post.topic.title}
+                    </div>
+                  )}
+                  {post.board?.title && (
+                    <Link
+                      href={`/topics/${post.board.id}`}
+                      className="px-3 py-1 bg-[var(--pixel-panel)] text-[var(--pixel-text)] text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2 hover:bg-[var(--pixel-surface)]"
+                    >
+                      📌 主題：{post.board.title}
+                    </Link>
+                  )}
+
+                  {editingPostId === post.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none"
+                        disabled={savingEdit}
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSaveEdit}
+                          disabled={savingEdit}
+                          className="px-4 py-2 bg-[var(--pixel-highlight)] text白 border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50"
+                        >
+                          儲存
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          disabled={savingEdit}
+                          className="px-4 py-2 bg-[var(--pixel-panel)] text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:bg-[var(--pixel-surface)]"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
+                      {post.content}
+                    </div>
+                  )}
+
+                  {post.imageUrl && (
+                    <div className="mt-3 rounded-none overflow-hidden border-3 border-[var(--pixel-border)]">
+                      <img
+                        src={post.imageUrl}
+                        alt="Post"
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="pixel-panel p-3 mt-6 text-center">
+            <p className="text-xs text-[var(--pixel-text-dim)]">
+              每天最多只能從貼文中配對 3 人
+            </p>
+            <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
+              今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}
+              {dailyMatchCount.remaining > 0 && (
+                <span className="ml-2 text-[var(--pixel-highlight)]">
+                  （還可配對 {dailyMatchCount.remaining} 人）
+                </span>
+              )}
+            </p>
           </div>
-        )}
-
-        {/* Phase 4: 每日配對上限提示 */}
-        <div className="pixel-panel p-3 mt-6 text-center">
-          <p className="text-xs text-[var(--pixel-text-dim)]">
-            每天最多只能從貼文中配對 3 人
-          </p>
-          <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
-            今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}
-            {dailyMatchCount.remaining > 0 && (
-              <span className="ml-2 text-[var(--pixel-highlight)]">
-                （還可配對 {dailyMatchCount.remaining} 人）
-              </span>
-            )}
-          </p>
-        </div>
         </div>
       </div>
     </div>
   )
 }
+
