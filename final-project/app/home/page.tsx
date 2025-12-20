@@ -569,7 +569,32 @@ export default function HomePage() {
       )}
       
       <div className="max-w-6xl mx-auto pt-8 px-4 flex gap-6">
-        {/* 左側側欄：主題列表 + 配對排行榜 */}
+        {/* 主內容 */}
+        <div className="flex-1 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[var(--pixel-text-dim)]">排序：</span>
+            <button
+              type="button"
+              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              最新
+            </button>
+            <span className="text-[var(--pixel-text-dim)]">/</span>
+            <button
+              type="button"
+              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              熱門
+            </button>
+          </div>
+        </div>
+
+        {/* 右側側欄：主題列表 + 配對排行榜 */}
         <aside className="w-72 space-y-4">
           <div className="pixel-panel p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -626,8 +651,8 @@ export default function HomePage() {
                     {u.bio && <div className="text-[11px] text-[var(--pixel-text-dim)] truncate">{u.bio}</div>}
                   </div>
                   <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => loadPosts(filterTopicId, { authorId: u.id, showNoPostToast: true })}
+                    <button
+                      onClick={() => loadPosts(filterTopicId, { authorId: u.id, showNoPostToast: true })}
                       className="px-2 py-1 text-[10px]"
                     >
                       查看貼文
@@ -644,31 +669,6 @@ export default function HomePage() {
             </div>
           </div>
         </aside>
-
-        {/* 主內容 */}
-        <div className="flex-1 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[var(--pixel-text-dim)]">排序：</span>
-            <button
-              type="button"
-              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              最新
-            </button>
-            <span className="text-[var(--pixel-text-dim)]">/</span>
-            <button
-              type="button"
-              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              熱門
-            </button>
-          </div>
-        </div>
 
         {/* 每日主題區塊 */}
         {dailyTopic && (
