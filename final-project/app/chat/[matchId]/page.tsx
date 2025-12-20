@@ -32,8 +32,11 @@ export default function ChatPage() {
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [openingPool, setOpeningPool] = useState<string[]>([])
-  const [openingIndex, setOpeningIndex] = useState(0)
+  const [personaIndices, setPersonaIndices] = useState<Record<string, number>>({
+    puppy: 0,
+    boss: 0,
+    queen: 0,
+  })
   const [pusher, setPusher] = useState<Pusher | null>(null)
   const [sending, setSending] = useState(false)
   const [otherUser, setOtherUser] = useState<any>(null)
@@ -297,41 +300,51 @@ export default function ChatPage() {
     }
   }
 
-  const personalizeLine = (line: string) => {
-    // 取最近對方訊息內容，讓回應更有「接話」感
-    const lastIncoming = [...messages].reverse().find((m) => m.senderId !== user?.id)
-    if (lastIncoming?.content) {
-      const snippet = lastIncoming.content.slice(0, 40)
-      return `${line}（回應對方提到的：「${snippet}${lastIncoming.content.length > 40 ? '…' : ''}」）`
-    }
-    return line
+  const PERSONA_SCRIPTS: Record<string, string[]> = {
+    puppy: [
+      '我在呢！想聽你今天的故事！',
+      '嘿嘿～你在忙嗎？一起聊聊吧！',
+      '給你一個微笑 😊 想說點什麼嗎？',
+      '剛剛想到你，想問問你最近的心情～',
+      '我超好奇你的日常，分享給我吧！',
+      '如果現在能出去走走，你想去哪裡？',
+      '你在意的人，就是我在意的人！',
+      '聽你說話讓我放鬆，想多聽一點～',
+      '你覺得我像個貼心小幫手嗎？',
+      '有什麼想讓我幫忙開話題的嗎？',
+    ],
+    boss: [
+      '直接切入重點：最近有什麼有趣的目標在進行？',
+      '我想聽聽你的想法，越直接越好。',
+      '如果給你 5 分鐘，你會分享什麼亮點？',
+      '我欣賞行動派，最近你做了什麼讓自己滿意的事？',
+      '說說看，你現在最想解決的問題是什麼？',
+      '我在，給我一個話題，我們往前推。',
+      '談談你最有成就感的瞬間，我想聽。',
+      '如果要我投資你的時間，現在的重點是什麼？',
+      '把你的想法丟過來，我接住。',
+      '讓我們別浪費時間，現在想聊哪塊？',
+    ],
+    queen: [
+      '親愛的，我在等你的分享，願聞其詳。',
+      '今天的你想聊聊什麼呢？我願意傾聽。',
+      '和我說說，你此刻的心情如何？',
+      '我喜歡有質感的對話，來點有深度的話題吧。',
+      '如果此刻要犒賞自己，你會怎麼做？',
+      '讓我們優雅地開始，談談最近的靈感？',
+      '我想聽聽你最真實的想法，別客氣。',
+      '關於生活的品味，你最近的發現是？',
+      '我們來聊點迷人的話題，好嗎？',
+      '把你的故事講給我聽，我會認真聽。'
+    ],
   }
 
-  const getOpeningLines = async () => {
-    if (!otherUser?.id) {
-      console.error('Other user not loaded yet')
-      return
-    }
-    
-    try {
-      // 若已經有池子，直接循環使用
-      let pool = openingPool
-      if (!pool.length) {
-        const response = await api.get(`/ai-coach/opening-lines/${otherUser.id}`)
-        pool = Array.isArray(response.data.suggestions) && response.data.suggestions.length > 0
-          ? response.data.suggestions
-          : ['你好！很高興認識你 😊']
-        setOpeningPool(pool)
-        setOpeningIndex(0)
-      }
-
-      const nextLine = personalizeLine(pool[openingIndex % pool.length])
-      setOpeningIndex((prev) => prev + 1)
-      setInput(nextLine)
-    } catch (error: any) {
-      console.error('Failed to get opening lines:', error)
-      setInput('你好！很高興認識你 😊')
-    }
+  const usePersonaLine = (persona: 'puppy' | 'boss' | 'queen') => {
+    const pool = PERSONA_SCRIPTS[persona]
+    const idx = personaIndices[persona] ?? 0
+    const line = pool[idx % pool.length]
+    setPersonaIndices((prev) => ({ ...prev, [persona]: idx + 1 }))
+    setInput(line)
   }
 
   // 发起游戏
@@ -682,15 +695,31 @@ export default function ChatPage() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-[var(--pixel-text-dim)] mb-4">No messages yet. Say hi!</p>
-              <button
-                onClick={getOpeningLines}
-                disabled={!otherUser?.id}
-                className="px-4 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                🐕 Get opener
-              </button>
+            <div className="text-center space-y-3">
+              <p className="text-[var(--pixel-text-dim)] mb-2">還沒有訊息，先用 AI coach 開話題吧！</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <button
+                  onClick={() => usePersonaLine('puppy')}
+                  disabled={!otherUser?.id}
+                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🐶 小奶狗
+                </button>
+                <button
+                  onClick={() => usePersonaLine('boss')}
+                  disabled={!otherUser?.id}
+                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🧠 霸道總裁
+                </button>
+                <button
+                  onClick={() => usePersonaLine('queen')}
+                  disabled={!otherUser?.id}
+                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  👑 高貴御姐
+                </button>
+              </div>
             </div>
           </div>
         ) : (
