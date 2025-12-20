@@ -486,7 +486,7 @@ export default function ChatPage() {
             🎮
           </button>
           <button
-            onClick={getOpeningLines}
+            onClick={() => usePersonaLine('puppy')}
             className="text-2xl"
             title="AI coach"
           >
