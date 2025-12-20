@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Toast from '@/components/Toast'
 import { useUnreadMessages } from '@/components/hooks/useUnreadMessages'
 import Pusher from 'pusher-js'
+import { motion } from 'framer-motion'
 
 interface Match {
   id: string
@@ -253,20 +254,46 @@ export default function MatchesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <motion.button
                       onClick={() => handleAcceptMatch(pending.id)}
                       disabled={processingMatch === pending.id}
-                      className="flex-1 px-4 py-2 bg-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={!processingMatch ? { 
+                        scale: 1.02,
+                        boxShadow: '4px 4px 0 rgba(0,0,0,0.25)',
+                        y: -1,
+                        x: -1,
+                      } : {}}
+                      whileTap={!processingMatch ? { 
+                        scale: 0.98,
+                        boxShadow: '2px 2px 0 rgba(0,0,0,0.25)',
+                        y: 0,
+                        x: 0,
+                      } : {}}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     >
                       {processingMatch === pending.id ? '處理中...' : '接受'}
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                       onClick={() => handleRejectMatch(pending.id)}
                       disabled={processingMatch === pending.id}
-                      className="flex-1 px-4 py-2 bg-[var(--pixel-text-dim)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-4 py-2 bg-[var(--pixel-text-dim)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      whileHover={!processingMatch ? { 
+                        scale: 1.02,
+                        boxShadow: '4px 4px 0 rgba(0,0,0,0.25)',
+                        y: -1,
+                        x: -1,
+                      } : {}}
+                      whileTap={!processingMatch ? { 
+                        scale: 0.98,
+                        boxShadow: '2px 2px 0 rgba(0,0,0,0.25)',
+                        y: 0,
+                        x: 0,
+                      } : {}}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     >
                       拒絕
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               ))}
@@ -294,15 +321,21 @@ export default function MatchesPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {matches.map((match) => {
+            {matches.map((match, index) => {
               const unreadCount = getUnreadCount(match.id)
               
               return (
-                <Link
+                <motion.div
                   key={match.id}
-                  href={`/chat/${match.id}`}
-                  className="block pixel-panel p-4 hover:translate-y-[-2px] transition-transform relative"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.3 }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 >
+                  <Link
+                    href={`/chat/${match.id}`}
+                    className="block pixel-panel p-4 transition-all duration-200 ease-smooth relative hover:shadow-[10px_10px_0_rgba(0,0,0,0.25)]"
+                  >
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-none overflow-hidden flex-shrink-0 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)] relative">
                       {(() => {
@@ -340,9 +373,14 @@ export default function MatchesPage() {
                       })()}
                       {/* 未读消息徽章 */}
                       {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold border-2 border-white rounded-full flex items-center justify-center shadow-[2px_2px_0_rgba(0,0,0,0.25)] z-10">
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white text-xs font-bold border-2 border-white rounded-full flex items-center justify-center shadow-[2px_2px_0_rgba(0,0,0,0.25)] z-10"
+                        >
                           {unreadCount > 9 ? '9+' : unreadCount}
-                        </span>
+                        </motion.span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -373,6 +411,7 @@ export default function MatchesPage() {
                     </div>
                   </div>
                 </Link>
+                </motion.div>
               )
             })}
           </div>
