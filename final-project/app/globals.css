@@ -33,6 +33,12 @@ body {
     linear-gradient(180deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px);
   background-size: 18px 18px, 18px 18px;
   background-position: 0 0, 0 0;
+  /* 字体优化 */
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
 }
 
 @layer base {

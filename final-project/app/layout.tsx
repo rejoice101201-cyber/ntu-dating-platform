@@ -1,15 +1,25 @@
 import type { Metadata } from 'next'
-import { Press_Start_2P } from 'next/font/google'
+import { Inter, Noto_Sans_TC } from 'next/font/google'
 import './globals.css'
 import dynamic from 'next/dynamic'
 
 const Navigation = dynamic(() => import('@/components/Navigation'), { ssr: false })
 const LeftSidebar = dynamic(() => import('@/components/LeftSidebar'), { ssr: false })
 
-const pixelFont = Press_Start_2P({
+// 英文和数字使用 Inter - 现代、清晰、易读
+const inter = Inter({
   subsets: ['latin'],
-  weight: '400',
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-inter',
+})
+
+// 中文使用 Noto Sans TC - 优雅、现代、易读
+const notoSansTC = Noto_Sans_TC({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-noto',
 })
 
 export const metadata: Metadata = {
@@ -24,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-TW">
-      <body className={pixelFont.className}>
+      <body className={`${inter.variable} ${notoSansTC.variable} font-sans`}>
         <LeftSidebar />
         <div className="ml-20">
           {children}
