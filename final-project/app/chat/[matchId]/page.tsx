@@ -791,21 +791,21 @@ export default function ChatPage() {
           <button
             onClick={() => usePersonaLine('puppy')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             🐶 小奶狗
           </button>
           <button
             onClick={() => usePersonaLine('boss')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             🧠 霸道總裁
           </button>
           <button
             onClick={() => usePersonaLine('queen')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             👑 高貴御姐
           </button>
