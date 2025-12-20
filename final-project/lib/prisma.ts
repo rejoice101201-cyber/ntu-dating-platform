@@ -7,15 +7,18 @@ const globalForPrisma = globalThis as unknown as {
 
 // 如果使用 Prisma Accelerate，使用 PRISMA_DATABASE_URL
 // 否则使用标准的 DATABASE_URL
+// 在构建时（NODE_ENV !== 'production' 且没有 DATABASE_URL），使用虚拟 URL
 const databaseUrl =
   process.env.PRISMA_DATABASE_URL ||
   process.env.DATABASE_URL ||
   // 讓 build 不會因為 PrismaClient constructor validation 直接炸掉。
   // 真正執行查詢時若沒設 DATABASE_URL 仍會出錯，提醒使用者補環境變數即可。
-  'postgresql://invalid:invalid@localhost:5432/invalid';
+  'postgresql://user:password@localhost:5432/dbname?schema=public';
 
 if (!process.env.PRISMA_DATABASE_URL && !process.env.DATABASE_URL) {
-  console.warn('DATABASE_URL is not set! (using a dummy URL for build)');
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('DATABASE_URL is not set in production!');
+  }
 }
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
