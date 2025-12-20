@@ -1,12 +1,40 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
 export const dynamic = 'force-dynamic'
 
-function SuccessInner() {
+const DogLoader = ({ text }: { text: string }) => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="pixel-panel p-10 text-center space-y-4">
+      <div className="w-24 h-24 mx-auto relative">
+        <div className="pixel-dog" />
+      </div>
+      <p className="font-bold text-lg">{text}</p>
+      <p className="text-sm text-gray-600">Please wait…</p>
+    </div>
+    <style jsx>{`
+      .pixel-dog {
+        width: 48px;
+        height: 32px;
+        background: url('/pixel-dog-sprite.png') 0 0 / auto 32px no-repeat;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: run 0.8s steps(4) infinite;
+      }
+      @keyframes run {
+        from { background-position: 0 0; }
+        to { background-position: -192px 0; }
+      }
+    `}</style>
+  </div>
+)
+
+export default function GoogleSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -35,36 +63,6 @@ function SuccessInner() {
     }
   }, [router, searchParams, setAuth])
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="pixel-panel p-8 text-center space-y-3">
-        <div className="text-4xl">🔐</div>
-        <p className="font-bold">
-          {error ? 'Redirecting…' : 'Signing in with Google…'}
-        </p>
-        <p className="text-sm text-gray-600">
-          {error ? 'Please try again.' : 'Please wait a moment.'}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-export default function GoogleSuccessPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="pixel-panel p-8 text-center space-y-3">
-            <div className="text-4xl">🔐</div>
-            <p className="font-bold">Signing in with Google…</p>
-            <p className="text-sm text-gray-600">Please wait a moment.</p>
-          </div>
-        </div>
-      }
-    >
-      <SuccessInner />
-    </Suspense>
-  )
+  return <DogLoader text={error ? 'Redirecting…' : 'Signing in with Google…'} />
 }
 
