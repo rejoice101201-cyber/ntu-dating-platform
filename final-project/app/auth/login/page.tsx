@@ -17,6 +17,7 @@ const GOOGLE_CLIENT_ID =
 
 export default function LoginPage() {
   const router = useRouter()
+  const { user, token } = useAuthStore()
   const login = useAuthStore((state) => state.login)
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle)
   const [email, setEmail] = useState('')
@@ -27,14 +28,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     // 若 10 分鐘內已經成功登入過，直接進站
-    if (typeof window !== 'undefined') {
+    // Only redirect if we have both token and user in store (validated)
+    if (typeof window !== 'undefined' && token && user) {
       const expires = localStorage.getItem('recentLoginExpiresAt')
-      const token = localStorage.getItem('token')
-      if (token && expires && Number(expires) > Date.now()) {
+      if (expires && Number(expires) > Date.now()) {
         router.replace('/discover')
         return
       }
     }
+    
+    // If token exists but user not loaded, don't auto-redirect to avoid loops
+    // Let the user manually login or wait for auth store to rehydrate
 
     if (typeof window === 'undefined') return
     const hash = window.location.hash || ''

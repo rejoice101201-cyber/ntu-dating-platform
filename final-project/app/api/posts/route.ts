@@ -118,6 +118,8 @@ export async function GET(request: NextRequest) {
             content: post.content,
             imageUrl: post.imageUrl,
             type: post.type,
+            likeCount: post.likeCount,
+            hasLiked: likeSet.has(post.id),
             topicId: post.topicId,
             topic: post.topic ? {
               id: post.topic.id,
@@ -127,6 +129,7 @@ export async function GET(request: NextRequest) {
             board: post.board ? { id: post.board.id, title: post.board.title } : null,
             createdAt: post.createdAt.toISOString(),
             isMatched: true, // 自己的貼文視為已配對
+            matchId: null, // 自己的貼文不需要 matchId
             isAuthor: true,
             isFavorited: favoriteSet.has(post.id),
           };

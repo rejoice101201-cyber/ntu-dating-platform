@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
+import PostButton from '@/components/PostButton'
+import { motion } from 'framer-motion'
+import { Image as ImageIcon } from 'lucide-react'
 
 interface Post {
   id: string
@@ -741,19 +744,29 @@ export default function WallPage() {
             
             {/* 圖片預覽 */}
             {imagePreview && (
-              <div className="relative">
+              <div className="relative group">
                 <img
                   src={imagePreview}
                   alt="Preview"
                   className="w-full max-h-64 object-cover border-3 border-[var(--pixel-border)]"
                 />
-                <button
+                <motion.button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold hover:bg-red-600"
+                  className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
+                  whileHover={{
+                    scale: 1.1,
+                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
+                    backgroundColor: '#dc2626',
+                  }}
+                  whileTap={{
+                    scale: 0.95,
+                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 >
                   ×
-                </button>
+                </motion.button>
               </div>
             )}
 
@@ -772,18 +785,31 @@ export default function WallPage() {
                   className="hidden"
                   disabled={posting}
                 />
-                <span className="px-4 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors inline-block">
-                  📷 選擇圖片
-                </span>
+                <motion.span
+                  className="px-4 py-2.5 bg-gradient-to-br from-[var(--pixel-panel)] to-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold inline-flex items-center gap-2"
+                  whileHover={!posting ? {
+                    scale: 1.05,
+                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
+                    y: -2,
+                    x: -2,
+                  } : {}}
+                  whileTap={!posting ? {
+                    scale: 0.95,
+                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
+                    y: 0,
+                    x: 0,
+                  } : {}}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
+                  <ImageIcon size={18} />
+                  <span>選擇圖片</span>
+                </motion.span>
               </label>
               
-              <button
-                type="submit"
+              <PostButton
+                posting={posting}
                 disabled={posting || !content.trim()}
-                className="px-6 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {posting ? '發佈中...' : '發佈'}
-              </button>
+              />
             </div>
           </form>
         </div>

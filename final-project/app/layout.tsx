@@ -10,16 +10,20 @@ const LeftSidebar = dynamic(() => import('@/components/LeftSidebar'), { ssr: fal
 const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  display: 'swap',
+  display: 'swap', // 性能优化：字体加载时显示回退字体
   variable: '--font-inter',
+  preload: true, // 预加载字体，提升性能
+  adjustFontFallback: true, // 自动调整回退字体，减少布局偏移
 })
 
 // 中文使用 Noto Sans TC - 优雅、现代、易读
 const notoSansTC = Noto_Sans_TC({
-  subsets: ['latin'],
+  subsets: ['latin'], // Next.js 会自动处理中文字符
   weight: ['400', '500', '600', '700'],
-  display: 'swap',
+  display: 'swap', // 性能优化：字体加载时显示回退字体
   variable: '--font-noto',
+  preload: true, // 预加载字体，提升性能
+  adjustFontFallback: true, // 自动调整回退字体，减少布局偏移
 })
 
 export const metadata: Metadata = {

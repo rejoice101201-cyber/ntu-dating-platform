@@ -28,8 +28,26 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'var(--font-noto)', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        display: ['var(--font-inter)', 'var(--font-noto)', 'system-ui', 'sans-serif'],
+        sans: [
+          'var(--font-inter)', 
+          'var(--font-noto)', 
+          '-apple-system', 
+          'BlinkMacSystemFont', 
+          'Segoe UI', 
+          'Microsoft JhengHei', 
+          'PingFang TC', 
+          'Helvetica Neue', 
+          'Arial', 
+          'Noto Sans', 
+          'Noto Sans TC', 
+          'sans-serif'
+        ],
+        display: [
+          'var(--font-inter)', 
+          'var(--font-noto)', 
+          'system-ui', 
+          'sans-serif'
+        ],
         cute: ['Comic Sans MS', 'cursive'],
       },
       transitionDuration: {
