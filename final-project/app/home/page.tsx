@@ -558,7 +558,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-36">
       {/* Toast 通知 */}
       {toast && (
         <Toast
