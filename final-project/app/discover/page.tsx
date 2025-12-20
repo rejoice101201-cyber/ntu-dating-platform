@@ -179,7 +179,7 @@ export default function DiscoverPage() {
               <button
                 key={score}
                 onClick={() => handleRate(score)}
-                className="w-14 h-14 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] text-lg font-bold"
+                className="w-14 h-14 text-lg font-bold flex items-center justify-center"
               >
                 {score}
               </button>
