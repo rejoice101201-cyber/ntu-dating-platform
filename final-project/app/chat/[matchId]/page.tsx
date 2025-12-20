@@ -693,35 +693,6 @@ export default function ChatPage() {
               </button>
             </div>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center space-y-3">
-              <p className="text-[var(--pixel-text-dim)] mb-2">還沒有訊息，先用 AI coach 開話題吧！</p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <button
-                  onClick={() => usePersonaLine('puppy')}
-                  disabled={!otherUser?.id}
-                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  🐶 小奶狗
-                </button>
-                <button
-                  onClick={() => usePersonaLine('boss')}
-                  disabled={!otherUser?.id}
-                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  🧠 霸道總裁
-                </button>
-                <button
-                  onClick={() => usePersonaLine('queen')}
-                  disabled={!otherUser?.id}
-                  className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  👑 高貴御姐
-                </button>
-              </div>
-            </div>
-          </div>
         ) : (
           messages.map((message) => {
             const isOwn = message.senderId === user?.id
@@ -815,7 +786,31 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
-      <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4">
+      <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => usePersonaLine('puppy')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🐶 小奶狗
+          </button>
+          <button
+            onClick={() => usePersonaLine('boss')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            🧠 霸道總裁
+          </button>
+          <button
+            onClick={() => usePersonaLine('queen')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            👑 高貴御姐
+          </button>
+        </div>
+
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
