@@ -3,10 +3,16 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const OPENING_LINES = [
-  "你好！我看到你們有共同的興趣，不如從 {interest} 開始聊起？",
-  "🐕 柴犬建議：可以問問他/她關於 {tag} 的看法！",
-  "試試這個開場白：'我注意到你喜歡 {tag}，我也是！'",
-  "根據你們的匹配度，建議聊聊 {commonInterest}",
+  '我注意到我們都對 {tag} 有興趣，最近有沒有新的發現？',
+  '🐕 柴犬提示：先聊聊 {interest}，通常能很快找到共鳴！',
+  '如果週末有空，{commonInterest} 相關的活動你會想試試嗎？',
+  '我也喜歡 {tag}，好奇你是怎麼入坑的？',
+  '看到你標籤有 {interest}，最近有什麼推薦的嗎？',
+  '先從最輕鬆的開始：你最喜歡的 {tag} 是什麼？',
+  '我最近在找 {commonInterest} 的靈感，想聽聽你的想法～',
+  '你會怎麼形容自己在 {interest} 這件事上的風格？',
+  '如果要推薦一個給新手的 {tag} 入門，你會說什麼？',
+  '聊點有趣的：最近一次關於 {commonInterest} 的小插曲是什麼？',
 ];
 
 export async function GET(

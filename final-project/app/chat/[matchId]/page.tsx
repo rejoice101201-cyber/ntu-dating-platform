@@ -32,6 +32,8 @@ export default function ChatPage() {
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  const [openingPool, setOpeningPool] = useState<string[]>([])
+  const [openingIndex, setOpeningIndex] = useState(0)
   const [pusher, setPusher] = useState<Pusher | null>(null)
   const [sending, setSending] = useState(false)
   const [otherUser, setOtherUser] = useState<any>(null)
@@ -295,6 +297,16 @@ export default function ChatPage() {
     }
   }
 
+  const personalizeLine = (line: string) => {
+    // 取最近對方訊息內容，讓回應更有「接話」感
+    const lastIncoming = [...messages].reverse().find((m) => m.senderId !== user?.id)
+    if (lastIncoming?.content) {
+      const snippet = lastIncoming.content.slice(0, 40)
+      return `${line}（回應對方提到的：「${snippet}${lastIncoming.content.length > 40 ? '…' : ''}」）`
+    }
+    return line
+  }
+
   const getOpeningLines = async () => {
     if (!otherUser?.id) {
       console.error('Other user not loaded yet')
@@ -302,20 +314,22 @@ export default function ChatPage() {
     }
     
     try {
-      console.log('Getting opening lines for user:', otherUser.id)
-      const response = await api.get(`/ai-coach/opening-lines/${otherUser.id}`)
-      console.log('Opening lines response:', response.data)
-      const suggestions = response.data.suggestions
-      if (suggestions && suggestions.length > 0) {
-        setInput(suggestions[0])
-        console.log('Set opening line:', suggestions[0])
-      } else {
-        // Fallback suggestions
-        setInput('你好！很高興認識你 😊')
+      // 若已經有池子，直接循環使用
+      let pool = openingPool
+      if (!pool.length) {
+        const response = await api.get(`/ai-coach/opening-lines/${otherUser.id}`)
+        pool = Array.isArray(response.data.suggestions) && response.data.suggestions.length > 0
+          ? response.data.suggestions
+          : ['你好！很高興認識你 😊']
+        setOpeningPool(pool)
+        setOpeningIndex(0)
       }
+
+      const nextLine = personalizeLine(pool[openingIndex % pool.length])
+      setOpeningIndex((prev) => prev + 1)
+      setInput(nextLine)
     } catch (error: any) {
       console.error('Failed to get opening lines:', error)
-      // Fallback suggestions
       setInput('你好！很高興認識你 😊')
     }
   }
