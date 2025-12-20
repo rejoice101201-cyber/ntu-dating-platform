@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const DogLoader = ({ text }: { text: string }) => (
   <div className="min-h-screen flex items-center justify-center">
@@ -34,7 +35,7 @@ const DogLoader = ({ text }: { text: string }) => (
   </div>
 )
 
-export default function GoogleSuccessPage() {
+function SuccessInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -64,5 +65,13 @@ export default function GoogleSuccessPage() {
   }, [router, searchParams, setAuth])
 
   return <DogLoader text={error ? 'Redirecting…' : 'Signing in with Google…'} />
+}
+
+export default function GoogleSuccessPage() {
+  return (
+    <Suspense fallback={<DogLoader text="Signing in with Google…" />}>
+      <SuccessInner />
+    </Suspense>
+  )
 }
 
