@@ -479,7 +479,7 @@ export default function HomePage() {
     if (posting) return
 
     setPosting(true)
-      setError(null)
+    setError(null)
 
     try {
       const currentToken = token || localStorage.getItem('token')

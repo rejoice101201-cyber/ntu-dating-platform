@@ -1,5 +1,3 @@
-'use server'
-
 import { prisma } from '@/lib/prisma'
 
 // Daily refill cutoff 06:00 UTC+8
