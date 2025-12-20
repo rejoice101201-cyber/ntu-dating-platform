@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
 
 const DogLoader = ({ text }: { text: string }) => (
   <div className="min-h-screen flex items-center justify-center">
