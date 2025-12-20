@@ -66,12 +66,13 @@ export function useUnreadMessages() {
         channel.bind('new_message', (message: any) => {
           if (message.senderId !== user.id && message.matchId) {
             setUnreadCounts((prev) => {
-              const newCounts = {
+              const newCounts: UnreadCounts = {
                 ...prev,
                 [message.matchId]: (prev[message.matchId] || 0) + 1,
               }
               // 更新总数
-              const newTotal = Object.values(newCounts).reduce((sum, count) => sum + count, 0)
+              const counts = Object.values(newCounts) as number[]
+              const newTotal = counts.reduce((sum: number, count: number) => sum + count, 0)
               setTotalUnread(newTotal)
               return newCounts
             })
