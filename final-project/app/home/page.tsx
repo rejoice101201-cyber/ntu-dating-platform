@@ -81,6 +81,10 @@ export default function HomePage() {
   // 使用者主題 (board) trending
   const [trendingTopics, setTrendingTopics] = useState<BoardTopic[]>([])
   const [loadingTrending, setLoadingTrending] = useState(true)
+  const [leaderboard, setLeaderboard] = useState<
+    { id: string; userId: string; name: string; bio: string | null; matchCount: number; photoUrl: string | null; blurLevel: number }[]
+  >([])
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
   
   // Phase 4: 每日配對上限狀態
   const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
@@ -91,6 +95,7 @@ export default function HomePage() {
   
   // 篩選狀態
   const [filterTopicId, setFilterTopicId] = useState<string | null>(null)
+  const [filterAuthorId, setFilterAuthorId] = useState<string | null>(null)
   
   // 發文狀態
   const [content, setContent] = useState('')
@@ -131,6 +136,7 @@ export default function HomePage() {
     loadDailyMatchCount()
     loadTopicStatus()
     loadTrendingTopics()
+    loadLeaderboard()
   }, [token, router])
 
   const loadPosts = async (topicId?: string | null) => {
@@ -138,8 +144,11 @@ export default function HomePage() {
       setLoading(true)
       setError(null)
       const sortParam = `sort=${sort}`
-      const base = topicId ? `/posts?topicId=${topicId}&${sortParam}` : `/posts?${sortParam}`
-      const url = base
+      const params = new URLSearchParams()
+      params.set('sort', sort)
+      if (topicId) params.set('topicId', topicId)
+      if (filterAuthorId) params.set('authorId', filterAuthorId)
+      const url = `/posts?${params.toString()}`
       const response = await api.get(url)
       setPosts(response.data.posts || [])
     } catch (error: any) {
@@ -151,6 +160,18 @@ export default function HomePage() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadLeaderboard = async () => {
+    try {
+      setLoadingLeaderboard(true)
+      const res = await api.get('/leaderboard/matches')
+      setLeaderboard(res.data.users || [])
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error)
+    } finally {
+      setLoadingLeaderboard(false)
     }
   }
 
@@ -458,7 +479,7 @@ export default function HomePage() {
     if (posting) return
 
     setPosting(true)
-    setError(null)
+      setError(null)
 
     try {
       const currentToken = token || localStorage.getItem('token')
@@ -541,52 +562,107 @@ export default function HomePage() {
         />
       )}
       
-      <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-[var(--pixel-text-dim)]">排序：</span>
-            <button
-              type="button"
-              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              最新
-            </button>
-            <span className="text-[var(--pixel-text-dim)]">/</span>
-            <button
-              type="button"
-              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-            >
-              熱門
-            </button>
+      <div className="max-w-6xl mx-auto pt-8 px-4 flex gap-6">
+        {/* 左側側欄：主題列表 + 配對排行榜 */}
+        <aside className="w-72 space-y-4">
+          <div className="pixel-panel p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-bold text-[var(--pixel-text)]">熱門主題</div>
+              <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '載入中...' : ''}</div>
+            </div>
+            {trendingTopics.length === 0 && !loadingTrending && (
+              <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
+            )}
+            <div className="flex flex-col gap-2">
+              {trendingTopics.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/topics/${t.id}`}
+                  className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate">{t.title}</span>
+                    {typeof t.postCount === 'number' && <span className="ml-2 text-[var(--pixel-text-dim)]">{t.postCount}</span>}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* 熱門主題 */}
-        <div className="pixel-panel p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-bold text-[var(--pixel-text)]">熱門主題</div>
-            <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '載入中...' : ''}</div>
+          <div className="pixel-panel p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-bold text-[var(--pixel-text)]">配對排行榜 Top 10</div>
+              <div className="text-xs text-[var(--pixel-text-dim)]">
+                {loadingLeaderboard ? '載入中...' : ''}
+              </div>
+            </div>
+            {leaderboard.length === 0 && !loadingLeaderboard && (
+              <div className="text-xs text-[var(--pixel-text-dim)]">暫無資料</div>
+            )}
+            <div className="space-y-3">
+              {leaderboard.map((u, idx) => (
+                <div key={u.id} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)]">
+                  <div className="w-10 h-10 border-3 border-[var(--pixel-border)] overflow-hidden bg-[var(--pixel-surface)]">
+                    {u.photoUrl ? (
+                      <div
+                        className="w-full h-full bg-center bg-cover"
+                        style={{ backgroundImage: `url(${u.photoUrl})`, filter: `blur(${u.blurLevel ?? 50}px)` }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-[var(--pixel-text-dim)]">?</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-[var(--pixel-text-dim)]">#{idx + 1} • {u.matchCount} 配對</div>
+                    <Link href={`/profile/${u.id}`} className="text-sm font-bold text-[var(--pixel-text)] hover:text-[var(--pixel-highlight)] truncate">
+                      {u.userId || u.name || 'User'}
+                    </Link>
+                    {u.bio && <div className="text-[11px] text-[var(--pixel-text-dim)] truncate">{u.bio}</div>}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => { setFilterAuthorId(u.id); loadPosts(filterTopicId) }}
+                      className="px-2 py-1 text-[10px]"
+                    >
+                      查看貼文
+                    </button>
+                    <button
+                      onClick={() => router.push(`/profile/${u.id}`)}
+                      className="px-2 py-1 text-[10px] bg-[var(--pixel-panel)] text-[var(--pixel-border)] hover:bg-[var(--pixel-highlight)] hover:text-white"
+                    >
+                      配對
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          {trendingTopics.length === 0 && !loadingTrending && (
-            <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {trendingTopics.map((t) => (
-              <Link
-                key={t.id}
-                href={`/topics/${t.id}`}
-                className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
+        </aside>
+
+        {/* 主內容 */}
+        <div className="flex-1 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[var(--pixel-text-dim)]">排序：</span>
+              <button
+                type="button"
+                onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+                className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
               >
-                {t.title}
-                {typeof t.postCount === 'number' && <span className="ml-1 text-[var(--pixel-text-dim)]">({t.postCount})</span>}
-              </Link>
-            ))}
+                最新
+              </button>
+              <span className="text-[var(--pixel-text-dim)]">/</span>
+              <button
+                type="button"
+                onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+                className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+              >
+                熱門
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* 每日主題區塊 */}
         {dailyTopic && (

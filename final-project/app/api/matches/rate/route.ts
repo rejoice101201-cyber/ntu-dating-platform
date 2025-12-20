@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { applyDailyEnergyRefill } from '@/lib/energy';
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    await applyDailyEnergyRefill(authUser.id);
 
     // Check energy
     const user = await prisma.user.findUnique({

@@ -29,6 +29,8 @@ model User {
   energy           Int      @default(100) // 体力值
   energyMax        Int      @default(100)
   lastEnergyRefill DateTime @default(now())
+  matchCredits     Int      @default(0) // 額外配對機會
+  matchLikeCounter Int      @default(0) // 累積按讚數（達 3 時給一次配對機會）
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   isVerified       Boolean  @default(false)

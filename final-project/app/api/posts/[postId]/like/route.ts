@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: { postId:
     const result = await prisma.$transaction(async (tx) => {
       const post = await tx.post.findUnique({
         where: { id: postId },
-        select: { id: true },
+        select: { id: true, authorId: true },
       })
       if (!post) {
         throw new Error('Post not found')
@@ -58,6 +58,38 @@ export async function POST(request: NextRequest, { params }: { params: { postId:
         })
         hasLiked = true
         likeCount = updated.likeCount
+
+        // 按讚獎勵：每按讚 3 則他人貼文且配對數 < 3，給 1 次配對機會
+        if (post.authorId !== authUser.id) {
+          const user = await tx.user.findUnique({
+            where: { id: authUser.id },
+            select: { matchLikeCounter: true, matchCredits: true },
+          })
+          const matchesCount = await tx.match.count({
+            where: {
+              status: 'matched',
+              OR: [
+                { userId: authUser.id },
+                { matchedUserId: authUser.id },
+              ],
+            },
+          })
+          if (user) {
+            let counter = user.matchLikeCounter + 1
+            let creditInc = 0
+            if (counter >= 3 && matchesCount < 3) {
+              creditInc = 1
+              counter = counter - 3
+            }
+            await tx.user.update({
+              where: { id: authUser.id },
+              data: {
+                matchLikeCounter: counter,
+                matchCredits: { increment: creditInc },
+              },
+            })
+          }
+        }
       }
 
       return { hasLiked, likeCount }

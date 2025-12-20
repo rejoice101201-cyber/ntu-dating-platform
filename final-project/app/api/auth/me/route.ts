@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { applyDailyEnergyRefill } from '@/lib/energy';
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuth(request);
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
         isVerified: true,
       },
     });
+
+    const refilled = await applyDailyEnergyRefill(authUser.id);
+    if (refilled) {
+      return NextResponse.json({ user: refilled });
+    }
 
     if (!user) {
       return NextResponse.json(

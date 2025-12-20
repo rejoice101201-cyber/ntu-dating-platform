@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
 import { getTodayInTaiwan } from '@/lib/dateUtils';
+import { applyDailyEnergyRefill, clampEnergy } from '@/lib/energy';
 
 // Lazy load sharp to handle platform-specific issues
 let sharp: any;
@@ -203,6 +204,12 @@ export async function POST(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
+    await applyDailyEnergyRefill(authUser.id);
+    const energySnapshot = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: { energy: true, energyMax: true },
+    });
+
     const formData = await request.formData();
     const content = formData.get('content') as string;
     const image = formData.get('image') as File | null;
@@ -349,6 +356,15 @@ export async function POST(request: NextRequest) {
       await prisma.topic.update({
         where: { id: boardId },
         data: { lastActivityAt: new Date() },
+      });
+    }
+
+    // 發文回補 10 點體力（上限 energyMax）
+    if (energySnapshot) {
+      const newEnergy = clampEnergy(energySnapshot.energy + 10, energySnapshot.energyMax);
+      await prisma.user.update({
+        where: { id: authUser.id },
+        data: { energy: newEnergy, lastEnergyRefill: new Date() },
       });
     }
 

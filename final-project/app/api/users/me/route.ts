@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { applyDailyEnergyRefill } from '@/lib/energy';
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -45,7 +46,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { password, ...userWithoutPassword } = user;
+    const refilled = await applyDailyEnergyRefill(authUser.id);
+    const finalUser = refilled ? { ...user, ...refilled, photos: user.photos, tags: user.tags } : user;
+
+    const { password, ...userWithoutPassword } = finalUser;
 
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
