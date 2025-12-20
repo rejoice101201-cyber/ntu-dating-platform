@@ -19,7 +19,7 @@ export default function LoginPage() {
   const router = useRouter()
   const login = useAuthStore((state) => state.login)
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle)
-  const [identifier, setIdentifier] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -57,7 +57,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(identifier, password || undefined)
+      await login(email, password)
       // Wait a bit for state to update
       setTimeout(() => {
         router.push('/discover')
@@ -102,27 +102,28 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs uppercase tracking-wide text-gray-700 mb-2">
-              Email or UserID (UserID can skip password)
+              Email
             </label>
             <input
-              type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="username"
               className="w-full"
-              placeholder="your@email.com or yourUserID"
+              placeholder="your@email.com"
             />
           </div>
 
           <div>
             <label className="block text-xs uppercase tracking-wide text-gray-700 mb-2">
-              Password (optional if using UserID)
+              Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
               autoComplete="current-password"
               className="w-full"
               placeholder="••••••••"

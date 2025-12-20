@@ -4,9 +4,10 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
+// 僅支援 Email + 密碼登入（UserID 登入已移除）
 const loginSchema = z.object({
-  identifier: z.string(), // email 或 userId
-  password: z.string().optional(),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 // Handle OPTIONS for CORS
@@ -27,8 +28,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Login request body:', { email: body.email });
     const data = loginSchema.parse(body);
-    const identifier = data.identifier.trim();
-    const emailLike = identifier.includes('@') ? identifier.toLowerCase() : null;
+    const email = data.email.trim().toLowerCase();
 
     // Check database connection
     try {
@@ -43,17 +43,11 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          emailLike ? { email: emailLike } : undefined,
-          { userId: identifier },
-          { name: { equals: identifier, mode: 'insensitive' } },
-        ].filter(Boolean) as any,
-      },
+      where: { email },
     });
 
     if (!user) {
-      console.log('User not found:', identifier);
+      console.log('User not found:', email);
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -62,33 +56,13 @@ export async function POST(request: NextRequest) {
 
     console.log('User found:', { id: user.id, email: user.email, isActive: user.isActive });
 
-    const hasPassword = !!data.password && data.password.length > 0;
-    if (hasPassword) {
-      const isValidPassword = await bcrypt.compare(data.password!, user.password);
-      if (!isValidPassword) {
-        console.log('Invalid password for user:', identifier);
-        return NextResponse.json(
-          { error: 'Invalid credentials' },
-          { status: 401 }
-        );
-      }
-    } else {
-      // 無密碼登入：僅當 identifier 等於 userId，或 userId 為空且名稱匹配時允許
-      const idMatch = user.userId && identifier === user.userId;
-      const nameMatch = !user.userId && user.name?.toLowerCase() === identifier.toLowerCase();
-
-      if (!idMatch && !nameMatch) {
-        return NextResponse.json({ error: '需要密碼' }, { status: 401 });
-      }
-
-      // 若 userId 尚未設定且名稱匹配，嘗試補上 userId（避免下次再失敗）
-      if (!user.userId && nameMatch) {
-        const conflict = await prisma.user.findFirst({ where: { userId: identifier } });
-        if (!conflict) {
-          await prisma.user.update({ where: { id: user.id }, data: { userId: identifier } });
-          user.userId = identifier;
-        }
-      }
+    const isValidPassword = await bcrypt.compare(data.password, user.password);
+    if (!isValidPassword) {
+      console.log('Invalid password for user:', email);
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
     if (!user.isActive) {

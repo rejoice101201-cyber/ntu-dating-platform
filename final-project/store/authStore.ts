@@ -19,7 +19,7 @@ interface User {
 interface AuthState {
   user: User | null;
   token: string | null;
-  login: (identifier: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>()(
       return {
         user: null,
         token: null,
-        login: async (identifier: string, password?: string) => {
-          const response = await api.post('/auth/login', { identifier, password });
+        login: async (email: string, password: string) => {
+          const response = await api.post('/auth/login', { email, password });
           const { user, token } = response.data;
           set({ user, token });
           if (typeof window !== 'undefined') {
