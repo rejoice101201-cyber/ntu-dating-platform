@@ -1,12 +1,12 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
-export default function GoogleSuccessPage() {
+export const dynamic = 'force-dynamic'
+
+function SuccessInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -47,6 +47,24 @@ export default function GoogleSuccessPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function GoogleSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="pixel-panel p-8 text-center space-y-3">
+            <div className="text-4xl">🔐</div>
+            <p className="font-bold">Signing in with Google…</p>
+            <p className="text-sm text-gray-600">Please wait a moment.</p>
+          </div>
+        </div>
+      }
+    >
+      <SuccessInner />
+    </Suspense>
   )
 }
 
