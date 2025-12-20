@@ -115,6 +115,7 @@ export default function ChatPage() {
         // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
         pollInterval = setInterval(() => {
           loadMessages(false)
+          checkActiveGameSession() // 確保遊戲狀態定期同步
         }, 5000)
 
         setPusher(newPusher)
@@ -361,6 +362,7 @@ export default function ChatPage() {
         answer: gameAnswer,
       })
       setGameSession(response.data.gameSession)
+      await checkActiveGameSession() // 回答後強制刷新狀態，避免另一端停留
       alert('答案已提交！等待對方猜測...')
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
@@ -379,6 +381,7 @@ export default function ChatPage() {
         guess: gameGuess,
       })
       setGameSession(response.data.gameSession)
+      await checkActiveGameSession() // 猜測後強制刷新狀態，避免另一端停留
       if (response.data.isCorrect) {
         alert('🎉 猜對了！你獲得一把鑰匙！')
       } else {
