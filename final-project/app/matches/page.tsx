@@ -63,6 +63,57 @@ export default function MatchesPage() {
     checkAuth()
   }, [token, router])
 
+  const loadMatches = async () => {
+    try {
+      const response = await api.get('/matches')
+      console.log('Matches response:', response.data)
+      if (response.data && response.data.matches) {
+        // Load full profile for each user to get correct blur levels
+        const matchesWithProfiles = await Promise.all(
+          response.data.matches.map(async (match: any) => {
+            try {
+              // Load full user profile to get photos with correct blur levels
+              const profileResponse = await api.get(`/users/${match.user.id}`)
+              console.log(`Loaded profile for ${match.user.name}:`, {
+                userId: match.user.id,
+                photos: profileResponse.data.photos,
+                photosCount: profileResponse.data.photos?.length || 0,
+                unlockProgress: profileResponse.data.unlockProgress,
+              })
+              return {
+                ...match,
+                user: {
+                  ...match.user,
+                  photos: profileResponse.data.photos || [],
+                },
+                unlockProgress: profileResponse.data.unlockProgress,
+              }
+            } catch (error) {
+              console.error(`Failed to load profile for user ${match.user.id}:`, error)
+              return match // Fallback to original match data
+            }
+          })
+        )
+        console.log('Final matches with profiles:', matchesWithProfiles.map((m: any) => ({
+          name: m.user.name,
+          photosCount: m.user.photos?.length || 0,
+          firstPhoto: m.user.photos?.[0],
+        })))
+        setMatches(matchesWithProfiles)
+      } else {
+        setMatches([])
+      }
+    } catch (error: any) {
+      console.error('Failed to load matches:', error)
+      if (error.response?.status === 401) {
+        // Token expired, redirect to login
+        router.push('/auth/login')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 监听新消息，自动刷新 matches 列表以更新排序
   useEffect(() => {
     if (!token || !user?.id) return
