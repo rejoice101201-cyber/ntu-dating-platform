@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Link from 'next/link'
 import Toast from '@/components/Toast'
 import { useUnreadMessages } from '@/components/hooks/useUnreadMessages'
+import Pusher from 'pusher-js'
 
 interface Match {
   id: string
@@ -39,13 +40,14 @@ interface PendingMatch {
 
 export default function MatchesPage() {
   const router = useRouter()
-  const { token } = useAuthStore()
+  const { token, user } = useAuthStore()
   const [matches, setMatches] = useState<Match[]>([])
   const [pendingMatches, setPendingMatches] = useState<PendingMatch[]>([])
   const [loading, setLoading] = useState(true)
   const [processingMatch, setProcessingMatch] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
   const { getUnreadCount } = useUnreadMessages()
+  const pusherRef = useRef<Pusher | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -60,6 +62,43 @@ export default function MatchesPage() {
     }
     checkAuth()
   }, [token, router])
+
+  // 监听新消息，自动刷新 matches 列表以更新排序
+  useEffect(() => {
+    if (!token || !user?.id) return
+
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY || process.env.NEXT_PUBLIC_PUSHER_KEY
+    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'us2'
+
+    if (pusherKey && pusherCluster) {
+      try {
+        const pusher = new Pusher(pusherKey, {
+          cluster: pusherCluster,
+        })
+
+        // 订阅用户频道，监听新消息
+        const channel = pusher.subscribe(`user-${user.id}`)
+        
+        // 当收到新消息时，重新加载 matches 以更新排序
+        channel.bind('new_message', (message: any) => {
+          if (message.senderId !== user.id && message.matchId) {
+            // 延迟一下，确保后端已经更新了消息
+            setTimeout(() => {
+              loadMatches()
+            }, 500)
+          }
+        })
+
+        pusherRef.current = pusher
+
+        return () => {
+          pusher.disconnect()
+        }
+      } catch (error) {
+        console.error('Failed to initialize Pusher for matches page:', error)
+      }
+    }
+  }, [token, user?.id])
 
   const loadMatches = async () => {
     try {
