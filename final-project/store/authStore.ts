@@ -65,6 +65,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user, token });
           if (typeof window !== 'undefined') {
             localStorage.setItem('token', token);
+            const expiresAt = Date.now() + 10 * 60 * 1000;
+            localStorage.setItem('recentLoginExpiresAt', String(expiresAt));
           }
         },
         register: async (data: RegisterData) => {
@@ -73,6 +75,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user, token });
           if (typeof window !== 'undefined') {
             localStorage.setItem('token', token);
+            const expiresAt = Date.now() + 10 * 60 * 1000;
+            localStorage.setItem('recentLoginExpiresAt', String(expiresAt));
           }
         },
         logout: () => {
@@ -87,6 +91,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user, token });
           if (typeof window !== 'undefined') {
             localStorage.setItem('token', token);
+            const expiresAt = Date.now() + 10 * 60 * 1000;
+            localStorage.setItem('recentLoginExpiresAt', String(expiresAt));
           }
         },
       };
