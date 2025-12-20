@@ -641,63 +641,63 @@ export default function HomePage() {
 
         {/* 主內容 */}
         <div className="flex-1 space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[var(--pixel-text-dim)]">排序：</span>
-              <button
-                type="button"
-                onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-                className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-              >
-                最新
-              </button>
-              <span className="text-[var(--pixel-text-dim)]">/</span>
-              <button
-                type="button"
-                onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-                className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
-              >
-                熱門
-              </button>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[var(--pixel-text-dim)]">排序：</span>
+            <button
+              type="button"
+              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              最新
+            </button>
+            <span className="text-[var(--pixel-text-dim)]">/</span>
+            <button
+              type="button"
+              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+            >
+              熱門
+            </button>
           </div>
+        </div>
 
-          {/* 每日主題區塊 */}
-          {dailyTopic && (
-            <div className="pixel-panel p-4 mb-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-1">
-                  <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
-                    今日話題
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (filterTopicId === dailyTopic.id) {
-                        setFilterTopicId(null)
-                        loadPosts(null)
-                      } else {
-                        setFilterTopicId(dailyTopic.id)
-                        loadPosts(dailyTopic.id)
-                      }
-                    }}
-                    className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
-                  >
-                    <span>{dailyTopic.title}</span>
-                    {filterTopicId === dailyTopic.id && (
-                      <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
-                    )}
-                  </button>
-                  {dailyTopic.postCount !== undefined && (
-                    <div className="text-xs text-[var(--pixel-text-dim)]">
-                      {dailyTopic.postCount} 則回應
-                    </div>
-                  )}
+        {/* 每日主題區塊 */}
+        {dailyTopic && (
+          <div className="pixel-panel p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)] mb-1">
+                  今日話題
                 </div>
+                <button
+                  onClick={() => {
+                    if (filterTopicId === dailyTopic.id) {
+                      setFilterTopicId(null)
+                      loadPosts(null)
+                    } else {
+                      setFilterTopicId(dailyTopic.id)
+                      loadPosts(dailyTopic.id)
+                    }
+                  }}
+                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
+                >
+                  <span>{dailyTopic.title}</span>
+                  {filterTopicId === dailyTopic.id && (
+                    <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
+                  )}
+                </button>
+                {dailyTopic.postCount !== undefined && (
+                  <div className="text-xs text-[var(--pixel-text-dim)]">
+                    {dailyTopic.postCount} 則回應
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
         {/* Phase 2: 今天是否已發主題貼文的狀態提示 */}
         {dailyTopic && !loadingTopicStatus && (
