@@ -54,6 +54,9 @@ export const useAuthStore = create<AuthState>()(
           set({ user, token });
           if (typeof window !== 'undefined') {
             localStorage.setItem('token', token);
+            // 記錄最近密碼登入時間，10 分鐘內可直接進站
+            const expiresAt = Date.now() + 10 * 60 * 1000;
+            localStorage.setItem('recentLoginExpiresAt', String(expiresAt));
           }
         },
         loginWithGoogle: async (idToken: string) => {
@@ -75,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
         logout: () => {
           set({ user: null, token: null });
           localStorage.removeItem('token');
+          localStorage.removeItem('recentLoginExpiresAt');
         },
         updateUser: (user: User) => {
           set({ user });

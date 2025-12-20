@@ -26,6 +26,16 @@ export default function LoginPage() {
   const [gLoading, setGLoading] = useState(false)
 
   useEffect(() => {
+    // 若 10 分鐘內已經成功登入過，直接進站
+    if (typeof window !== 'undefined') {
+      const expires = localStorage.getItem('recentLoginExpiresAt')
+      const token = localStorage.getItem('token')
+      if (token && expires && Number(expires) > Date.now()) {
+        router.replace('/discover')
+        return
+      }
+    }
+
     if (typeof window === 'undefined') return
     const hash = window.location.hash || ''
     if (!hash.includes('id_token')) return
