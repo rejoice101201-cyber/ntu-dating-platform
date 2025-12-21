@@ -76,6 +76,8 @@ export default function WallPage() {
   
   // 篩選狀態
   const [filterTopicId, setFilterTopicId] = useState<string | null>(null)
+  const [filterAuthorId, setFilterAuthorId] = useState<string | null>(null)
+  const [sort, setSort] = useState<'latest' | 'trending'>('latest')
   
   // 發文狀態
   const [content, setContent] = useState('')
