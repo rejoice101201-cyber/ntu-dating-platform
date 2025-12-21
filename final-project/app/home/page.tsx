@@ -22,6 +22,11 @@ interface Post {
     id: string
     title: string
   } | null
+  boardId?: string | null
+  board?: {
+    id: string
+    title: string
+  } | null
   createdAt: string
   updatedAt?: string
   isMatched?: boolean
