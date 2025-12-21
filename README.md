@@ -85,7 +85,7 @@ npm run dev
 - **樣式**: Tailwind CSS
 - **部署**: Vercel
 
-## ✨ 主要功能
+## ✨主要功能
 
 - **多重登入**：Google OAuth、UserID（可免密碼）、Email/Password；忘記密碼寄送重設連結。(R14631031)
 - **像素風 UI**：Press Start 2P 字體、淺色像素格背景、深色高對比按鈕。(R14631031)
