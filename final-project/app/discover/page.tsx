@@ -122,7 +122,7 @@ export default function DiscoverPage() {
   const current = recommendations[currentIndex]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pl-20">
       <div className="max-w-2xl mx-auto pt-8 pb-24 px-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

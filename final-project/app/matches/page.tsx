@@ -76,7 +76,7 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pl-20">
       <div className="max-w-2xl mx-auto py-8 px-4">
         <h1 className="text-xl font-bold uppercase tracking-wide text-center mb-6">Matches</h1>
 

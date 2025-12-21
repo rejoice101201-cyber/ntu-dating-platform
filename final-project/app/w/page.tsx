@@ -535,7 +535,7 @@ export default function WallPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 pl-20">
       {/* Toast 通知 */}
       {toast && (
         <Toast

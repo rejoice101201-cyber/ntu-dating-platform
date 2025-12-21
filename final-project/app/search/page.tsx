@@ -72,7 +72,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 pl-20">
       <div className="max-w-5xl mx-auto pt-12 px-6">
         <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)] mb-6 text-center">Search Topics</h1>
 
