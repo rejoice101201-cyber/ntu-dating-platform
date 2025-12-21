@@ -17,6 +17,8 @@ export default function Navigation() {
     { href: '/discover', label: 'Discover', glyph: 'D' },
     { href: '/matches', label: 'Matches', glyph: 'M' },
     { href: '/profile/me', label: 'Profile', glyph: 'P' },
+
+    { href: '/home', label: 'Wall', glyph: 'W' },
   ]
 
   return (

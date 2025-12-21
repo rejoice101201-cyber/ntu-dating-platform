@@ -17,7 +17,7 @@ interface Recommendation {
 
 export default function DiscoverPage() {
   const router = useRouter()
-  const { user, token } = useAuthStore()
+  const { user, token, setAuth, updateUser } = useAuthStore()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -31,8 +31,27 @@ export default function DiscoverPage() {
         return
       }
     }
+    refreshEnergy()
     fetchRecommendations()
   }, [token, router])
+
+  const refreshEnergy = async () => {
+    try {
+      const res = await api.get('/auth/me')
+      const fetchedUser = res.data?.user
+      if (fetchedUser) {
+        if (token) {
+          setAuth(fetchedUser, token)
+        } else {
+          const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+          if (storedToken) setAuth(fetchedUser, storedToken)
+          else updateUser(fetchedUser)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to refresh energy:', err)
+    }
+  }
 
   const fetchRecommendations = async () => {
     try {
@@ -62,6 +81,7 @@ export default function DiscoverPage() {
         userId: recommendations[currentIndex].id,
         score,
       })
+      await refreshEnergy()
       
       // Move to next
       if (currentIndex < recommendations.length - 1) {
@@ -90,10 +110,10 @@ export default function DiscoverPage() {
   if (recommendations.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center text-gray-700">
-          <div className="text-4xl mb-4">🐕</div>
-          <p className="text-sm uppercase tracking-wide">No recommendations yet</p>
-          <p className="text-xs text-gray-500">Try again later</p>
+        <div className="text-center text-gray-700 space-y-3">
+          <div className="text-4xl mb-2">🐕</div>
+          <p className="text-sm uppercase tracking-wide">已經沒有可配對的人了</p>
+          <p className="text-xs text-gray-500">稍後再試</p>
         </div>
       </div>
     )

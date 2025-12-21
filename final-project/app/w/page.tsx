@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
+import PostButton from '@/components/PostButton'
+import { motion } from 'framer-motion'
+import { Image as ImageIcon } from 'lucide-react'
 
 interface Post {
   id: string

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Deduct energy
     await prisma.user.update({
       where: { id: authUser.id },
-      data: { energy: { decrement: 5 } },
+      data: { energy: Math.max(user.energy - 5, 0) },
     });
 
     // Create or update rating

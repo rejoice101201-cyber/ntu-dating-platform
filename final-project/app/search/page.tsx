@@ -73,23 +73,23 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      <div className="max-w-2xl mx-auto pt-8 px-4">
-        <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)] mb-6">Search Topics</h1>
+      <div className="max-w-5xl mx-auto pt-12 px-6">
+        <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)] mb-6 text-center">Search Topics</h1>
 
-        <div className="pixel-panel p-4 space-y-3">
-          <div className="flex items-center gap-3">
+        <div className="pixel-panel p-5 space-y-4 w-full">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜尋或建立主題，如：美食、旅行、運動"
-              className="flex-1 px-3 py-2 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none focus:ring-0"
+              className="flex-1 px-4 py-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none focus:ring-0 text-base"
             />
             <button
               type="button"
               onClick={handleCreate}
               disabled={creating || !query.trim()}
-              className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
+              className="md:w-auto w-full px-5 py-3 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
             >
               {creating ? '建立中...' : '建立/套用'}
             </button>

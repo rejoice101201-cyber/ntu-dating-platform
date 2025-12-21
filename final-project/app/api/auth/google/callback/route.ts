@@ -45,10 +45,17 @@ export async function GET(req: NextRequest) {
       audience: CLIENT_ID,
     })
     const payload = ticket.getPayload()
+
+    // 必須要有 email
     if (!payload?.email) {
       return NextResponse.redirect(new URL('/auth/login?error=google_no_email', req.url))
     }
     const email = payload.email.toLowerCase()
+
+    // 若 Google 回傳 hd，且不是 g.ntu.edu.tw，拒絕
+    if (payload.hd && payload.hd !== 'g.ntu.edu.tw') {
+      return NextResponse.redirect(new URL('/auth/login?error=google_hd_not_allowed', req.url))
+    }
 
     // Find or create user
     let user = await prisma.user.findUnique({ where: { email } })

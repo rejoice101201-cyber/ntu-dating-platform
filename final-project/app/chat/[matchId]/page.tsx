@@ -27,6 +27,11 @@ export default function ChatPage() {
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  const [personaIndices, setPersonaIndices] = useState<Record<string, number>>({
+    puppy: 0,
+    boss: 0,
+    queen: 0,
+  })
   const [pusher, setPusher] = useState<Pusher | null>(null)
   const [otherUser, setOtherUser] = useState<any>(null)
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null)
@@ -95,15 +100,14 @@ export default function ChatPage() {
           }
         })
 
-        // Also subscribe to user channel for notifications
-        if (user) {
-          const userChannel = newPusher.subscribe(`user-${user.id}`)
-          userChannel.bind('new_message', (message: Message) => {
-            if (message.matchId === matchId) {
-              setMessages(prev => [...prev, message])
-            }
-          })
-        }
+        // NOTE: 不要在聊天室頁訂閱 user channel（後端會同時推 match + user），
+        // 否則同一則訊息會被加入兩次。
+
+        // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
+        pollInterval = setInterval(() => {
+          loadMessages(false)
+          checkActiveGameSession() // 確保遊戲狀態定期同步
+        }, 5000)
 
         setPusher(newPusher)
 
@@ -290,29 +294,51 @@ export default function ChatPage() {
     }
   }
 
-  const getOpeningLines = async () => {
-    if (!otherUser?.id) {
-      console.error('Other user not loaded yet')
-      return
-    }
-    
-    try {
-      console.log('Getting opening lines for user:', otherUser.id)
-      const response = await api.get(`/ai-coach/opening-lines/${otherUser.id}`)
-      console.log('Opening lines response:', response.data)
-      const suggestions = response.data.suggestions
-      if (suggestions && suggestions.length > 0) {
-        setInput(suggestions[0])
-        console.log('Set opening line:', suggestions[0])
-      } else {
-        // Fallback suggestions
-        setInput('你好！很高興認識你 😊')
-      }
-    } catch (error: any) {
-      console.error('Failed to get opening lines:', error)
-      // Fallback suggestions
-      setInput('你好！很高興認識你 😊')
-    }
+  const PERSONA_SCRIPTS: Record<string, string[]> = {
+    puppy: [
+      '我在呢！想聽你今天的故事！',
+      '嘿嘿～你在忙嗎？一起聊聊吧！',
+      '給你一個微笑 😊 想說點什麼嗎？',
+      '剛剛想到你，想問問你最近的心情～',
+      '我超好奇你的日常，分享給我吧！',
+      '如果現在能出去走走，你想去哪裡？',
+      '你在意的人，就是我在意的人！',
+      '聽你說話讓我放鬆，想多聽一點～',
+      '你覺得我像個貼心小幫手嗎？',
+      '有什麼想讓我幫忙開話題的嗎？',
+    ],
+    boss: [
+      '直接切入重點：最近有什麼有趣的目標在進行？',
+      '我想聽聽你的想法，越直接越好。',
+      '如果給你 5 分鐘，你會分享什麼亮點？',
+      '我欣賞行動派，最近你做了什麼讓自己滿意的事？',
+      '說說看，你現在最想解決的問題是什麼？',
+      '我在，給我一個話題，我們往前推。',
+      '談談你最有成就感的瞬間，我想聽。',
+      '如果要我投資你的時間，現在的重點是什麼？',
+      '把你的想法丟過來，我接住。',
+      '讓我們別浪費時間，現在想聊哪塊？',
+    ],
+    queen: [
+      '親愛的，我在等你的分享，願聞其詳。',
+      '今天的你想聊聊什麼呢？我願意傾聽。',
+      '和我說說，你此刻的心情如何？',
+      '我喜歡有質感的對話，來點有深度的話題吧。',
+      '如果此刻要犒賞自己，你會怎麼做？',
+      '讓我們優雅地開始，談談最近的靈感？',
+      '我想聽聽你最真實的想法，別客氣。',
+      '關於生活的品味，你最近的發現是？',
+      '我們來聊點迷人的話題，好嗎？',
+      '把你的故事講給我聽，我會認真聽。'
+    ],
+  }
+
+  const usePersonaLine = (persona: 'puppy' | 'boss' | 'queen') => {
+    const pool = PERSONA_SCRIPTS[persona]
+    const idx = personaIndices[persona] ?? 0
+    const line = pool[idx % pool.length]
+    setPersonaIndices((prev) => ({ ...prev, [persona]: idx + 1 }))
+    setInput(line)
   }
 
   // 发起游戏
@@ -357,6 +383,7 @@ export default function ChatPage() {
         answer: gameAnswer,
       })
       setGameSession(response.data.gameSession)
+      await checkActiveGameSession() // 回答後強制刷新狀態，避免另一端停留
       alert('答案已提交！等待對方猜測...')
       // API已经通过Pusher通知对方，这里不需要额外操作
     } catch (error: any) {
@@ -375,6 +402,7 @@ export default function ChatPage() {
         guess: gameGuess,
       })
       setGameSession(response.data.gameSession)
+      await checkActiveGameSession() // 猜測後強制刷新狀態，避免另一端停留
       if (response.data.isCorrect) {
         alert('🎉 猜對了！你獲得一把鑰匙！')
       } else {
@@ -452,7 +480,7 @@ export default function ChatPage() {
             🎮
           </button>
           <button
-            onClick={getOpeningLines}
+            onClick={() => usePersonaLine('puppy')}
             className="text-2xl"
             title="AI coach"
           >
@@ -532,7 +560,12 @@ export default function ChatPage() {
               </p>
               {gameSession.question ? (
                 <>
-                  <p className="font-semibold text-lg mb-3">{gameSession.question.content}</p>
+              <p
+                className="text-lg mb-3"
+                style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+              >
+                {gameSession.question.content}
+              </p>
                   {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
                     <div className="space-y-2">
                       {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
@@ -561,14 +594,21 @@ export default function ChatPage() {
                       placeholder="Your answer"
                     />
                   )}
-                  <button onClick={submitAnswer} disabled={!gameAnswer} className="w-full text-[var(--pixel-text)]">
+                  <button
+                    onClick={submitAnswer}
+                    disabled={!gameAnswer}
+                    className="w-full text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold py-2 hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     Submit answer
                   </button>
                 </>
               ) : (
                 <div className="text-center py-4">
                   <p className="text-[var(--pixel-text-dim)] mb-2">Loading question...</p>
-                  <button onClick={checkActiveGameSession} className="underline text-sm text-[var(--pixel-text)]">
+                  <button
+                    onClick={checkActiveGameSession}
+                    className="px-4 py-2 text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)]"
+                  >
                     Reload
                   </button>
                 </div>
@@ -577,7 +617,12 @@ export default function ChatPage() {
           ) : gameSession.status === 'waiting_guess' && gameSession.initiatorId === user?.id ? (
             <div className="space-y-3 pixel-panel p-4 text-[var(--pixel-text)]">
               <p className="text-sm text-[var(--pixel-text-dim)] mb-2">They answered, your turn to guess!</p>
-              <p className="font-semibold text-lg mb-3">{gameSession.question?.content}</p>
+              <p
+                className="text-lg mb-3"
+                style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+              >
+                {gameSession.question?.content}
+              </p>
               {gameSession.question?.type === 'multiple_choice' && gameSession.question?.options ? (
                 <div className="space-y-2">
                   {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
@@ -606,7 +651,11 @@ export default function ChatPage() {
                   placeholder="Your guess"
                 />
               )}
-              <button onClick={submitGuess} disabled={!gameGuess} className="w-full text-[var(--pixel-text)]">
+              <button
+                onClick={submitGuess}
+                disabled={!gameGuess}
+                className="w-full text-white bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold py-2 hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Submit guess
               </button>
             </div>
@@ -656,19 +705,6 @@ export default function ChatPage() {
                 className="underline text-[var(--pixel-text)]"
               >
                 Back
-              </button>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-[var(--pixel-text-dim)] mb-4">No messages yet. Say hi!</p>
-              <button
-                onClick={getOpeningLines}
-                disabled={!otherUser?.id}
-                className="px-4 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                🐕 Get opener
               </button>
             </div>
           </div>
@@ -765,7 +801,34 @@ export default function ChatPage() {
       </div>
 
       {/* Input - Always visible at bottom */}
-      <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4">
+      <div className="bg-[var(--pixel-panel)] border-t-3 border-[var(--pixel-border)] p-4 space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => usePersonaLine('puppy')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+          >
+            🐶 小奶狗
+          </button>
+          <button
+            onClick={() => usePersonaLine('boss')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+          >
+            🧠 霸道總裁
+          </button>
+          <button
+            onClick={() => usePersonaLine('queen')}
+            disabled={!otherUser?.id}
+            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+          >
+            👑 高貴御姐
+          </button>
+        </div>
+
         <form onSubmit={handleSend} className="flex gap-2">
           <input
             type="text"
