@@ -64,6 +64,9 @@ export default function ChatPage() {
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
 
+    let pollInterval: ReturnType<typeof setInterval> | undefined
+    let pusherInstance: Pusher | null = null
+
     // Initialize Pusher if environment variables are set
     if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
       try {
@@ -109,11 +112,8 @@ export default function ChatPage() {
           checkActiveGameSession() // 確保遊戲狀態定期同步
         }, 5000)
 
+        pusherInstance = newPusher
         setPusher(newPusher)
-
-        return () => {
-          newPusher.disconnect()
-        }
       } catch (error) {
         console.error('Failed to initialize Pusher:', error)
         // Continue without Pusher - messages will still work via API polling
@@ -121,15 +121,20 @@ export default function ChatPage() {
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
-      const pollInterval = setInterval(() => {
+      pollInterval = setInterval(() => {
         if (!isInitialLoad) {
           loadMessages(false) // Don't show loading spinner on polling
           checkActiveGameSession() // 检查游戏状态
         }
       }, 5000) // Poll every 5 seconds
+    }
 
-      return () => {
+    return () => {
+      if (pollInterval) {
         clearInterval(pollInterval)
+      }
+      if (pusherInstance) {
+        pusherInstance.disconnect()
       }
     }
   }, [matchId, token, user])
