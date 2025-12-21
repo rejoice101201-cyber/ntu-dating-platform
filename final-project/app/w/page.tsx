@@ -128,11 +128,47 @@ export default function WallPage() {
         return
       }
     }
-    loadPosts()
-    loadDailyTopic()
-    loadDailyMatchCount()
-    loadTopicStatus()
-    loadTrendingTopics()
+    // #region agent log
+    const startTime = Date.now()
+    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:useEffect',message:'Wall page data loading started',data:{timestamp:startTime},timestamp:startTime,sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+    // #endregion
+    // 並行載入所有數據以提升性能
+    Promise.all([
+      loadPosts().then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:loadPosts',message:'loadPosts completed',data:{duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+        // #endregion
+      }),
+      loadDailyTopic().then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:loadDailyTopic',message:'loadDailyTopic completed',data:{duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+        // #endregion
+      }),
+      loadDailyMatchCount().then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:loadDailyMatchCount',message:'loadDailyMatchCount completed',data:{duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+        // #endregion
+      }),
+      loadTopicStatus().then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:loadTopicStatus',message:'loadTopicStatus completed',data:{duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+        // #endregion
+      }),
+      loadTrendingTopics().then(() => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:loadTrendingTopics',message:'loadTrendingTopics completed',data:{duration:Date.now()-startTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+        // #endregion
+      }),
+    ]).then(() => {
+      // #region agent log
+      const totalDuration = Date.now() - startTime
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:useEffect',message:'All data loading completed',data:{totalDuration:totalDuration},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+      // #endregion
+    }).catch((error) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/w/page.tsx:useEffect',message:'Data loading error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'H'})}).catch(()=>{})
+      // #endregion
+    })
   }, [token, router])
 
   const loadPosts = async (topicId?: string | null) => {
