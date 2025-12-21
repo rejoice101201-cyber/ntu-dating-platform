@@ -67,7 +67,8 @@ function SuccessInner() {
       router.replace('/discover')
     } catch (e) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/google/success/page.tsx:error',message:'Failed to parse user data',data:{error:String(e),errorName:e?.name,errorMessage:e?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'I'})}).catch(()=>{})
+      const error = e as Error
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/google/success/page.tsx:error',message:'Failed to parse user data',data:{error:String(e),errorName:error?.name,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'I'})}).catch(()=>{})
       // #endregion
       console.error('Failed to parse user from Google success:', e)
       setError('Invalid token data')
