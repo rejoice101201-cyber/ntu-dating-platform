@@ -29,8 +29,6 @@ model User {
   energy           Int      @default(100) // 体力值
   energyMax        Int      @default(100)
   lastEnergyRefill DateTime @default(now())
-  matchCredits     Int      @default(0) // 額外配對機會
-  matchLikeCounter Int      @default(0) // 累積按讚數（達 3 時給一次配對機會）
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   isVerified       Boolean  @default(false)
@@ -48,9 +46,6 @@ model User {
   unlockProgress         UnlockProgress[]
   unlockProgressAsTarget UnlockProgress[] @relation("TargetUser")
   matchPreference        MatchPreference?
-  posts                  Post[]
-  favorites              Favorite[]
-  likes                  PostLike[]
 
   @@index([email])
   @@index([userId])
@@ -220,86 +215,4 @@ model MatchPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-model Post {
-  id        String   @id @default(cuid())
-  authorId  String
-  content   String
-  imageUrl  String?  // Vercel Blob URL，可選
-  type      String   @default("FREE") // "FREE" | "TOPIC" (Phase 2 用)
-  topicId   String?  // Phase 2: 關聯到 DailyTopic（每日主題）
-  boardId   String?  // Phase 4: 使用者自定主題/看板
-  likeCount Int      @default(0) // Phase 5: 按讚數快取
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  topic  DailyTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
-  board  Topic?      @relation(fields: [boardId], references: [id], onDelete: SetNull)
-  favorites Favorite[]
-  likes     PostLike[]
-
-  @@index([authorId])
-  @@index([createdAt])
-  @@index([type])
-  @@index([topicId])
-  @@index([boardId])
-}
-
-model DailyTopic {
-  id        String   @id @default(cuid())
-  date      DateTime @unique // 每天一個主題（只存日期部分，不包含時間）
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  posts Post[]
-
-  @@index([date])
-}
-
-// 使用者自定主題 / 看板
-model Topic {
-  id             String   @id @default(cuid())
-  title          String
-  createdBy      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  lastActivityAt DateTime @default(now())
-
-  posts Post[]
-
-  @@index([title])
-  @@index([lastActivityAt])
-  @@index([createdBy])
-}
-
-// Phase 5: 貼文按讚（匿名）
-model PostLike {
-  id        String   @id @default(cuid())
-  userId    String
-  postId    String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
-}
-
-model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  postId    String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@index([userId])
-  @@index([postId])
 }

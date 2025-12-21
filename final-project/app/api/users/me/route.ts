@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { applyDailyEnergyRefill } from '@/lib/energy';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -25,18 +26,21 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.id },
-      include: {
-        photos: {
-          orderBy: { order: 'asc' },
-        },
-        tags: {
-          include: {
-            tag: true,
+    // 使用重試機制執行查詢
+    const user = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { id: authUser.id },
+        include: {
+          photos: {
+            orderBy: { order: 'asc' },
+          },
+          tags: {
+            include: {
+              tag: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -52,11 +56,14 @@ export async function GET(request: NextRequest) {
     const { password, ...userWithoutPassword } = finalUser;
 
     return NextResponse.json(userWithoutPassword);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get user error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to get user' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }
@@ -74,29 +81,32 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const data = updateSchema.parse(body);
 
-    const updatedUser = await prisma.user.update({
-      where: { id: authUser.id },
-      data,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        bio: true,
-        location: true,
-        height: true,
-        weight: true,
-        occupation: true,
-        school: true,
-        bloodType: true,
-        birthday: true,
-        gender: true,
-        energy: true,
-        energyMax: true,
-      },
+    // 使用重試機制執行更新
+    const updatedUser = await withRetry(async () => {
+      return await prisma.user.update({
+        where: { id: authUser.id },
+        data,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          bio: true,
+          location: true,
+          height: true,
+          weight: true,
+          occupation: true,
+          school: true,
+          bloodType: true,
+          birthday: true,
+          gender: true,
+          energy: true,
+          energyMax: true,
+        },
+      });
     });
 
     return NextResponse.json(updatedUser);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors },
@@ -104,9 +114,12 @@ export async function PUT(request: NextRequest) {
       );
     }
     console.error('Update user error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

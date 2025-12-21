@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuth(request);
@@ -12,61 +13,74 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    const matches = await prisma.match.findMany({
-      where: {
-        OR: [
-          { userId: authUser.id },
-          { matchedUserId: authUser.id },
+    // 使用重試機制執行查詢
+    const matches = await withRetry(async () => {
+      return await prisma.match.findMany({
+        where: {
+          OR: [
+            { userId: authUser.id },
+            { matchedUserId: authUser.id },
+          ],
+          status: 'matched',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              photos: {
+                where: { isCover: true },
+                take: 1,
+              },
+            },
+          },
+          matchedUser: {
+            select: {
+              id: true,
+              name: true,
+              photos: {
+                where: { isCover: true },
+                take: 1,
+              },
+            },
+          },
+          lastMessage: {
+            select: {
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc' as const,
+            },
+            take: 1,
+          },
+        },
+        orderBy: [
+          {
+            lastMessage: {
+              createdAt: 'desc' as const,
+            },
+          },
+          {
+            matchedAt: 'desc' as const,
+          },
         ],
-        status: 'matched',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            photos: {
-              where: { isCover: true },
-              take: 1,
-            },
-          },
-        },
-        matchedUser: {
-          select: {
-            id: true,
-            name: true,
-            photos: {
-              where: { isCover: true },
-              take: 1,
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+      });
     });
 
     // Format matches to always show the other user
     const formattedMatches = await Promise.all(matches.map(async (match: any) => {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
       
-      // Get unlock progress for this match
-      const unlockProgress = await prisma.unlockProgress.findUnique({
-        where: {
-          userId_targetUserId: {
-            userId: authUser.id,
-            targetUserId: otherUser.id,
+      // Get unlock progress for this match（使用重試機制）
+      const unlockProgress = await withRetry(async () => {
+        return await prisma.unlockProgress.findUnique({
+          where: {
+            userId_targetUserId: {
+              userId: authUser.id,
+              targetUserId: otherUser.id,
+            },
           },
-        },
-      });
-
-      // Get the last message for this match
-      const lastMessage = await prisma.message.findFirst({
-        where: { matchId: match.id },
-        orderBy: { createdAt: 'desc' },
-        select: {
-          content: true,
-          createdAt: true,
-        },
+        });
       });
 
       // Apply blur to photos based on unlock progress
@@ -102,41 +116,25 @@ export async function GET(request: NextRequest) {
         } : null,
         createdAt: match.createdAt,
         matchedAt: match.matchedAt,
-        lastMessage: lastMessage ? {
-          content: lastMessage.content,
-          createdAt: lastMessage.createdAt.toISOString(),
-        } : null,
-        // 用于排序：如果有最后一条消息，使用消息时间；否则使用匹配时间
-        sortTime: lastMessage ? lastMessage.createdAt : (match.matchedAt || match.createdAt),
+        lastMessageAt: match.lastMessage?.[0]?.createdAt || match.matchedAt,
       };
     }));
 
-    // 按最后消息时间排序（最新的在最上面）
-    formattedMatches.sort((a: any, b: any) => {
-      const timeA = new Date(a.sortTime).getTime();
-      const timeB = new Date(b.sortTime).getTime();
-      return timeB - timeA; // 降序：最新的在前
-    });
-
-    // 移除 sortTime，不需要返回给前端
-    const finalMatches = formattedMatches.map((match: any) => {
-      const { sortTime, ...rest } = match;
-      return rest;
-    });
-
-    console.log('Formatted matches:', finalMatches.map((m: any) => ({
+    console.log('Formatted matches:', formattedMatches.map((m: any) => ({
       id: m.id,
       userName: m.user.name,
       photosCount: m.user.photos?.length || 0,
-      lastMessageTime: m.lastMessage?.createdAt,
     })));
 
-    return NextResponse.json({ matches: finalMatches });
-  } catch (error) {
+    return NextResponse.json({ matches: formattedMatches });
+  } catch (error: any) {
     console.error('Get matches error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to get matches' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

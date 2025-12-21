@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 // 僅支援 Email + 密碼登入（UserID 登入已移除）
 const loginSchema = z.object({
@@ -30,22 +31,11 @@ export async function POST(request: NextRequest) {
     const data = loginSchema.parse(body);
     const email = data.email.trim().toLowerCase();
 
-    // 检查环境变量
-    if (!process.env.DATABASE_URL && !process.env.PRISMA_DATABASE_URL) {
-      console.error('DATABASE_URL is not set!');
-      return NextResponse.json(
-        { 
-          error: 'Database configuration error. DATABASE_URL is not set.',
-          hint: 'Please check Vercel Environment Variables'
-        },
-        { status: 500 }
-      );
-    }
-
-    // Prisma 会在第一次查询时自动连接，不需要显式调用 $connect()
-    // 直接进行查询，让 Prisma 自动处理连接
-    const user = await prisma.user.findFirst({
-      where: { email },
+    // 使用重試機制執行查詢（Prisma 會自動連接，不需要手動 $connect）
+    const user = await withRetry(async () => {
+      return await prisma.user.findFirst({
+        where: { email },
+      });
     });
 
     if (!user) {
@@ -87,7 +77,7 @@ export async function POST(request: NextRequest) {
       user: userWithoutPassword,
       token,
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors },
@@ -97,28 +87,11 @@ export async function POST(request: NextRequest) {
     
     console.error('Login error:', error);
     
-    // 检查是否是数据库连接错误
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const isConnectionError = 
-      errorMessage.includes('connect') || 
-      errorMessage.includes('ECONNREFUSED') ||
-      errorMessage.includes('P1001') ||
-      errorMessage.includes('timeout') ||
-      errorMessage.includes('Can\'t reach database');
-    
-    if (isConnectionError) {
-      return NextResponse.json(
-        { 
-          error: 'Database connection failed. Please check your DATABASE_URL environment variable.',
-          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-        },
-        { status: 500 }
-      );
-    }
-    
+    // 使用統一的數據庫錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Login failed' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

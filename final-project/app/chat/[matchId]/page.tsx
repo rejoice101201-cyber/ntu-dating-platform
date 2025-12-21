@@ -5,7 +5,6 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import Pusher from 'pusher-js'
 import api from '@/lib/api'
-import { useUnreadMessages } from '@/components/hooks/useUnreadMessages'
 
 interface Message {
   id: string
@@ -25,17 +24,10 @@ export default function ChatPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const matchId = params.matchId as string
-  const pusherKey =
-    process.env.NEXT_PUBLIC_PUSHER_APP_KEY || process.env.NEXT_PUBLIC_PUSHER_KEY
-  const pusherCluster =
-    process.env.NEXT_PUBLIC_PUSHER_CLUSTER || process.env.PUSHER_CLUSTER
-  const hasRealPusher = Boolean(pusherKey && pusherCluster)
-  const { clearUnreadCount } = useUnreadMessages()
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [pusher, setPusher] = useState<Pusher | null>(null)
-  const [sending, setSending] = useState(false)
   const [otherUser, setOtherUser] = useState<any>(null)
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -58,37 +50,29 @@ export default function ChatPage() {
 
     // Load messages first (even without Pusher)
     loadMessages(true)
-
+    
     // Load current user's profile to get photos
     if (user?.id) {
       loadCurrentUserProfile(user.id)
     }
-
+    
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
 
-    // 使用 ReturnType<typeof setInterval> 兼容瀏覽器與 Node 型別
-    let pollInterval: ReturnType<typeof setInterval> | undefined
-
     // Initialize Pusher if environment variables are set
-    if (hasRealPusher) {
+    if (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER) {
       try {
-        const newPusher = new Pusher(pusherKey as string, {
-          cluster: pusherCluster as string,
+        const newPusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
         })
 
         // Subscribe to match channel
         const channel = newPusher.subscribe(`match-${matchId}`)
-
-        // 避免重複綁定造成訊息重複
-        channel.unbind('new_message')
+        
         channel.bind('new_message', (message: Message) => {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === message.id)) return prev
-            return [...prev, message]
-          })
+          setMessages(prev => [...prev, message])
         })
-
+        
         // 监听游戏状态更新
         channel.bind('game_state_update', (data: any) => {
           console.log('Game state update received:', data)
@@ -111,19 +95,20 @@ export default function ChatPage() {
           }
         })
 
-        // NOTE: 不要在聊天室頁訂閱 user channel（後端會同時推 match + user），
-        // 否則同一則訊息會被加入兩次。
-
-        // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
-        pollInterval = setInterval(() => {
-          loadMessages(false)
-        }, 5000)
+        // Also subscribe to user channel for notifications
+        if (user) {
+          const userChannel = newPusher.subscribe(`user-${user.id}`)
+          userChannel.bind('new_message', (message: Message) => {
+            if (message.matchId === matchId) {
+              setMessages(prev => [...prev, message])
+            }
+          })
+        }
 
         setPusher(newPusher)
 
         return () => {
           newPusher.disconnect()
-          if (pollInterval) clearInterval(pollInterval)
         }
       } catch (error) {
         console.error('Failed to initialize Pusher:', error)
@@ -132,13 +117,15 @@ export default function ChatPage() {
     } else {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
-        pollInterval = setInterval(() => {
-        loadMessages(false) // Don't show loading spinner on polling
-        checkActiveGameSession() // 检查游戏状态
+      const pollInterval = setInterval(() => {
+        if (!isInitialLoad) {
+          loadMessages(false) // Don't show loading spinner on polling
+          checkActiveGameSession() // 检查游戏状态
+        }
       }, 5000) // Poll every 5 seconds
 
       return () => {
-        if (pollInterval) clearInterval(pollInterval)
+        clearInterval(pollInterval)
       }
     }
   }, [matchId, token, user])
@@ -158,9 +145,6 @@ export default function ChatPage() {
       const response = await api.get(`/chat/${matchId}`)
       console.log('Messages response:', response.data)
       setMessages(response.data.messages || [])
-
-      // 清除该匹配的未读数（因为消息已被标记为已读）
-      clearUnreadCount(matchId)
 
       // Get match info to find other user (only on initial load)
       if (isInitialLoad) {
@@ -215,10 +199,24 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || !user || sending) return
+    if (!input.trim() || !user) return
 
     const messageContent = input.trim()
-    setSending(true)
+    
+    // Optimistically add message to UI
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content: messageContent,
+      type: 'text',
+      senderId: user.id,
+      sender: {
+        id: user.id,
+        name: user.name,
+      },
+      createdAt: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, tempMessage])
+    setInput('')
 
     try {
       // Send via API (which will trigger Pusher)
@@ -226,24 +224,17 @@ export default function ChatPage() {
         content: messageContent,
         type: 'text',
       })
-
-      // 樂觀更新：即便 Pusher 未即時回推也先呈現
-      const newMessage = response.data?.message as Message | undefined
-      if (newMessage) {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === newMessage.id)) return prev
-          return [...prev, newMessage]
-        })
+      
+      // Replace temp message with real message
+      if (response.data.message) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempMessage.id ? response.data.message : msg
+        ))
       }
-
-      setInput('')
-      // 仍保險重拉一次，確保排序/狀態一致
-      await loadMessages(false)
     } catch (error) {
       console.error('Failed to send message:', error)
-      alert('發送失敗，請稍後再試')
-    } finally {
-      setSending(false)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
     }
   }
 

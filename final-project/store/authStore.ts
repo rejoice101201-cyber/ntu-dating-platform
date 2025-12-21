@@ -105,27 +105,18 @@ export const useAuthStore = create<AuthState>()(
           // After rehydration, try to restore user from token
           if (state && typeof window !== 'undefined') {
             const storedToken = localStorage.getItem('token');
-            const currentPath = window.location.pathname;
-            
-            // Don't call /auth/me if we're already on auth pages to avoid redirect loops
-            if (storedToken && !state.token && !currentPath.includes('/auth/')) {
-              // Try to restore user from token (silently, don't redirect on error)
+            if (storedToken && !state.token) {
+              // Try to restore user from token
               api.get('/auth/me')
                 .then(response => {
-                  if (response.data?.user) {
-                    state.user = response.data.user;
-                    state.token = storedToken;
-                  }
+                  state.user = response.data.user;
+                  state.token = storedToken;
                 })
-                .catch((error) => {
-                  // Token invalid, clear it silently
-                  // Don't redirect here, let the page component handle it
-                  if (error.response?.status === 401) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('recentLoginExpiresAt');
-                    state.user = null;
-                    state.token = null;
-                  }
+                .catch(() => {
+                  // Token invalid, clear it
+                  localStorage.removeItem('token');
+                  state.user = null;
+                  state.token = null;
                 });
             }
           }

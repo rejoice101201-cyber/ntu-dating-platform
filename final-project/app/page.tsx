@@ -17,15 +17,23 @@ export default function Home() {
   useEffect(() => {
     if (!isHydrated) return // Wait for hydration
     
-    // Only redirect if we have both token and user (validated state)
+    // Check localStorage directly as fallback
+    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    
     if (token && user) {
       router.push('/discover')
-      return
-    }
-    
-    // If no token or user, go to login
-    // Don't check localStorage here to avoid loops - let auth store handle rehydration
-    if (!token || !user) {
+    } else if (storedToken) {
+      // Token exists but user not loaded yet, wait a bit
+      setTimeout(() => {
+        const currentToken = useAuthStore.getState().token
+        const currentUser = useAuthStore.getState().user
+        if (currentToken && currentUser) {
+          router.push('/discover')
+        } else {
+          router.push('/auth/login')
+        }
+      }, 100)
+    } else {
       router.push('/auth/login')
     }
   }, [token, user, router, isHydrated])

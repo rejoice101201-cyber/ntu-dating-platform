@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { put } from '@vercel/blob';
 import { getTodayInTaiwan } from '@/lib/dateUtils';
 import { applyDailyEnergyRefill, clampEnergy } from '@/lib/energy';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 // Lazy load sharp to handle platform-specific issues
 let sharp: any;
@@ -57,146 +58,140 @@ export async function GET(request: NextRequest) {
       whereClause.createdAt = { gte: since };
     }
 
-    const posts = await prisma.post.findMany({
-      where: whereClause,
-      orderBy: sort === 'latest'
-        ? { createdAt: 'desc' as const }
-        : [{ likeCount: 'desc' as const }, { createdAt: 'desc' as const }],
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
+    // 使用重試機制執行查詢
+    const posts = await withRetry(async () => {
+      return await prisma.post.findMany({
+        where: whereClause,
+        orderBy: sort === 'latest'
+          ? { createdAt: 'desc' as const }
+          : [{ likeCount: 'desc' as const }, { createdAt: 'desc' as const }],
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          topic: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          board: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-        topic: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        board: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      });
     });
 
     const postIds = posts.map((p: any) => p.id);
-    const favorites = await prisma.favorite.findMany({
-      where: {
-        userId: authUser.id,
-        postId: { in: postIds },
-      },
-      select: { postId: true },
-    });
-    const favoriteSet = new Set(favorites.map((f: any) => f.postId));
-
-    const likes = await prisma.postLike.findMany({
-      where: {
-        userId: authUser.id,
-        postId: { in: postIds },
-      },
-      select: { postId: true },
-    });
-    const likeSet = new Set(likes.map((l: any) => l.postId));
-
-    // 檢查每個貼文作者是否與當前用戶配對
-    const postsWithMatchStatus = await Promise.all(
-      posts.map(async (post: any) => {
-        // 如果是自己的貼文，直接顯示姓名
-        if (post.authorId === authUser.id) {
-          return {
-            id: post.id,
-            authorId: post.authorId,
-            author: {
-              id: post.author.id,
-              name: post.author.name,
-            },
-            content: post.content,
-            imageUrl: post.imageUrl,
-            type: post.type,
-            likeCount: post.likeCount,
-            hasLiked: likeSet.has(post.id),
-            topicId: post.topicId,
-            topic: post.topic ? {
-              id: post.topic.id,
-              title: post.topic.title,
-            } : null,
-            boardId: post.boardId,
-            board: post.board ? { id: post.board.id, title: post.board.title } : null,
-            createdAt: post.createdAt.toISOString(),
-            isMatched: true, // 自己的貼文視為已配對
-            matchId: null, // 自己的貼文不需要 matchId
-            isAuthor: true,
-            isFavorited: favoriteSet.has(post.id),
-          };
-        }
-
-        // 檢查是否已配對（雙向檢查）
-        const match = await prisma.match.findFirst({
+    
+    // 使用重試機制查詢收藏和按讚狀態
+    const [favorites, likes, matches] = await Promise.all([
+      withRetry(async () => {
+        return await prisma.favorite.findMany({
+          where: {
+            userId: authUser.id,
+            postId: { in: postIds },
+          },
+          select: { postId: true },
+        });
+      }),
+      withRetry(async () => {
+        return await prisma.postLike.findMany({
+          where: {
+            userId: authUser.id,
+            postId: { in: postIds },
+          },
+          select: { postId: true },
+        });
+      }),
+      withRetry(async () => {
+        return await prisma.match.findMany({
           where: {
             OR: [
-              {
-                userId: authUser.id,
-                matchedUserId: post.authorId,
-                status: 'matched',
-              },
-              {
-                userId: post.authorId,
-                matchedUserId: authUser.id,
-                status: 'matched',
-              },
+              { userId: authUser.id, matchedUserId: { in: posts.map((p: any) => p.authorId).filter(Boolean) as string[] }, status: 'matched' },
+              { matchedUserId: authUser.id, userId: { in: posts.map((p: any) => p.authorId).filter(Boolean) as string[] }, status: 'matched' },
             ],
           },
+          select: { id: true, userId: true, matchedUserId: true },
         });
+      }),
+    ]);
 
-        const isMatched = !!match;
+    const favoriteSet = new Set(favorites.map((f: any) => f.postId));
+    const likeSet = new Set(likes.map((l: any) => l.postId));
+    const matchMap = new Map<string, { isMatched: boolean, matchId: string | null }>();
 
-        return {
-          id: post.id,
-          authorId: post.authorId,
-          author: {
-            id: post.author.id,
-            // Phase 3: 未配對時隱藏姓名
-            name: isMatched ? post.author.name : null,
-          },
-          content: post.content,
-          imageUrl: post.imageUrl,
-          type: post.type,
-          likeCount: post.likeCount,
-          hasLiked: likeSet.has(post.id),
-          topicId: post.topicId,
-          topic: post.topic ? {
-            id: post.topic.id,
-            title: post.topic.title,
-          } : null,
-          boardId: post.boardId,
-          board: post.board ? { id: post.board.id, title: post.board.title } : null,
-          createdAt: post.createdAt.toISOString(),
-          isMatched,
-          matchId: match?.id || null, // 用於聊天室入口
-          isAuthor: false,
-          isFavorited: favoriteSet.has(post.id),
-        };
-      })
-    );
-
-    return NextResponse.json({
-      posts: postsWithMatchStatus,
+    posts.forEach((post: any) => {
+      const authorId = post.authorId;
+      const match = matches.find((m: any) => 
+        (m.userId === authUser.id && m.matchedUserId === authorId) ||
+        (m.matchedUserId === authUser.id && m.userId === authorId)
+      );
+      matchMap.set(post.id, { isMatched: !!match, matchId: match?.id || null });
     });
-  } catch (error) {
+
+    // 計算每個貼文的按讚數
+    const likeCounts = await withRetry(async () => {
+      return await prisma.postLike.groupBy({
+        by: ['postId'],
+        where: { postId: { in: postIds } },
+        _count: { id: true },
+      });
+    });
+
+    const likeCountMap = new Map(likeCounts.map((lc: any) => [lc.postId, lc._count.id]));
+
+    const formattedPosts = posts.map((post: any) => {
+      const matchStatus = matchMap.get(post.id) || { isMatched: false, matchId: null };
+      
+      return {
+        id: post.id,
+        authorId: post.authorId,
+        author: {
+          id: post.author.id,
+          name: matchStatus.isMatched ? post.author.name : (post.authorId === authUser.id ? post.author.name : null),
+        },
+        content: post.content,
+        imageUrl: post.imageUrl,
+        type: post.type,
+        topicId: post.topicId,
+        topic: post.topic ? {
+          id: post.topic.id,
+          title: post.topic.title,
+        } : null,
+        board: post.board ? {
+          id: post.board.id,
+          title: post.board.title,
+        } : null,
+        createdAt: post.createdAt.toISOString(),
+        isFavorited: favoriteSet.has(post.id),
+        likeCount: likeCountMap.get(post.id) || 0,
+        hasLiked: likeSet.has(post.id),
+        isMatched: matchStatus.isMatched,
+        matchId: matchStatus.matchId,
+      };
+    });
+
+    return NextResponse.json({ posts: formattedPosts });
+  } catch (error: any) {
     console.error('Get posts error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to get posts' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }
 
-// POST: 建立新貼文（文字 + 可選圖片）
+// POST: 建立新貼文
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
   
@@ -207,169 +202,136 @@ export async function POST(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    await applyDailyEnergyRefill(authUser.id);
-    const energySnapshot = await prisma.user.findUnique({
-      where: { id: authUser.id },
-      select: { energy: true, energyMax: true },
-    });
-
     const formData = await request.formData();
-    const content = formData.get('content') as string;
+    const content = (formData.get('content') as string)?.trim() || '';
     const image = formData.get('image') as File | null;
-    const topicId = formData.get('topicId') as string | null; // daily topic (old)
-    const boardId = formData.get('boardId') as string | null; // user-created topic/board
+    const type = (formData.get('type') as string) || 'FREE';
+    const topicId = formData.get('topicId') as string | null;
+    const boardId = formData.get('boardId') as string | null;
 
-    if (!content || !content.trim()) {
+    if (!content && !image) {
       return NextResponse.json(
-        { error: 'Content is required' },
+        { error: 'Content or image is required' },
         { status: 400 }
       );
     }
 
-    // 如果提供了每日主題 topicId，驗證主題是否存在
-    let postType = 'FREE';
-    if (topicId) {
-      const topic = await prisma.dailyTopic.findUnique({
-        where: { id: topicId },
-      });
-      
-      if (!topic) {
-        return NextResponse.json(
-          { error: 'Topic not found' },
-          { status: 404 }
-        );
-      }
-      
-      // Phase 2: 檢查今天是否已經發過主題貼文（一天只能發一個主題貼文）
-      // 取得台灣時間的今天日期
+    // Phase 2: 檢查是否為主題貼文，且今天是否已發過
+    if (type === 'TOPIC' && topicId) {
       const { start: today, end: todayEnd } = getTodayInTaiwan();
-
-      const todayTopicPost = await prisma.post.findFirst({
-        where: {
-          authorId: authUser.id,
-          type: 'TOPIC',
-          createdAt: {
-            gte: today,
-            lte: todayEnd,
+      
+      const todayTopicPost = await withRetry(async () => {
+        return await prisma.post.findFirst({
+          where: {
+            authorId: authUser.id,
+            type: 'TOPIC',
+            topicId,
+            createdAt: {
+              gte: today,
+              lte: todayEnd,
+            },
           },
-        },
+        });
       });
 
       if (todayTopicPost) {
         return NextResponse.json(
-          { 
-            error: '今日主題貼文已發佈',
-            message: '每天只能針對今日話題發文一次',
-            limitReached: true,
-          },
-          { status: 429 }
-        );
-      }
-      
-      postType = 'TOPIC';
-    }
-
-    // 如果提供 boardId，驗證存在
-    if (boardId) {
-      const board = await prisma.topic.findUnique({
-        where: { id: boardId },
-      });
-      if (!board) {
-        return NextResponse.json(
-          { error: 'Board (topic) not found' },
-          { status: 404 }
+          { error: '今天已經發過這個主題的貼文了' },
+          { status: 400 }
         );
       }
     }
 
+    // 處理圖片上傳
     let imageUrl: string | null = null;
-
-    // 處理圖片上傳（如果有的話）
-    if (image && image.size > 0) {
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        return NextResponse.json(
-          { error: 'Blob storage not configured' },
-          { status: 500 }
-        );
-      }
-
+    if (image) {
       try {
-        // 處理圖片
-        const buffer = Buffer.from(await image.arrayBuffer());
         const sharpInstance = await getSharp();
-        const processedBuffer = await sharpInstance(buffer)
+        const imageBuffer = Buffer.from(await image.arrayBuffer());
+        const processedImage = await sharpInstance(imageBuffer)
           .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 85 })
           .toBuffer();
 
-        // 上傳到 Vercel Blob
-        const blob = await put(
-          `posts/${authUser.id}/${Date.now()}.jpg`,
-          processedBuffer,
-          {
-            access: 'public',
-            contentType: 'image/jpeg',
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-          }
-        );
-
+        const blob = await put(`posts/${Date.now()}-${image.name}`, processedImage, {
+          access: 'public',
+          contentType: 'image/jpeg',
+        });
         imageUrl = blob.url;
       } catch (imageError) {
-        console.error('Image upload error:', imageError);
+        console.error('Image processing error:', imageError);
         return NextResponse.json(
-          { error: 'Failed to upload image' },
+          { error: 'Failed to process image' },
           { status: 500 }
         );
       }
     }
 
-    // 建立 Post
-    const post = await prisma.post.create({
-      data: {
-        authorId: authUser.id,
-        content: content.trim(),
-        imageUrl: imageUrl,
-        type: postType,
-        topicId: topicId || null,
-        boardId: boardId || null,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
+    // 使用重試機制建立貼文
+    const post = await withRetry(async () => {
+      return await prisma.post.create({
+        data: {
+          authorId: authUser.id,
+          content,
+          imageUrl,
+          type: type as 'FREE' | 'TOPIC',
+          topicId: topicId || null,
+          boardId: boardId || null,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          topic: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          board: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
         },
-        topic: topicId ? {
-          select: {
-            id: true,
-            title: true,
-          },
-        } : undefined,
-        board: boardId ? {
-          select: {
-            id: true,
-            title: true,
-          },
-        } : undefined,
-      },
+      });
     });
 
-    if (boardId) {
-      await prisma.topic.update({
-        where: { id: boardId },
-        data: { lastActivityAt: new Date() },
-      });
+    // 更新主題的最後活動時間
+    if (topicId || boardId) {
+      const targetId = boardId || topicId;
+      if (targetId) {
+        await withRetry(async () => {
+          return await prisma.topic.update({
+            where: { id: targetId },
+            data: { lastActivityAt: new Date() },
+          });
+        }).catch(() => {
+          // 忽略更新錯誤
+        });
+      }
     }
 
-    // 發文回補 10 點體力（上限 energyMax）
-    if (energySnapshot) {
-      const newEnergy = clampEnergy(energySnapshot.energy + 10, energySnapshot.energyMax);
-      await prisma.user.update({
+    // 扣除體力
+    await applyDailyEnergyRefill(authUser.id);
+    await withRetry(async () => {
+      const user = await prisma.user.findUnique({
         where: { id: authUser.id },
-        data: { energy: newEnergy, lastEnergyRefill: new Date() },
+        select: { energy: true },
       });
-    }
+      if (user && user.energy >= 5) {
+        await prisma.user.update({
+          where: { id: authUser.id },
+          data: { energy: { decrement: 5 } },
+        });
+      }
+    }).catch(() => {
+      // 忽略體力扣除錯誤
+    });
 
     return NextResponse.json({
       post: {
@@ -387,20 +349,26 @@ export async function POST(request: NextRequest) {
           id: post.topic.id,
           title: post.topic.title,
         } : null,
-        boardId: post.boardId,
         board: post.board ? {
           id: post.board.id,
           title: post.board.title,
         } : null,
         createdAt: post.createdAt.toISOString(),
+        isFavorited: false,
+        likeCount: 0,
+        hasLiked: false,
+        isMatched: false,
+        matchId: null,
       },
-    });
+    }, { status: 201 });
   } catch (error: any) {
     console.error('Create post error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create post' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }
-

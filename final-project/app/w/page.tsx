@@ -1,15 +1,11 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
-import PostButton from '@/components/PostButton'
-import { motion } from 'framer-motion'
-import { Image as ImageIcon, MessageCircle, MoreVertical } from 'lucide-react'
-import IconButton from '@/components/IconButton'
 
 interface Post {
   id: string
@@ -87,7 +83,7 @@ export default function WallPage() {
   const [loadingTrending, setLoadingTrending] = useState(true)
 
   // Phase 4: 每日配對上限狀態
-  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 5, remaining: 5 })
+  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
   
   // Phase 2: 今天是否已發過主題貼文
   const [hasPostedTopicToday, setHasPostedTopicToday] = useState(false)
@@ -137,15 +133,13 @@ export default function WallPage() {
     loadTrendingTopics()
   }, [token, router])
 
-  const loadPosts = useCallback(async (topicId?: string | null, sortOption?: 'latest' | 'trending') => {
+  const loadPosts = async (topicId?: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      const currentSort = sortOption || sort
-      const params = new URLSearchParams()
-      params.set('sort', currentSort)
-      if (topicId) params.set('topicId', topicId)
-      const url = `/posts?${params.toString()}`
+      const sortParam = `sort=${sort}`
+      const base = topicId ? `/posts?topicId=${topicId}&${sortParam}` : `/posts?${sortParam}`
+      const url = base
       const response = await api.get(url)
       setPosts(response.data.posts || [])
     } catch (error: any) {
@@ -158,7 +152,7 @@ export default function WallPage() {
     } finally {
       setLoading(false)
     }
-  }, [sort, router])
+  }
 
   const handleStartEdit = (post: Post) => {
     setOpenMenuPostId(null)
@@ -447,7 +441,7 @@ export default function WallPage() {
       console.error('Failed to match from post:', error)
       // Phase 4: 檢查是否是配對上限錯誤
       if (error.response?.status === 429) {
-        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 5 個人', type: 'error' })
+        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 3 個人', type: 'error' })
         await loadDailyMatchCount() // 更新配對次數顯示
       } else {
         setToast({ message: error.message || '配對失敗，請稍後再試', type: 'error' })
@@ -557,30 +551,16 @@ export default function WallPage() {
             <span className="text-[var(--pixel-text-dim)]">排序：</span>
             <button
               type="button"
-              onClick={() => {
-                setSort('latest')
-                loadPosts(filterTopicId, 'latest')
-              }}
-              className={`font-bold transition-colors ${
-                sort === 'latest' 
-                  ? 'text-[var(--pixel-highlight)] underline' 
-                  : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)]'
-              }`}
+              onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
+              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
             >
               最新
             </button>
             <span className="text-[var(--pixel-text-dim)]">/</span>
             <button
               type="button"
-              onClick={() => {
-                setSort('trending')
-                loadPosts(filterTopicId, 'trending')
-              }}
-              className={`font-bold transition-colors ${
-                sort === 'trending' 
-                  ? 'text-[var(--pixel-highlight)] underline' 
-                  : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)]'
-              }`}
+              onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
+              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
             >
               熱門
             </button>
@@ -761,29 +741,19 @@ export default function WallPage() {
             
             {/* 圖片預覽 */}
             {imagePreview && (
-              <div className="relative group">
+              <div className="relative">
                 <img
                   src={imagePreview}
                   alt="Preview"
                   className="w-full max-h-64 object-cover border-3 border-[var(--pixel-border)]"
                 />
-                <motion.button
+                <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
-                  whileHover={{
-                    scale: 1.1,
-                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
-                    backgroundColor: '#dc2626',
-                  }}
-                  whileTap={{
-                    scale: 0.95,
-                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
-                  }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold hover:bg-red-600"
                 >
                   ×
-                </motion.button>
+                </button>
               </div>
             )}
 
@@ -802,31 +772,18 @@ export default function WallPage() {
                   className="hidden"
                   disabled={posting}
                 />
-                <motion.span
-                  className="px-4 py-2.5 bg-gradient-to-br from-[var(--pixel-panel)] to-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold inline-flex items-center gap-2"
-                  whileHover={!posting ? {
-                    scale: 1.05,
-                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
-                    y: -2,
-                    x: -2,
-                  } : {}}
-                  whileTap={!posting ? {
-                    scale: 0.95,
-                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
-                    y: 0,
-                    x: 0,
-                  } : {}}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                >
-                  <ImageIcon size={18} />
-                  <span>選擇圖片</span>
-                </motion.span>
+                <span className="px-4 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors inline-block">
+                  📷 選擇圖片
+                </span>
               </label>
               
-              <PostButton
-                posting={posting}
+              <button
+                type="submit"
                 disabled={posting || !content.trim()}
-              />
+                className="px-6 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {posting ? '發佈中...' : '發佈'}
+              </button>
             </div>
           </form>
         </div>
@@ -868,118 +825,79 @@ export default function WallPage() {
                   </div>
                   {/* 收藏 + 按讚 + 配對/聊天或作者功能 */}
                   <div className="flex items-center gap-2">
-                    <IconButton
-                      icon="heart"
-                      active={post.isFavorited}
+                    <button
+                      type="button"
                       onClick={() => toggleFavorite(post.id)}
-                      variant="default"
-                      size="md"
+                      className="px-1"
                       aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    />
-                    
-                    <IconButton
-                      icon="thumbsUp"
-                      count={post.likeCount}
-                      active={post.hasLiked}
+                    >
+                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
+                        {post.isFavorited ? '❤️' : '🤍'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => toggleLike(post.id)}
-                      variant="primary"
-                      size="md"
+                      className="flex items-center gap-1 px-1 text-xs"
                       aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    />
-
-                    {post.isAuthor ? (
-                      <div className="relative">
-                        <motion.button
-                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
-                          className="w-10 h-10 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.15)] rounded-lg flex items-center justify-center transition-all"
-                          whileHover={{ scale: 1.08, y: -1, x: -1, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
-                          whileTap={{ scale: 0.92, y: 0, x: 0, boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                        >
-                          <MoreVertical size={18} />
-                        </motion.button>
-                        {openMenuPostId === post.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-32 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10 rounded-lg overflow-hidden"
+                    >
+                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
+                        👍
+                      </span>
+                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
+                    </button>
+                  {post.isAuthor ? (
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
+                        className="px-2 py-1 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold text-lg leading-none"
+                        aria-label="更多選項"
+                      >
+                        ⋯
+                      </button>
+                      {openMenuPostId === post.id && (
+                        <div className="absolute right-0 mt-2 w-32 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10 divide-y-3 divide-[var(--pixel-border)]">
+                          <button
+                            onClick={() => handleStartEdit(post)}
+                            className="w-full text-left px-3 py-2 text-sm text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors"
                           >
-                            <button
-                              onClick={() => handleStartEdit(post)}
-                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--pixel-surface)] transition-colors font-medium text-[var(--pixel-text)]"
-                            >
-                              編輯
-                            </button>
-                            <button
-                              onClick={() => handleDeletePost(post.id)}
-                              disabled={deletingPostId === post.id}
-                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors font-medium"
-                            >
-                              {deletingPostId === post.id ? '刪除中...' : '刪除'}
-                            </button>
-                          </motion.div>
+                            編輯
+                          </button>
+                          <button
+                            onClick={() => handleDeletePost(post.id)}
+                            disabled={deletingPostId === post.id}
+                            className="w-full text-left px-3 py-2 text-sm text-red-600 font-bold hover:bg-red-50 disabled:opacity-50 transition-colors"
+                          >
+                            {deletingPostId === post.id ? '刪除中...' : '刪除'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    post.authorId !== user?.id && (
+                      <div className="flex items-center gap-2">
+                        {post.isMatched && post.matchId ? (
+                          // 已配對：顯示聊天室入口
+                          <Link
+                            href={`/chat/${post.matchId}`}
+                            className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                          >
+                            聊天
+                          </Link>
+                        ) : (
+                          // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
+                          <button
+                            onClick={() => handleMatchFromPost(post.id)}
+                            disabled={dailyMatchCount.remaining === 0}
+                            className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
+                            title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
+                          >
+                            {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
+                          </button>
                         )}
                       </div>
-                    ) : (
-                      post.authorId !== user?.id && (
-                        <div className="flex items-center gap-2">
-                          {post.isMatched && post.matchId ? (
-                            // 已配對：顯示聊天室入口
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <Link
-                                href={`/chat/${post.matchId}`}
-                                className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight)] via-[#0284c7] to-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all flex items-center gap-2 group relative overflow-hidden"
-                              >
-                                {/* 光效背景 */}
-                                <motion.span
-                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                                  initial={{ x: '-100%' }}
-                                  animate={{ x: ['-100%', '200%'] }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    repeatDelay: 1,
-                                    ease: 'linear',
-                                  }}
-                                />
-                                <MessageCircle size={16} className="relative z-10 group-hover:scale-110 transition-transform" />
-                                <span className="relative z-10">聊天</span>
-                              </Link>
-                            </motion.div>
-                          ) : (
-                            // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
-                            <motion.button
-                              onClick={() => handleMatchFromPost(post.id)}
-                              disabled={dailyMatchCount.remaining === 0}
-                              className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight-2)] via-[#0ea5e9] to-[var(--pixel-highlight-2)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)] disabled:from-[var(--pixel-text-dim)] disabled:to-[var(--pixel-text-dim)] disabled:via-[var(--pixel-text-dim)] relative overflow-hidden group"
-                              whileHover={dailyMatchCount.remaining > 0 ? { scale: 1.02, y: -1, x: -1 } : {}}
-                              whileTap={dailyMatchCount.remaining > 0 ? { scale: 0.98, y: 0, x: 0 } : {}}
-                              title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
-                            >
-                              {/* 光效背景 */}
-                              <motion.span
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                                initial={{ x: '-100%' }}
-                                animate={dailyMatchCount.remaining > 0 ? { x: ['-100%', '200%'] } : {}}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  repeatDelay: 1,
-                                  ease: 'linear',
-                                }}
-                              />
-                              <span className="relative z-10">
-                                {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
-                              </span>
-                            </motion.button>
-                          )}
-                        </div>
-                      )
-                    )}
+                    )
+                  )}
                   </div>
                 </div>
 
@@ -1049,7 +967,7 @@ export default function WallPage() {
         {/* Phase 4: 每日配對上限提示 */}
         <div className="pixel-panel p-3 mt-6 text-center">
           <p className="text-xs text-[var(--pixel-text-dim)]">
-            每天最多只能從貼文中配對 5 人
+            每天最多只能從貼文中配對 3 人
           </p>
           <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
             今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}

@@ -11,17 +11,6 @@
   --pixel-highlight-2: #f97316;
   --pixel-text: #0f172a;
   --pixel-text-dim: #475569;
-  
-  /* 动画时长 */
-  --transition-fast: 0.15s;
-  --transition-base: 0.2s;
-  --transition-slow: 0.3s;
-  --transition-slower: 0.5s;
-  
-  /* 缓动函数 */
-  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body {
@@ -33,29 +22,6 @@ body {
     linear-gradient(180deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px);
   background-size: 18px 18px, 18px 18px;
   background-position: 0 0, 0 0;
-  
-  /* 字体优化 - 支持中英文 */
-  font-family: var(--font-inter), var(--font-noto), 
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-    'Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', 
-    Arial, 'Noto Sans', 'Noto Sans TC', sans-serif;
-  
-  /* 字体渲染优化 */
-  font-feature-settings: 'kern' 1, 'liga' 1;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  letter-spacing: -0.01em;
-  
-  /* 性能优化：减少字体闪烁 */
-  font-display: swap;
-}
-
-/* 确保中文字符正确显示 */
-@supports (font-variation-settings: normal) {
-  body {
-    font-variation-settings: normal;
-  }
 }
 
 @layer base {
@@ -67,64 +33,40 @@ body {
     color: var(--pixel-highlight);
     text-decoration: none;
     text-shadow: none;
-    transition: color var(--transition-base) var(--ease-smooth),
-                transform var(--transition-fast) var(--ease-smooth);
   }
 
   a:hover {
     color: #0284c7;
-    transform: translateY(-1px);
-  }
-
-  a:active {
-    transform: translateY(0);
   }
 
   button,
   .btn {
-    /* 預設黑白強對比 */
-    background: #0a0a0a;
-    color: #ffffff;
-    border: 3px solid #0a0a0a;
-    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.35);
+    background: var(--pixel-border);
+    color: #f8fafc;
+    border: 3px solid var(--pixel-border);
+    box-shadow:
+      6px 6px 0 rgba(0, 0, 0, 0.35);
     padding: 0.9rem 1.6rem;
     letter-spacing: 0.04em;
     border-radius: 0;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: 
-      transform var(--transition-fast) var(--ease-smooth),
-      box-shadow var(--transition-fast) var(--ease-smooth),
-      background var(--transition-base) var(--ease-smooth),
-      border-color var(--transition-base) var(--ease-smooth);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.1s ease;
   }
 
-  button:hover:not(:disabled),
-  .btn:hover:not(:disabled) {
-    /* hover 變為藍白對比 */
+  button:hover,
+  .btn:hover {
     background: var(--pixel-highlight);
-    color: #ffffff;
-    border-color: var(--pixel-highlight);
-    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
-    transform: translate(-1px, -1px) scale(1.02);
+    box-shadow:
+      4px 4px 0 rgba(0, 0, 0, 0.35);
+    transform: translate(-1px, -1px);
   }
 
-  button:active:not(:disabled),
-  .btn:active:not(:disabled) {
-    transform: translate(1px, 1px) scale(0.98);
+  button:active,
+  .btn:active {
+    transform: translate(1px, 1px);
     box-shadow:
       inset -2px -2px 0 rgba(0, 0, 0, 0.45),
       inset 2px 2px 0 rgba(255, 255, 255, 0.16),
       2px 2px 0 rgba(0, 0, 0, 0.55);
-    transition: transform 0.05s ease, box-shadow 0.05s ease;
-  }
-
-  button:disabled,
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
   }
 
   input,
@@ -138,16 +80,7 @@ body {
       inset 3px 3px 0 rgba(255, 255, 255, 0.12);
     border-radius: 0;
     padding: 0.85rem 1rem;
-    transition: 
-      box-shadow var(--transition-base) var(--ease-smooth),
-      border-color var(--transition-base) var(--ease-smooth),
-      transform var(--transition-fast) var(--ease-smooth);
-  }
-
-  input:hover,
-  select:hover,
-  textarea:hover {
-    transform: translateY(-1px);
+    transition: box-shadow 0.08s ease, border-color 0.1s ease;
   }
 
   input:focus,
@@ -159,7 +92,6 @@ body {
       inset -3px -3px 0 rgba(0, 0, 0, 0.18),
       inset 3px 3px 0 rgba(255, 255, 255, 0.12),
       0 0 0 3px rgba(14, 165, 233, 0.22);
-    transform: translateY(-2px);
   }
 
   .pixel-panel,
@@ -169,16 +101,6 @@ body {
     border: 3px solid var(--pixel-border);
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
     border-radius: 0;
-    transition: 
-      transform var(--transition-base) var(--ease-smooth),
-      box-shadow var(--transition-base) var(--ease-smooth);
-  }
-
-  .pixel-panel:hover,
-  .card:hover,
-  .panel:hover {
-    transform: translateY(-2px);
-    box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -186,120 +108,17 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-
-  /* 平滑过渡工具类 */
-  .transition-smooth {
-    transition: all var(--transition-base) var(--ease-smooth);
-  }
-
-  .transition-fast {
-    transition: all var(--transition-fast) var(--ease-smooth);
-  }
-
-  .transition-slow {
-    transition: all var(--transition-slow) var(--ease-smooth);
-  }
-
-  /* Hover 提升效果 */
-  .hover-lift {
-    transition: transform var(--transition-base) var(--ease-smooth);
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-4px);
-  }
-
-  /* 点击缩放效果 */
-  .active-scale {
-    transition: transform var(--transition-fast) var(--ease-smooth);
-  }
-
-  .active-scale:active {
-    transform: scale(0.95);
-  }
-
-  /* 淡入动画 */
-  .fade-in {
-    animation: fadeIn var(--transition-slow) var(--ease-smooth);
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* 滑入动画 */
-  .slide-in {
-    animation: slideIn var(--transition-base) var(--ease-smooth);
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  /* 脉冲动画（用于加载状态） */
-  .pulse-soft {
-    animation: pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulseSoft {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
 }
 
 /* Blur effect for photos */
 .photo-blur {
   filter: blur(var(--blur-level, 20px));
-  transition: filter var(--transition-slow) var(--ease-smooth);
+  transition: filter 0.3s ease;
 }
 
-/* Toast animation */
-@keyframes slide-down {
-  from {
-    transform: translate(-50%, -100%);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-down {
-  animation: slide-down var(--transition-base) var(--ease-bounce);
-}
-
-/* 列表项动画 */
-@keyframes listItemIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.list-item-enter {
-  animation: listItemIn var(--transition-base) var(--ease-smooth);
+/* Blur effect for photos */
+.photo-blur {
+  filter: blur(var(--blur-level, 20px));
+  transition: filter 0.3s ease;
 }
 

@@ -1,15 +1,11 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
-import PostButton from '@/components/PostButton'
-import { motion } from 'framer-motion'
-import { Image as ImageIcon, MessageCircle, MoreVertical } from 'lucide-react'
-import IconButton from '@/components/IconButton'
 
 interface Post {
   id: string
@@ -26,19 +22,9 @@ interface Post {
     id: string
     title: string
   } | null
-  boardId?: string | null
-  board?: {
-    id: string
-    title: string
-  } | null
   createdAt: string
-  updatedAt?: string
   isMatched?: boolean // Phase 3: 是否已配對
   matchId?: string | null // Phase 3: Match ID（用於聊天室入口）
-  isAuthor?: boolean
-  isFavorited?: boolean
-  likeCount: number
-  hasLiked: boolean
 }
 
 interface DailyTopic {
@@ -47,13 +33,6 @@ interface DailyTopic {
   title: string
   postCount?: number
   createdAt: string
-}
-
-interface BoardTopic {
-  id: string
-  title: string
-  postCount?: number
-  lastActivityAt?: string
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -71,7 +50,7 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })
 }
 
-export default function HomePage() {
+export default function WallPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const [posts, setPosts] = useState<Post[]>([])
@@ -81,17 +60,9 @@ export default function HomePage() {
   // 每日主題狀態
   const [dailyTopic, setDailyTopic] = useState<DailyTopic | null>(null)
   const [loadingTopic, setLoadingTopic] = useState(true)
-
-  // 使用者主題 (board) trending
-  const [trendingTopics, setTrendingTopics] = useState<BoardTopic[]>([])
-  const [loadingTrending, setLoadingTrending] = useState(true)
-  const [leaderboard, setLeaderboard] = useState<
-    { id: string; userId: string; name: string; bio: string | null; matchCount: number; photoUrl: string | null; blurLevel: number }[]
-  >([])
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
   
   // Phase 4: 每日配對上限狀態
-  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 5, remaining: 5 })
+  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
   
   // Phase 2: 今天是否已發過主題貼文
   const [hasPostedTopicToday, setHasPostedTopicToday] = useState(false)
@@ -99,7 +70,6 @@ export default function HomePage() {
   
   // 篩選狀態
   const [filterTopicId, setFilterTopicId] = useState<string | null>(null)
-  const [filterAuthorId, setFilterAuthorId] = useState<string | null>(null)
   
   // 發文狀態
   const [content, setContent] = useState('')
@@ -108,24 +78,9 @@ export default function HomePage() {
   const [posting, setPosting] = useState(false)
   const [postingAsTopic, setPostingAsTopic] = useState(false) // 是否針對主題發文
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // 編輯/刪除狀態
-  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
-  const [editingPostId, setEditingPostId] = useState<string | null>(null)
-  const [editContent, setEditContent] = useState('')
-  const [savingEdit, setSavingEdit] = useState(false)
-  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
   
   // Toast 通知狀態
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
-
-  // 發文選擇主題 (使用者主題 board)
-  const [boardQuery, setBoardQuery] = useState('')
-  const [boardResults, setBoardResults] = useState<BoardTopic[]>([])
-  const [boardSearching, setBoardSearching] = useState(false)
-  const [selectedBoard, setSelectedBoard] = useState<BoardTopic | null>(null)
-  const [creatingBoard, setCreatingBoard] = useState(false)
-  const [sort, setSort] = useState<'latest' | 'trending'>('latest')
 
   useEffect(() => {
     if (!token) {
@@ -139,20 +94,13 @@ export default function HomePage() {
     loadDailyTopic()
     loadDailyMatchCount()
     loadTopicStatus()
-    loadTrendingTopics()
-    loadLeaderboard()
   }, [token, router])
 
-  const loadPosts = useCallback(async (topicId?: string | null, sortOption?: 'latest' | 'trending') => {
+  const loadPosts = async (topicId?: string | null) => {
     try {
       setLoading(true)
       setError(null)
-      const currentSort = sortOption || sort
-      const params = new URLSearchParams()
-      params.set('sort', currentSort)
-      if (topicId) params.set('topicId', topicId)
-      if (filterAuthorId) params.set('authorId', filterAuthorId)
-      const url = `/posts?${params.toString()}`
+      const url = topicId ? `/posts?topicId=${topicId}` : '/posts'
       const response = await api.get(url)
       setPosts(response.data.posts || [])
     } catch (error: any) {
@@ -164,151 +112,6 @@ export default function HomePage() {
       }
     } finally {
       setLoading(false)
-    }
-  }, [sort, filterAuthorId, router])
-
-  const loadLeaderboard = async () => {
-    try {
-      setLoadingLeaderboard(true)
-      const res = await api.get('/leaderboard/matches')
-      setLeaderboard(res.data.users || [])
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error)
-    } finally {
-      setLoadingLeaderboard(false)
-    }
-  }
-
-  const handleStartEdit = (post: Post) => {
-    setOpenMenuPostId(null)
-    setEditingPostId(post.id)
-    setEditContent(post.content)
-  }
-
-  const handleCancelEdit = () => {
-    setEditingPostId(null)
-    setEditContent('')
-  }
-
-  const handleSaveEdit = async () => {
-    if (!editingPostId) return
-    const trimmed = editContent.trim()
-    if (!trimmed) {
-      setToast({ message: '內容不可為空', type: 'error' })
-      return
-    }
-    try {
-      setSavingEdit(true)
-      const res = await api.patch(`/posts/${editingPostId}`, { content: trimmed })
-      const updated = res.data.post
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === editingPostId
-            ? { ...p, content: updated.content, updatedAt: updated.updatedAt }
-            : p
-        )
-      )
-      setEditingPostId(null)
-      setEditContent('')
-      setToast({ message: '已更新貼文', type: 'success' })
-    } catch (error: any) {
-      console.error('Update post failed:', error)
-      setToast({
-        message: error.response?.data?.error || '更新貼文失敗',
-        type: 'error',
-      })
-    } finally {
-      setSavingEdit(false)
-    }
-  }
-
-  const handleDeletePost = async (postId: string) => {
-    if (deletingPostId) return
-    const confirmed = typeof window !== 'undefined' ? window.confirm('確定要刪除這則貼文嗎？') : true
-    if (!confirmed) return
-    try {
-      setDeletingPostId(postId)
-      await api.delete(`/posts/${postId}`)
-      setPosts((prev) => prev.filter((p) => p.id !== postId))
-      setToast({ message: '已刪除貼文', type: 'success' })
-    } catch (error: any) {
-      console.error('Delete post failed:', error)
-      setToast({
-        message: error.response?.data?.error || '刪除貼文失敗',
-        type: 'error',
-      })
-    } finally {
-      setDeletingPostId(null)
-      setOpenMenuPostId(null)
-    }
-  }
-  
-  const toggleFavorite = async (postId: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
-      )
-    )
-    try {
-      const target = posts.find((p) => p.id === postId)
-      if (!target?.isFavorited) {
-        await api.post('/favorites', { postId })
-        setToast({ message: '已加入收藏', type: 'success' })
-      } else {
-        await api.delete(`/favorites/${postId}`)
-        setToast({ message: '已取消收藏', type: 'info' })
-      }
-    } catch (error: any) {
-      console.error('Toggle favorite failed:', error)
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, isFavorited: !p.isFavorited } : p
-        )
-      )
-      setToast({
-        message: error.response?.data?.error || '更新收藏狀態失敗',
-        type: 'error',
-      })
-    }
-  }
-  
-  const toggleLike = async (postId: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              hasLiked: !p.hasLiked,
-              likeCount: p.likeCount + (p.hasLiked ? -1 : 1),
-            }
-          : p
-      )
-    )
-    try {
-      const res = await api.post(`/posts/${postId}/like`)
-      const { likeCount, hasLiked } = res.data
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, likeCount, hasLiked } : p
-        )
-      )
-    } catch (error: any) {
-      console.error('Toggle like failed:', error)
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId
-            ? {
-                ...p,
-                hasLiked: !p.hasLiked,
-                likeCount: p.likeCount + (p.hasLiked ? 1 : -1),
-              }
-            : p
-        )
-      )
-      setToast({
-        message: error.response?.data?.error || '更新按讚狀態失敗',
-        type: 'error',
-      })
     }
   }
   
@@ -348,18 +151,6 @@ export default function HomePage() {
     }
   }
 
-  const loadTrendingTopics = async () => {
-    try {
-      setLoadingTrending(true)
-      const res = await api.get('/topics?sort=trending')
-      setTrendingTopics(res.data.topics || [])
-    } catch (error) {
-      console.error('Failed to load trending topics:', error)
-    } finally {
-      setLoadingTrending(false)
-    }
-  }
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -377,50 +168,6 @@ export default function HomePage() {
     setImagePreview(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
-    }
-  }
-
-  // 搜尋/建立使用者主題 (board)
-  useEffect(() => {
-    let active = true
-    const doSearch = async () => {
-      if (!boardQuery.trim()) {
-        setBoardResults([])
-        return
-      }
-      try {
-        setBoardSearching(true)
-        const res = await api.get(`/topics/search?q=${encodeURIComponent(boardQuery.trim())}`)
-        if (!active) return
-        setBoardResults(res.data.topics || [])
-      } catch (error) {
-        console.error('Search topics error:', error)
-      } finally {
-        if (active) setBoardSearching(false)
-      }
-    }
-    const handler = setTimeout(doSearch, 300)
-    return () => {
-      active = false
-      clearTimeout(handler)
-    }
-  }, [boardQuery])
-
-  const handleCreateBoard = async () => {
-    const title = boardQuery.trim()
-    if (!title) return
-    try {
-      setCreatingBoard(true)
-      const res = await api.post('/topics', { title })
-      const topic = res.data.topic
-      setSelectedBoard(topic)
-      setBoardResults([])
-      setToast({ message: res.data.existed ? '已使用既有主題' : '已建立新主題', type: 'success' })
-    } catch (error: any) {
-      console.error('Create topic error:', error)
-      setToast({ message: error.response?.data?.error || '建立主題失敗', type: 'error' })
-    } finally {
-      setCreatingBoard(false)
     }
   }
 
@@ -464,7 +211,7 @@ export default function HomePage() {
       console.error('Failed to match from post:', error)
       // Phase 4: 檢查是否是配對上限錯誤
       if (error.response?.status === 429) {
-        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 5 個人', type: 'error' })
+        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 3 個人', type: 'error' })
         await loadDailyMatchCount() // 更新配對次數顯示
       } else {
         setToast({ message: error.message || '配對失敗，請稍後再試', type: 'error' })
@@ -501,9 +248,6 @@ export default function HomePage() {
       if (postingAsTopic && dailyTopic) {
         formData.append('topicId', dailyTopic.id)
       }
-      if (selectedBoard?.id) {
-        formData.append('boardId', selectedBoard.id)
-      }
 
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -527,9 +271,6 @@ export default function HomePage() {
       setSelectedImage(null)
       setImagePreview(null)
       setPostingAsTopic(false)
-      setSelectedBoard(null)
-      setBoardQuery('')
-      setBoardResults([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -566,121 +307,11 @@ export default function HomePage() {
         />
       )}
       
-      <div className="max-w-6xl mx-auto pt-8 px-4 flex gap-6">
-        {/* 左側側欄：主題列表 + 配對排行榜 */}
-        <aside className="w-72 space-y-4">
-          <div className="pixel-panel p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold text-[var(--pixel-text)]">熱門主題</div>
-              <div className="text-xs text-[var(--pixel-text-dim)]">{loadingTrending ? '載入中...' : ''}</div>
-            </div>
-            {trendingTopics.length === 0 && !loadingTrending && (
-              <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
-            )}
-            <div className="flex flex-col gap-2">
-              {trendingTopics.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/topics/${t.id}`}
-                  className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate">{t.title}</span>
-                    {typeof t.postCount === 'number' && <span className="ml-2 text-[var(--pixel-text-dim)]">{t.postCount}</span>}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="pixel-panel p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-bold text-[var(--pixel-text)]">配對排行榜 Top 10</div>
-              <div className="text-xs text-[var(--pixel-text-dim)]">
-                {loadingLeaderboard ? '載入中...' : ''}
-              </div>
-            </div>
-            {leaderboard.length === 0 && !loadingLeaderboard && (
-              <div className="text-xs text-[var(--pixel-text-dim)]">暫無資料</div>
-            )}
-            <div className="space-y-3">
-              {leaderboard.map((u, idx) => (
-                <div key={u.id} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)]">
-                  <div className="w-10 h-10 border-3 border-[var(--pixel-border)] overflow-hidden bg-[var(--pixel-surface)]">
-                    {u.photoUrl ? (
-                      <div
-                        className="w-full h-full bg-center bg-cover"
-                        style={{ backgroundImage: `url(${u.photoUrl})`, filter: `blur(${u.blurLevel ?? 50}px)` }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-[var(--pixel-text-dim)]">?</div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-[var(--pixel-text-dim)]">#{idx + 1} • {u.matchCount} 配對</div>
-                    <Link href={`/profile/${u.id}`} className="text-sm font-bold text-[var(--pixel-text)] hover:text-[var(--pixel-highlight)] truncate">
-                      {u.userId || u.name || 'User'}
-                    </Link>
-                    {u.bio && <div className="text-[11px] text-[var(--pixel-text-dim)] truncate">{u.bio}</div>}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => { setFilterAuthorId(u.id); loadPosts(filterTopicId) }}
-                      className="px-2 py-1 text-[10px]"
-                    >
-                      查看貼文
-                    </button>
-                    <button
-                      onClick={() => router.push(`/profile/${u.id}`)}
-                      className="px-2 py-1 text-[10px] bg-[var(--pixel-panel)] text-[var(--pixel-border)] hover:bg-[var(--pixel-highlight)] hover:text-white"
-                    >
-                      配對
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* 主內容 */}
-        <div className="flex-1 space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-[var(--pixel-text-dim)]">排序：</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSort('latest')
-                  loadPosts(filterTopicId, 'latest')
-                }}
-                className={`font-bold transition-colors ${
-                  sort === 'latest' 
-                    ? 'text-[var(--pixel-highlight)] underline' 
-                    : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)]'
-                }`}
-              >
-                最新
-              </button>
-              <span className="text-[var(--pixel-text-dim)]">/</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSort('trending')
-                  loadPosts(filterTopicId, 'trending')
-                }}
-                className={`font-bold transition-colors ${
-                  sort === 'trending' 
-                    ? 'text-[var(--pixel-highlight)] underline' 
-                    : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-text)]'
-                }`}
-              >
-                熱門
-              </button>
-            </div>
-          </div>
+      <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Wall</h1>
+        </div>
 
         {/* 每日主題區塊 */}
         {dailyTopic && (
@@ -700,9 +331,9 @@ export default function HomePage() {
                       loadPosts(dailyTopic.id)
                     }
                   }}
-                  className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors break-words bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
+                  className="text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors text-left"
                 >
-                  <span>{dailyTopic.title}</span>
+                  {dailyTopic.title}
                   {filterTopicId === dailyTopic.id && (
                     <span className="ml-2 text-xs text-[var(--pixel-highlight)]">(已篩選)</span>
                   )}
@@ -764,65 +395,6 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* 使用者主題選擇/建立 */}
-            <div className="space-y-2">
-              <div className="text-xs uppercase tracking-wide text-[var(--pixel-text-dim)]">主題（可選）</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={boardQuery}
-                  onChange={(e) => {
-                    setBoardQuery(e.target.value)
-                    setSelectedBoard(null)
-                  }}
-                  placeholder="搜尋或建立主題，如：美食、運動"
-                  className="flex-1 px-3 py-2 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] focus:outline-none focus:ring-0"
-                  disabled={posting}
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateBoard}
-                  disabled={creatingBoard || !boardQuery.trim()}
-                  className="px-3 py-2 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
-                >
-                  {creatingBoard ? '建立中...' : '建立/套用'}
-                </button>
-              </div>
-              {boardSearching && <div className="text-xs text-[var(--pixel-text-dim)]">搜尋中...</div>}
-              {selectedBoard && (
-                <div className="text-xs text-[var(--pixel-text)]">
-                  已選主題：<span className="font-bold">{selectedBoard.title}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBoard(null)}
-                    className="ml-2 text-[var(--pixel-highlight)] underline"
-                  >
-                    清除
-                  </button>
-                </div>
-              )}
-              {!selectedBoard && boardResults.length > 0 && (
-                <div className="border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] divide-y-3 divide-[var(--pixel-border)]">
-                  {boardResults.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedBoard(t)
-                        setBoardResults([])
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--pixel-surface)]"
-                    >
-                      {t.title}
-                      {typeof t.postCount === 'number' && (
-                        <span className="ml-2 text-[var(--pixel-text-dim)] text-xs">({t.postCount})</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -833,29 +405,19 @@ export default function HomePage() {
             
             {/* 圖片預覽 */}
             {imagePreview && (
-              <div className="relative group">
+              <div className="relative">
                 <img
                   src={imagePreview}
                   alt="Preview"
                   className="w-full max-h-64 object-cover border-3 border-[var(--pixel-border)]"
                 />
-                <motion.button
+                <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 w-9 h-9 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)]"
-                  whileHover={{
-                    scale: 1.1,
-                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
-                    backgroundColor: '#dc2626',
-                  }}
-                  whileTap={{
-                    scale: 0.95,
-                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
-                  }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white border-3 border-[var(--pixel-border)] flex items-center justify-center font-bold hover:bg-red-600"
                 >
                   ×
-                </motion.button>
+                </button>
               </div>
             )}
 
@@ -874,31 +436,18 @@ export default function HomePage() {
                   className="hidden"
                   disabled={posting}
                 />
-                <motion.span
-                  className="px-4 py-2.5 bg-gradient-to-br from-[var(--pixel-panel)] to-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold inline-flex items-center gap-2"
-                  whileHover={!posting ? {
-                    scale: 1.05,
-                    boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
-                    y: -2,
-                    x: -2,
-                  } : {}}
-                  whileTap={!posting ? {
-                    scale: 0.95,
-                    boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
-                    y: 0,
-                    x: 0,
-                  } : {}}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                >
-                  <ImageIcon size={18} />
-                  <span>選擇圖片</span>
-                </motion.span>
+                <span className="px-4 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] text-[var(--pixel-text)] font-bold hover:bg-[var(--pixel-surface)] transition-colors inline-block">
+                  📷 選擇圖片
+                </span>
               </label>
               
-              <PostButton
-                posting={posting}
+              <button
+                type="submit"
                 disabled={posting || !content.trim()}
-              />
+                className="px-6 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {posting ? '發佈中...' : '發佈'}
+              </button>
             </div>
           </form>
         </div>
@@ -915,10 +464,10 @@ export default function HomePage() {
             {posts.map((post) => (
               <div
                 key={post.id}
-                className="pixel-panel p-4 space-y-3 relative"
+                className="pixel-panel p-4 space-y-3"
               >
-                {/* Author Info & Actions */}
-                <div className="flex items-start gap-3">
+                {/* Author Info */}
+                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-bold text-[var(--pixel-text)]">
                       {post.author.name ? post.author.name[0]?.toUpperCase() : '?'}
@@ -938,121 +487,30 @@ export default function HomePage() {
                       {formatTimeAgo(post.createdAt)}
                     </div>
                   </div>
-                  {/* 收藏 + 按讚 + 配對/聊天或作者功能 */}
-                  <div className="flex items-center gap-2">
-                    <IconButton
-                      icon="heart"
-                      active={post.isFavorited}
-                      onClick={() => toggleFavorite(post.id)}
-                      variant="default"
-                      size="md"
-                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    />
-                    
-                    <IconButton
-                      icon="thumbsUp"
-                      count={post.likeCount}
-                      active={post.hasLiked}
-                      onClick={() => toggleLike(post.id)}
-                      variant="primary"
-                      size="md"
-                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    />
-
-                    {post.isAuthor ? (
-                      <div className="relative">
-                        <motion.button
-                          onClick={() => setOpenMenuPostId(openMenuPostId === post.id ? null : post.id)}
-                          className="w-10 h-10 text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] hover:bg-[var(--pixel-surface)] shadow-[3px_3px_0_rgba(0,0,0,0.15)] rounded-lg flex items-center justify-center transition-all"
-                          whileHover={{ scale: 1.08, y: -1, x: -1, boxShadow: '4px 4px 0 rgba(0,0,0,0.2)' }}
-                          whileTap={{ scale: 0.92, y: 0, x: 0, boxShadow: '2px 2px 0 rgba(0,0,0,0.2)' }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  {/* Phase 3: 配對/聊天按鈕 */}
+                  {post.authorId !== user?.id && (
+                    <div className="flex items-center gap-2">
+                      {post.isMatched && post.matchId ? (
+                        // 已配對：顯示聊天室入口
+                        <Link
+                          href={`/chat/${post.matchId}`}
+                          className="px-3 py-1 bg-[var(--pixel-highlight)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
                         >
-                          <MoreVertical size={18} />
-                        </motion.button>
-                        {openMenuPostId === post.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-32 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.25)] z-10 rounded-lg overflow-hidden"
-                          >
-                            <button
-                              onClick={() => handleStartEdit(post)}
-                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-[var(--pixel-surface)] transition-colors font-medium text-[var(--pixel-text)]"
-                            >
-                              編輯
-                            </button>
-                            <button
-                              onClick={() => handleDeletePost(post.id)}
-                              disabled={deletingPostId === post.id}
-                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors font-medium"
-                            >
-                              {deletingPostId === post.id ? '刪除中...' : '刪除'}
-                            </button>
-                          </motion.div>
-                        )}
-                      </div>
-                    ) : (
-                      post.authorId !== user?.id && (
-                        <div className="flex items-center gap-2">
-                          {post.isMatched && post.matchId ? (
-                            // 已配對：顯示聊天室入口
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <Link
-                                href={`/chat/${post.matchId}`}
-                                className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight)] via-[#0284c7] to-[var(--pixel-highlight)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all flex items-center gap-2 group relative overflow-hidden"
-                              >
-                                {/* 光效背景 */}
-                                <motion.span
-                                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                                  initial={{ x: '-100%' }}
-                                  animate={{ x: ['-100%', '200%'] }}
-                                  transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    repeatDelay: 1,
-                                    ease: 'linear',
-                                  }}
-                                />
-                                <MessageCircle size={16} className="relative z-10 group-hover:scale-110 transition-transform" />
-                                <span className="relative z-10">聊天</span>
-                              </Link>
-                            </motion.div>
-                          ) : (
-                            // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
-                            <motion.button
-                              onClick={() => handleMatchFromPost(post.id)}
-                              disabled={dailyMatchCount.remaining === 0}
-                              className="px-4 py-2 bg-gradient-to-r from-[var(--pixel-highlight-2)] via-[#0ea5e9] to-[var(--pixel-highlight-2)] text-white text-sm font-bold border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.2)] rounded-lg hover:shadow-[6px_6px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)] disabled:from-[var(--pixel-text-dim)] disabled:to-[var(--pixel-text-dim)] disabled:via-[var(--pixel-text-dim)] relative overflow-hidden group"
-                              whileHover={dailyMatchCount.remaining > 0 ? { scale: 1.02, y: -1, x: -1 } : {}}
-                              whileTap={dailyMatchCount.remaining > 0 ? { scale: 0.98, y: 0, x: 0 } : {}}
-                              title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
-                            >
-                              {/* 光效背景 */}
-                              <motion.span
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                                initial={{ x: '-100%' }}
-                                animate={dailyMatchCount.remaining > 0 ? { x: ['-100%', '200%'] } : {}}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  repeatDelay: 1,
-                                  ease: 'linear',
-                                }}
-                              />
-                              <span className="relative z-10">
-                                {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
-                              </span>
-                            </motion.button>
-                          )}
-                        </div>
-                      )
-                    )}
-                  </div>
+                          聊天
+                        </Link>
+                      ) : (
+                        // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
+                        <button
+                          onClick={() => handleMatchFromPost(post.id)}
+                          disabled={dailyMatchCount.remaining === 0}
+                          className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
+                          title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
+                        >
+                          {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Topic Badge */}
@@ -1061,47 +519,11 @@ export default function HomePage() {
                     📌 {post.topic.title}
                   </div>
                 )}
-                {/* Board Badge */}
-                {post.board && (
-                  <Link
-                    href={`/topics/${post.board.id}`}
-                    className="px-3 py-1 bg-[var(--pixel-panel)] text-[var(--pixel-text)] text-xs font-bold border-3 border-[var(--pixel-border)] inline-block mb-2 hover:bg-[var(--pixel-surface)]"
-                  >
-                    📌 主題：{post.board.title}
-                  </Link>
-                )}
 
-                {/* Content / Edit */}
-                {editingPostId === post.id ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full min-h-[100px] p-3 bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] resize-none focus:outline-none focus:ring-0"
-                      disabled={savingEdit}
-                    />
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleSaveEdit}
-                        disabled={savingEdit}
-                        className="px-4 py-2 bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50"
-                      >
-                        {savingEdit ? '儲存中...' : '儲存'}
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={savingEdit}
-                        className="px-4 py-2 bg-[var(--pixel-panel)] text-[var(--pixel-text)] border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] font-bold hover:bg-[var(--pixel-surface)] transition-all"
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
-                    {post.content}
-                  </div>
-                )}
+                {/* Content */}
+                <div className="text-[var(--pixel-text)] whitespace-pre-wrap break-words">
+                  {post.content}
+                </div>
 
                 {/* Image */}
                 {post.imageUrl && (
@@ -1121,7 +543,7 @@ export default function HomePage() {
         {/* Phase 4: 每日配對上限提示 */}
         <div className="pixel-panel p-3 mt-6 text-center">
           <p className="text-xs text-[var(--pixel-text-dim)]">
-            每天最多只能從貼文中配對 5 人
+            每天最多只能從貼文中配對 3 人
           </p>
           <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
             今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}
@@ -1131,7 +553,6 @@ export default function HomePage() {
               </span>
             )}
           </p>
-        </div>
         </div>
       </div>
     </div>

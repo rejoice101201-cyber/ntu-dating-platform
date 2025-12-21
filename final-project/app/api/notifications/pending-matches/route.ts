@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 // GET: 取得待處理的配對請求（別人對我的配對請求）
 export async function GET(request: NextRequest) {
@@ -13,25 +14,27 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    // 查詢別人對我的 pending 配對請求
-    const pendingMatches = await prisma.match.findMany({
-      where: {
-        matchedUserId: authUser.id, // 我是被配對的對象
-        status: 'pending',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            photos: {
-              where: { isCover: true },
-              take: 1,
+    // 使用重試機制執行查詢
+    const pendingMatches = await withRetry(async () => {
+      return await prisma.match.findMany({
+        where: {
+          matchedUserId: authUser.id, // 我是被配對的對象
+          status: 'pending',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              photos: {
+                where: { isCover: true },
+                take: 1,
+              },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
+      });
     });
 
     return NextResponse.json({
@@ -46,11 +49,14 @@ export async function GET(request: NextRequest) {
       })),
       count: pendingMatches.length,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get pending matches error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: 'Failed to get pending matches' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

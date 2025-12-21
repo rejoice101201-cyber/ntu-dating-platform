@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getPusher } from '@/lib/pusher';
 
-// 回答者回答問題
+// 回答者回答问题
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
   
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 更新遊戲會話
+    // 更新游戏会话
     const updatedSession = await prisma.gameSession.update({
       where: { id: gameSessionId },
       data: {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 獲取問題詳情
+    // 获取问题详情
     let question = null;
     if (updatedSession.questionId) {
       question = await prisma.question.findUnique({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 通過Pusher通知對方
+    // 通过Pusher通知对方
     try {
       const pusher = getPusher();
       await pusher.trigger(`match-${gameSession.matchId}`, 'game_state_update', {

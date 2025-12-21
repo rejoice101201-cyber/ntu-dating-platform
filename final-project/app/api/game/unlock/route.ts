@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// 使用鑰匙解鎖照片
+// 使用钥匙解锁照片
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
   
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 獲取解鎖進度
+    // 获取解锁进度
     const unlockProgress = await prisma.unlockProgress.findUnique({
       where: {
         userId_targetUserId: {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 使用一把鑰匙，增加解鎖進度
+    // 使用一把钥匙，增加解锁进度
     const updatedProgress = await prisma.unlockProgress.update({
       where: {
         userId_targetUserId: {

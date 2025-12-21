@@ -3,10 +3,10 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getPusher } from '@/lib/pusher';
 
-// 初始化問題的輔助函數
+// 初始化问题的辅助函数
 async function initializeQuestions() {
   const questions = [
-    // Interest 類別
+    // Interest 类别
     {
       content: '你最喜欢的电影类型是？',
       category: 'interest',
@@ -36,7 +36,7 @@ async function initializeQuestions() {
       isActive: true,
     },
     
-    // Personality 類別
+    // Personality 类别
     {
       content: '在聚会上，你通常是？',
       category: 'personality',
@@ -48,25 +48,25 @@ async function initializeQuestions() {
       content: '面对压力时，你通常会？',
       category: 'personality',
       type: 'multiple_choice',
-      options: JSON.stringify(['冷靜分析', '尋求幫助', '獨自承受', '逃避問題']),
+      options: JSON.stringify(['冷静分析', '寻求帮助', '独自承受', '逃避问题']),
       isActive: true,
     },
     {
       content: '你更倾向于？',
       category: 'personality',
       type: 'multiple_choice',
-      options: JSON.stringify(['計畫一切', '隨性而為', '看情況', '兩者都有']),
+      options: JSON.stringify(['计划一切', '随性而为', '看情况', '两者都有']),
       isActive: true,
     },
     {
       content: '你更喜欢？',
       category: 'personality',
       type: 'multiple_choice',
-      options: JSON.stringify(['獨處', '和朋友在一起', '兩者都喜歡', '看心情']),
+      options: JSON.stringify(['独处', '和朋友在一起', '两者都喜欢', '看心情']),
       isActive: true,
     },
     
-    // Lifestyle 類別
+    // Lifestyle 类别
     {
       content: '你更喜欢哪种周末活动？',
       category: 'lifestyle',
@@ -85,7 +85,7 @@ async function initializeQuestions() {
       content: '你更喜欢早睡早起还是夜猫子？',
       category: 'lifestyle',
       type: 'multiple_choice',
-      options: JSON.stringify(['早睡早起', '夜貓子', '看情況']),
+      options: JSON.stringify(['早睡早起', '夜猫子', '看情况']),
       isActive: true,
     },
     {
@@ -96,7 +96,7 @@ async function initializeQuestions() {
       isActive: true,
     },
     
-    // Icebreaker 類別
+    // Icebreaker 类别
     {
       content: '第一次约会，你更倾向于？',
       category: 'icebreaker',
@@ -127,7 +127,7 @@ async function initializeQuestions() {
     },
   ];
 
-  // 確保問題存在且激活
+  // 确保问题存在且激活
   let createdCount = 0;
   let updatedCount = 0;
   
@@ -145,7 +145,7 @@ async function initializeQuestions() {
       });
       createdCount++;
     } else {
-      // 更新現有問題確保激活
+      // 更新现有问题确保激活
       await prisma.question.update({
         where: { id: existing.id },
         data: { 
@@ -161,7 +161,7 @@ async function initializeQuestions() {
   console.log(`Initialized questions: ${createdCount} created, ${updatedCount} updated, total: ${questions.length}`);
 }
 
-// 發起遊戲 - 選擇主題
+// 发起游戏 - 选择主题
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
   
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 驗證match是否存在且用戶參與其中
+    // 验证match是否存在且用户参与其中
     const match = await prisma.match.findUnique({
       where: { id: matchId },
     });
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 
     const responderId = match.userId === authUser.id ? match.matchedUserId : match.userId;
 
-    // 創建遊戲會話
+    // 创建游戏会话
     const gameSession = await prisma.gameSession.create({
       data: {
         matchId,
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 根據主題獲取一個問題（隨機選擇）
+    // 根据主题获取一个问题（随机选择）
     let allQuestions = await prisma.question.findMany({
       where: {
         category: topic,
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`Found ${allQuestions.length} questions for topic: ${topic}`);
 
-    // 如果沒有問題，自動初始化問題
+    // 如果没有问题，自动初始化问题
     if (!allQuestions || allQuestions.length === 0) {
       console.log(`No questions found for topic: ${topic}, initializing...`)
       try {
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         console.error('Failed to initialize questions:', initError)
       }
       
-      // 重新查詢
+      // 重新查询
       allQuestions = await prisma.question.findMany({
         where: {
           category: topic,
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
       console.log(`After initialization, found ${allQuestions.length} questions for topic: ${topic}`)
     }
 
-    // 如果還是沒有問題，嘗試查詢所有類別看看資料庫裡有什麼
+    // 如果还是没有问题，尝试查询所有类别看看数据库里有什么
     if (!allQuestions || allQuestions.length === 0) {
       const allCategories = await prisma.question.groupBy({
         by: ['category'],
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 隨機選擇一個問題
+    // 随机选择一个问题
     const question = allQuestions[Math.floor(Math.random() * allQuestions.length)];
     
     if (!question || !question.id) {
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
       category: question.category,
     });
 
-    // 更新遊戲會話的問題ID
+    // 更新游戏会话的问题ID
     let updatedSession;
     try {
       updatedSession = await prisma.gameSession.update({
@@ -291,11 +291,11 @@ export async function POST(request: NextRequest) {
       });
     } catch (updateError) {
       console.error('Failed to update game session with questionId:', updateError);
-      // 即使更新失敗，也返回遊戲會話和題目，讓前端可以處理
+      // 即使更新失败，也返回游戏会话和题目，让前端可以处理
       updatedSession = gameSession;
     }
 
-    // 確保 questionId 被正確設置
+    // 确保 questionId 被正确设置
     if (!updatedSession.questionId) {
       console.error('questionId was not set in updated session, attempting to set it again');
       try {
@@ -306,12 +306,12 @@ export async function POST(request: NextRequest) {
         console.log('Successfully set questionId on retry:', updatedSession.questionId);
       } catch (retryError) {
         console.error('Failed to set questionId on retry:', retryError);
-        // 即使更新失敗，也手動設置 questionId 在返回對象中
+        // 即使更新失败，也手动设置 questionId 在返回对象中
         updatedSession = { ...updatedSession, questionId: question.id };
       }
     }
 
-    // 通過Pusher通知對方
+    // 通过Pusher通知对方
     try {
       const pusher = getPusher();
       const gameSessionForPusher = {
