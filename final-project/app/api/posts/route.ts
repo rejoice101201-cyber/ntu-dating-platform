@@ -136,14 +136,14 @@ export async function GET(request: NextRequest) {
       matchMap.set(post.id, { isMatched: !!match, matchId: match?.id || null });
     });
 
-    // 計算每個貼文的按讚數
-    const likeCounts = await withRetry(async () => {
+    // 計算每個貼文的按讚數（如果 postIds 為空，跳過查詢）
+    const likeCounts = postIds.length > 0 ? await withRetry(async () => {
       return await prisma.postLike.groupBy({
         by: ['postId'],
         where: { postId: { in: postIds } },
         _count: { id: true },
       });
-    });
+    }) : [];
 
     const likeCountMap = new Map(likeCounts.map((lc: any) => [lc.postId, lc._count.id]));
 

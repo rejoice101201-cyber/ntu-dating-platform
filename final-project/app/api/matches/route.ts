@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               photos: {
-                where: { isCover: true },
-                take: 1,
+                // 返回所有 photos，不只是 cover
+                orderBy: { order: 'asc' },
               },
             },
           },
@@ -39,14 +39,15 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               photos: {
-                where: { isCover: true },
-                take: 1,
+                // 返回所有 photos，不只是 cover
+                orderBy: { order: 'asc' },
               },
             },
           },
-          lastMessage: {
+          messages: {
             select: {
               createdAt: true,
+              content: true, // 也返回 content，前端需要
             },
             orderBy: {
               createdAt: 'desc' as const,
@@ -54,45 +55,47 @@ export async function GET(request: NextRequest) {
             take: 1,
           },
         },
-        orderBy: [
-          {
-            lastMessage: {
-              createdAt: 'desc' as const,
-            },
-          },
-          {
-            matchedAt: 'desc' as const,
-          },
-        ],
       });
     });
 
     // Format matches to always show the other user
-    const formattedMatches = await Promise.all(matches.map(async (match: any) => {
+    // 先收集所有需要查询的 targetUserId
+    const targetUserIds = matches.map((match: any) => {
+      const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
+      return otherUser.id;
+    }).filter(Boolean) as string[];
+
+    // 一次性批量查询所有 unlockProgress（只查询一次！）
+    const unlockProgresses = targetUserIds.length > 0 ? await withRetry(async () => {
+      return await prisma.unlockProgress.findMany({
+        where: {
+          userId: authUser.id,
+          targetUserId: { in: targetUserIds },
+        },
+      });
+    }) : [];
+
+    // 创建 Map 用于快速查找
+    const unlockMap = new Map(
+      unlockProgresses.map(up => [`${up.userId}-${up.targetUserId}`, up])
+    );
+
+    // Map unlock level to blur stages: 0% → 20px, 10% → 15px, 30% → 10px, 50% → 5px, 100% → 0px
+    // Using smaller blur values to maintain color visibility
+    const getBlurLevel = (unlockLevel: number): number => {
+      if (unlockLevel >= 100) return 0;
+      if (unlockLevel >= 50) return 5;
+      if (unlockLevel >= 30) return 10;
+      if (unlockLevel >= 10) return 15;
+      return 20; // 0-10% - initial blur, still shows color
+    };
+
+    // 现在使用 Map 查找，而不是查询数据库
+    const formattedMatches = matches.map((match: any) => {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
       
-      // Get unlock progress for this match（使用重試機制）
-      const unlockProgress = await withRetry(async () => {
-        return await prisma.unlockProgress.findUnique({
-          where: {
-            userId_targetUserId: {
-              userId: authUser.id,
-              targetUserId: otherUser.id,
-            },
-          },
-        });
-      });
-
-      // Apply blur to photos based on unlock progress
-      // Map unlock level to blur stages: 0% → 20px, 10% → 15px, 30% → 10px, 50% → 5px, 100% → 0px
-      // Using smaller blur values to maintain color visibility
-      const getBlurLevel = (unlockLevel: number): number => {
-        if (unlockLevel >= 100) return 0;
-        if (unlockLevel >= 50) return 5;
-        if (unlockLevel >= 30) return 10;
-        if (unlockLevel >= 10) return 15;
-        return 20; // 0-10% - initial blur, still shows color
-      };
+      // 从 Map 中查找，而不是查询数据库
+      const unlockProgress = unlockMap.get(`${authUser.id}-${otherUser.id}`);
 
       const photosWithBlur = (otherUser.photos || []).map((photo: any) => {
         const progress = unlockProgress?.unlockLevel || 0;
@@ -103,6 +106,8 @@ export async function GET(request: NextRequest) {
         };
       });
 
+      const lastMessage = match.messages?.[0];
+      
       return {
         id: match.id,
         user: {
@@ -116,14 +121,26 @@ export async function GET(request: NextRequest) {
         } : null,
         createdAt: match.createdAt,
         matchedAt: match.matchedAt,
-        lastMessageAt: match.lastMessage?.[0]?.createdAt || match.matchedAt,
+        lastMessageAt: lastMessage?.createdAt || match.matchedAt,
+        lastMessage: lastMessage ? {
+          content: lastMessage.content,
+          createdAt: lastMessage.createdAt.toISOString(),
+        } : null,
       };
-    }));
+    });
+
+    // 按最后消息时间排序（最新的在最上面）
+    formattedMatches.sort((a: any, b: any) => {
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return bTime - aTime; // 降序排列
+    });
 
     console.log('Formatted matches:', formattedMatches.map((m: any) => ({
       id: m.id,
       userName: m.user.name,
       photosCount: m.user.photos?.length || 0,
+      lastMessageAt: m.lastMessageAt,
     })));
 
     return NextResponse.json({ matches: formattedMatches });
