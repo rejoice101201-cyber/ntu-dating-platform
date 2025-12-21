@@ -79,6 +79,21 @@ export default function WallPage() {
   const [filterAuthorId, setFilterAuthorId] = useState<string | null>(null)
   const [sort, setSort] = useState<'latest' | 'trending'>('latest')
   
+  // 排行榜狀態
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
+  
+  // 熱門主題狀態
+  const [trendingTopics, setTrendingTopics] = useState<any[]>([])
+  const [loadingTrending, setLoadingTrending] = useState(false)
+  
+  // 編輯/刪除狀態
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null)
+  
   // 發文狀態
   const [content, setContent] = useState('')
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
@@ -86,6 +101,13 @@ export default function WallPage() {
   const [posting, setPosting] = useState(false)
   const [postingAsTopic, setPostingAsTopic] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // 主題選擇狀態
+  const [boardQuery, setBoardQuery] = useState('')
+  const [boardResults, setBoardResults] = useState<any[]>([])
+  const [boardSearching, setBoardSearching] = useState(false)
+  const [selectedBoard, setSelectedBoard] = useState<any | null>(null)
+  const [creatingBoard, setCreatingBoard] = useState(false)
   
   // Toast 通知狀態
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
@@ -101,7 +123,21 @@ export default function WallPage() {
     loadDailyTopic()
     loadDailyMatchCount()
     loadTopicStatus()
+    loadLeaderboard()
+    loadTrendingTopics()
   }, [token, router])
+
+  const loadTrendingTopics = async () => {
+    try {
+      setLoadingTrending(true)
+      const res = await api.get('/topics?sort=trending')
+      setTrendingTopics(res.data.topics || [])
+    } catch (error) {
+      console.error('Failed to load trending topics:', error)
+    } finally {
+      setLoadingTrending(false)
+    }
+  }
 
   const loadPosts = async (topicId?: string | null) => {
     try {
