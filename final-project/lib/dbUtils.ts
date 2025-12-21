@@ -73,8 +73,11 @@ export async function checkDatabaseConnection(): Promise<boolean> {
     // MongoDB 使用不同的查詢方式
     const dbUrl = process.env.DATABASE_URL || process.env.PRISMA_DATABASE_URL || '';
     if (dbUrl.includes('mongodb')) {
-      // MongoDB: 使用 $runCommandRaw 或簡單查詢
-      await prisma.$runCommandRaw({ ping: 1 });
+      // MongoDB: 使用 $runCommandRaw（需要類型檢查，因為 PostgreSQL client 沒有這個方法）
+      const mongoPrisma = prisma as any;
+      if (typeof mongoPrisma.$runCommandRaw === 'function') {
+        await mongoPrisma.$runCommandRaw({ ping: 1 });
+      }
     } else {
       // PostgreSQL: 使用 SELECT 1
       await prisma.$queryRaw`SELECT 1`;
