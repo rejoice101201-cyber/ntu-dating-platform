@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
+import { withRetry } from '@/lib/dbUtils'
 
 // This route is inherently dynamic (uses searchParams and remote token exchange)
 export const dynamic = 'force-dynamic'
@@ -71,21 +72,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login?error=google_hd_not_allowed', req.url))
     }
 
-    // Find or create user
-    let user = await prisma.user.findUnique({ where: { email } })
+    // Find or create user (使用重試機制處理數據庫連接錯誤)
+    let user = await withRetry(
+      () => prisma.user.findUnique({ where: { email } }),
+      3, // 最多重試 3 次
+      1000 // 每次重試間隔 1 秒
+    )
     if (!user) {
       const randomPassword = Math.random().toString(36).slice(-12)
       const hashedPassword = await bcrypt.hash(randomPassword, 10)
-      user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name: payload.name || 'Google User',
-          birthday: new Date(),
-          gender: 'other',
-          isVerified: true,
-        },
-      })
+      user = await withRetry(
+        () => prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name: payload.name || 'Google User',
+            birthday: new Date(),
+            gender: 'other',
+            isVerified: true,
+          },
+        }),
+        3, // 最多重試 3 次
+        1000 // 每次重試間隔 1 秒
+      )
     }
 
     if (!user.isActive) {
