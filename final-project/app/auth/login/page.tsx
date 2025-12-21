@@ -82,14 +82,15 @@ export default function LoginPage() {
     if (typeof window === 'undefined') return
     setError('')
     setGLoading(true)
+    const redirectUri = `${window.location.origin}/api/auth/google/callback`
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
     url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
-    url.searchParams.set('redirect_uri', `${window.location.origin}/api/auth/google/callback`)
+    url.searchParams.set('redirect_uri', redirectUri)
     url.searchParams.set('response_type', 'code')
     url.searchParams.set('scope', 'openid email profile')
     url.searchParams.set('prompt', 'select_account')
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/login/page.tsx:handleGoogle',message:'start google redirect',data:{redirect:url.toString(),origin:window.location.origin},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/login/page.tsx:handleGoogle',message:'start google redirect',data:{redirectUri:redirectUri,fullUrl:url.toString(),origin:window.location.origin,clientId:GOOGLE_CLIENT_ID},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{});
     // #endregion
     window.location.href = url.toString()
   }
