@@ -301,19 +301,16 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // 更新主題的最後活動時間
-    if (topicId || boardId) {
-      const targetId = boardId || topicId;
-      if (targetId) {
-        await withRetry(async () => {
-          return await prisma.topic.update({
-            where: { id: targetId },
-            data: { lastActivityAt: new Date() },
-          });
-        }).catch(() => {
-          // 忽略更新錯誤
+    // 更新「自訂主題（board）」的最後活動時間（DailyTopic 不需要更新 lastActivityAt）
+    if (boardId) {
+      await withRetry(async () => {
+        return await prisma.topic.update({
+          where: { id: boardId },
+          data: { lastActivityAt: new Date() },
         });
-      }
+      }).catch(() => {
+        // 忽略更新錯誤
+      });
     }
 
     // 扣除體力

@@ -46,10 +46,97 @@ model User {
   unlockProgress         UnlockProgress[]
   unlockProgressAsTarget UnlockProgress[] @relation("TargetUser")
   matchPreference        MatchPreference?
+  posts                  Post[]
+  postLikes              PostLike[]
+  favorites              Favorite[]
+  topics                 Topic[]          @relation("UserTopics")
 
   @@index([email])
   @@index([userId])
   @@index([location])
+}
+
+model DailyTopic {
+  id        String   @id @default(cuid())
+  date      DateTime
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts Post[] @relation("DailyTopicPosts")
+
+  @@unique([date])
+  @@index([date])
+}
+
+// 使用者自訂主題（board）
+model Topic {
+  id             String   @id @default(cuid())
+  title          String
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  creator User   @relation("UserTopics", fields: [createdBy], references: [id], onDelete: Cascade)
+  posts   Post[] @relation("BoardPosts")
+
+  @@index([createdBy])
+  @@index([title])
+  @@index([lastActivityAt])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  content   String
+  imageUrl  String?
+  type      String   @default("FREE") // "FREE" | "TOPIC"
+  topicId   String? // DailyTopic
+  boardId   String? // Topic (board)
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  topic     DailyTopic? @relation("DailyTopicPosts", fields: [topicId], references: [id], onDelete: SetNull)
+  board     Topic?      @relation("BoardPosts", fields: [boardId], references: [id], onDelete: SetNull)
+  likes     PostLike[]
+  favorites Favorite[]
+
+  @@index([authorId])
+  @@index([topicId])
+  @@index([boardId])
+  @@index([createdAt])
+  @@index([likeCount])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
 
 model Photo {
