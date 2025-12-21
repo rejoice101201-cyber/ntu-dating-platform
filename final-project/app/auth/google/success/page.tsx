@@ -51,11 +51,24 @@ function SuccessInner() {
     }
 
     try {
-      const userJson = Buffer.from(userBase64, 'base64').toString('utf8')
+      // #region agent log
+      const parseStartTime = Date.now()
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/google/success/page.tsx:parse',message:'Parsing user data from base64',data:{hasToken:!!token,hasUserBase64:!!userBase64,userBase64Length:userBase64?.length},timestamp:parseStartTime,sessionId:'debug-session',runId:'run4',hypothesisId:'I'})}).catch(()=>{})
+      // #endregion
+      // 使用瀏覽器原生的 atob() 而不是 Node.js 的 Buffer
+      const userJson = typeof window !== 'undefined' 
+        ? atob(userBase64) 
+        : Buffer.from(userBase64, 'base64').toString('utf8')
       const user = JSON.parse(userJson)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/google/success/page.tsx:parse',message:'User data parsed successfully',data:{userId:user?.id,userEmail:user?.email,parseDuration:Date.now()-parseStartTime},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'I'})}).catch(()=>{})
+      // #endregion
       setAuth(user, token)
       router.replace('/discover')
     } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/google/success/page.tsx:error',message:'Failed to parse user data',data:{error:String(e),errorName:e?.name,errorMessage:e?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'I'})}).catch(()=>{})
+      // #endregion
       console.error('Failed to parse user from Google success:', e)
       setError('Invalid token data')
       const t = setTimeout(() => router.replace('/auth/login?error=google_callback'), 800)
