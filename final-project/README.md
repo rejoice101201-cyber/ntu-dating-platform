@@ -400,7 +400,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 
 ### 能量管理流程
 
-![Home/Wall 頁面](docs/未儲存圖片 5.jpg)
+![Home/Wall 頁面](docs/design-references/home-wall-page.jpg)
 
 1. **每日補滿檢查**：
    - 每次 API 請求時檢查 `lastEnergyRefill`

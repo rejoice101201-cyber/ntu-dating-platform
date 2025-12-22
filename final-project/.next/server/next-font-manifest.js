@@ -1,0 +1,1 @@
+self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/home/denny/下載/網路服務程式設計/ntu-dating-platform1/final-project/app/layout\":[\"static/media/db234bd00cda6a96-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
