@@ -122,7 +122,7 @@ function LoginInner() {
       <div className="pixel-panel p-10 w-full max-w-md">
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">🐕</div>
-          <h2 className="text-2xl font-bold text">Welcome back</h2>
+          <h2 className="text-2xl font-bold text">Shibuya</h2>
           <p className="mt-2 text-sm text-gray-600">Sign in to continue</p>
         </div>
 

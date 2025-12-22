@@ -13,7 +13,7 @@ const pixelFont = Press_Start_2P({
 })
 
 export const metadata: Metadata = {
-  title: 'NTU Dating Platform - 找到你的另一半',
+  title: 'Shibuya - 找到你的另一半',
   description: '一個注重內在的交友平台，透過互動解鎖照片，找到真正適合的人',
 }
 

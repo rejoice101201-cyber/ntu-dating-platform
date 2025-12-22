@@ -1,4 +1,4 @@
-# NTU Dating Platform 臺大學生專用免費交友軟體
+# Shibuya - 臺大學生專用免費交友軟體
 
 > Deployed service 網址：  
 > https://ntu-dating-platform1.vercel.app
@@ -6,7 +6,7 @@
 
 ## 專案簡介
 
-這是一個使用 Next.js 14 (App Router) + Prisma + PostgreSQL 打造的臺大學生專用交友平台，台大人的時間很貴，別再浪費在付費還配對不到的爛 App 上了！
+Shibuya 是一個使用 Next.js 14 (App Router) + Prisma + PostgreSQL 打造的臺大學生專用交友平台，台大人的時間很貴，別再浪費在付費還配對不到的爛 App 上了！
 
 我們把 AI 模型塞進聊天室，解決你的社交恐懼； 我們把 即時互動遊戲 寫進訊息流，因為無聊是最大的罪過； 我們堅持 注重個性與社群連結，因為這裡不是看臉的菜市場。
 
