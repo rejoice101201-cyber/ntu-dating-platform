@@ -635,16 +635,32 @@ export default function WallPage() {
               <span className="text-[var(--pixel-text-dim)]">排序：</span>
               <button
                 type="button"
-                onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-                className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
+                onClick={() => { 
+                  setSort('latest')
+                  loadPosts(filterTopicId)
+                }}
+                className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
+                  sort === 'latest' 
+                    ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
+                    : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
+                }`}
+                style={{ fontFamily: 'monospace' }}
               >
                 最新
               </button>
               <span className="text-[var(--pixel-text-dim)]">/</span>
               <button
                 type="button"
-                onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-                className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
+                onClick={() => { 
+                  setSort('trending')
+                  loadPosts(filterTopicId)
+                }}
+                className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
+                  sort === 'trending' 
+                    ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
+                    : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
+                }`}
+                style={{ fontFamily: 'monospace' }}
               >
                 熱門
               </button>

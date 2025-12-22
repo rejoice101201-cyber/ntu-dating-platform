@@ -33,13 +33,20 @@ export default function LeftSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center py-3 px-2 transition-all relative ${
+              className={`flex flex-col items-center py-3 px-2 transition-all relative group ${
                 isActive
                   ? 'text-[var(--pixel-highlight)]'
                   : 'text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)]'
               }`}
             >
-              <span className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] text-lg font-bold">
+              <span 
+                className={`mb-2 flex items-center justify-center w-12 h-12 border-3 border-[var(--pixel-border)] text-lg font-bold transition-all duration-100 ${
+                  isActive
+                    ? 'bg-[var(--pixel-highlight)] text-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]'
+                    : 'bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]'
+                }`}
+                style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
+              >
                 {item.glyph}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
