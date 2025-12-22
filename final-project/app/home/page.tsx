@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
@@ -63,6 +63,7 @@ function formatTimeAgo(dateString: string): string {
 
 export default function WallPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const { user, token } = useAuthStore()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -516,7 +517,7 @@ export default function WallPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24 pl-20">
+    <div className="min-h-screen pb-32 pl-20">
       {toast && (
         <Toast
           message={toast.message}
@@ -629,13 +630,13 @@ export default function WallPage() {
           
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Home</h1>
+            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">{pathname === '/home' ? 'HOME' : 'WALL'}</h1>
             <div className="flex items-center gap-2 text-xs">
               <span className="text-[var(--pixel-text-dim)]">排序：</span>
               <button
                 type="button"
                 onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-                className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+                className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
               >
                 最新
               </button>
@@ -643,7 +644,7 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-                className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+                className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
               >
                 熱門
               </button>
@@ -668,7 +669,7 @@ export default function WallPage() {
                         loadPosts(dailyTopic.id)
                       }
                     }}
-                    className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors"
+                    className="block w-full text-left text-base font-bold text-[var(--pixel-text)] mb-2 hover:text-[var(--pixel-highlight)] transition-colors bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0"
                   >
                     <span>{dailyTopic.title}</span>
                     {filterTopicId === dailyTopic.id && (

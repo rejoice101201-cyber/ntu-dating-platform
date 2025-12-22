@@ -539,7 +539,7 @@ export default function WallPage() {
   }
 
   return (
-    <div className="min-h-screen pb-24 pl-20">
+    <div className="min-h-screen pb-32 pl-20">
       {/* Toast 通知 */}
       {toast && (
         <Toast
@@ -558,7 +558,7 @@ export default function WallPage() {
             <button
               type="button"
               onClick={() => { setSort('latest'); loadPosts(filterTopicId) }}
-              className={sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+              className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'latest' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
             >
               最新
             </button>
@@ -566,7 +566,7 @@ export default function WallPage() {
             <button
               type="button"
               onClick={() => { setSort('trending'); loadPosts(filterTopicId) }}
-              className={sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}
+              className={`bg-transparent p-0 border-none shadow-none focus:outline-none focus:ring-0 ${sort === 'trending' ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}`}
             >
               熱門
             </button>
