@@ -205,9 +205,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const content = (formData.get('content') as string)?.trim() || '';
     const image = formData.get('image') as File | null;
-    const type = (formData.get('type') as string) || 'FREE';
+    let type = (formData.get('type') as string) || 'FREE';
     const topicId = formData.get('topicId') as string | null;
     const boardId = formData.get('boardId') as string | null;
+
+    // 如果提供了 topicId（今日話題），自動設置 type 為 'TOPIC'
+    if (topicId && type === 'FREE') {
+      type = 'TOPIC';
+    }
 
     if (!content && !image) {
       return NextResponse.json(
