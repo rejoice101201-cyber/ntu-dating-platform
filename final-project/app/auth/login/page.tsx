@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import Link from 'next/link'
 
@@ -15,8 +15,20 @@ const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
   '509318580080-2kko35m08jd0icaa4143mrcl7cgl9o5a.apps.googleusercontent.com'
 
+// 錯誤訊息映射
+const errorMessages: Record<string, string> = {
+  database_connection_failed: 'Database connection failed. Please try again later.',
+  google_hd_not_allowed: '僅限臺大 Google 帳號登入',
+  google_no_email: 'Google 帳號未提供 Email',
+  missing_code: 'Google 登入授權碼缺失',
+  missing_id_token: 'Google ID Token 缺失',
+  inactive: '帳號已停用',
+  google_callback: 'Google 登入失敗，請稍後再試',
+}
+
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const login = useAuthStore((state) => state.login)
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle)
   const [email, setEmail] = useState('')
@@ -24,6 +36,20 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [gLoading, setGLoading] = useState(false)
+
+  // 檢查 URL 參數中的錯誤訊息
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const errorParam = searchParams?.get('error')
+    const descriptionParam = searchParams?.get('description')
+    
+    if (errorParam) {
+      const errorMsg = errorMessages[errorParam] || descriptionParam || '登入失敗，請稍後再試'
+      setError(errorMsg)
+      // 清除 URL 參數
+      router.replace('/auth/login', { scroll: false })
+    }
+  }, [searchParams, router])
 
   useEffect(() => {
     // 若 10 分鐘內已經成功登入過，直接進站

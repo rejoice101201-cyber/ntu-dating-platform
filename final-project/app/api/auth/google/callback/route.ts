@@ -3,7 +3,7 @@ import { OAuth2Client } from 'google-auth-library'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import { withRetry } from '@/lib/dbUtils'
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils'
 
 // This route is inherently dynamic (uses searchParams and remote token exchange)
 export const dynamic = 'force-dynamic'
@@ -92,8 +92,15 @@ export async function GET(req: NextRequest) {
     successUrl.searchParams.set('token', token)
     successUrl.searchParams.set('user', Buffer.from(JSON.stringify(userWithoutPassword)).toString('base64'))
     return NextResponse.redirect(successUrl)
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Google Callback] error:', error)
+    
+    // 使用統一的數據庫錯誤處理
+    const dbError = handleDatabaseError(error)
+    if (dbError.code === 'DB_CONNECTION_ERROR') {
+      return NextResponse.redirect(new URL('/auth/login?error=database_connection_failed', req.url))
+    }
+    
     return NextResponse.redirect(new URL('/auth/login?error=google_callback', req.url))
   }
 }
