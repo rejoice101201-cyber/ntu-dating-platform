@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 // POST: 接受配對請求
 export async function POST(
@@ -17,9 +18,11 @@ export async function POST(
   const { matchId } = params;
 
   try {
-    // 取得配對記錄
-    const match = await prisma.match.findUnique({
-      where: { id: matchId },
+    // 使用重試機制取得配對記錄
+    const match = await withRetry(async () => {
+      return await prisma.match.findUnique({
+        where: { id: matchId },
+      });
     });
 
     if (!match) {
@@ -48,13 +51,15 @@ export async function POST(
       });
     }
 
-    // 更新為 matched
-    const updatedMatch = await prisma.match.update({
-      where: { id: matchId },
-      data: {
-        status: 'matched',
-        matchedAt: new Date(),
-      },
+    // 使用重試機制更新為 matched
+    const updatedMatch = await withRetry(async () => {
+      return await prisma.match.update({
+        where: { id: matchId },
+        data: {
+          status: 'matched',
+          matchedAt: new Date(),
+        },
+      });
     });
 
     return NextResponse.json({
@@ -66,9 +71,12 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Accept match error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: error.message || 'Failed to accept match' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

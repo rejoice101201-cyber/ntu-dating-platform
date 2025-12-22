@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const { user: authUser } = authResult;
 
   try {
-    // 使用重試機制執行查詢
+    // 使用重試機制執行查詢 - 包含 matched 和 pending 狀態
     const matches = await withRetry(async () => {
       return await prisma.match.findMany({
         where: {
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
             { userId: authUser.id },
             { matchedUserId: authUser.id },
           ],
-          status: 'matched',
+          status: {
+            in: ['matched', 'pending'],
+          },
         },
         include: {
           user: {
@@ -94,6 +96,11 @@ export async function GET(request: NextRequest) {
     const formattedMatches = matches.map((match: any) => {
       const otherUser = match.userId === authUser.id ? match.matchedUser : match.user;
       
+      // 判断配對請求的方向
+      const isPending = match.status === 'pending';
+      const isSentByMe = match.userId === authUser.id; // 我發送的配對請求
+      const isReceivedByMe = match.matchedUserId === authUser.id; // 別人發送給我的配對請求
+      
       // 从 Map 中查找，而不是查询数据库
       const unlockProgress = unlockMap.get(`${authUser.id}-${otherUser.id}`);
 
@@ -110,6 +117,10 @@ export async function GET(request: NextRequest) {
       
       return {
         id: match.id,
+        status: match.status, // 'matched' 或 'pending'
+        isPending,
+        isSentByMe, // 是否是我發送的配對請求
+        isReceivedByMe, // 是否是別人發送給我的配對請求
         user: {
           id: otherUser.id,
           name: otherUser.name,
@@ -129,10 +140,15 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 按最后消息时间排序（最新的在最上面）
+    // 排序：先按狀態（pending 在前，matched 在後），再按時間
     formattedMatches.sort((a: any, b: any) => {
-      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      // pending 狀態優先顯示
+      if (a.isPending && !b.isPending) return -1;
+      if (!a.isPending && b.isPending) return 1;
+      
+      // 相同狀態下，按最後消息時間排序（最新的在最上面）
+      const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : new Date(a.createdAt).getTime();
+      const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : new Date(b.createdAt).getTime();
       return bTime - aTime; // 降序排列
     });
 

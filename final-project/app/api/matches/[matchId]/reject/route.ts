@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 // POST: 拒絕配對請求
 export async function POST(
@@ -17,9 +18,11 @@ export async function POST(
   const { matchId } = params;
 
   try {
-    // 取得配對記錄
-    const match = await prisma.match.findUnique({
-      where: { id: matchId },
+    // 使用重試機制取得配對記錄
+    const match = await withRetry(async () => {
+      return await prisma.match.findUnique({
+        where: { id: matchId },
+      });
     });
 
     if (!match) {
@@ -37,9 +40,11 @@ export async function POST(
       );
     }
 
-    // 刪除配對請求（拒絕）
-    await prisma.match.delete({
-      where: { id: matchId },
+    // 使用重試機制刪除配對請求（拒絕）
+    await withRetry(async () => {
+      return await prisma.match.delete({
+        where: { id: matchId },
+      });
     });
 
     return NextResponse.json({
@@ -47,9 +52,12 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Reject match error:', error);
+    
+    // 使用統一的錯誤處理
+    const dbError = handleDatabaseError(error);
     return NextResponse.json(
-      { error: error.message || 'Failed to reject match' },
-      { status: 500 }
+      { error: dbError.message, code: dbError.code },
+      { status: dbError.status }
     );
   }
 }

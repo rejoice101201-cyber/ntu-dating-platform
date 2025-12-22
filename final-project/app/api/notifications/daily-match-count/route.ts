@@ -19,11 +19,14 @@ export async function GET(request: NextRequest) {
     const { start: today, end: todayEnd } = getTodayInTaiwan();
 
     // 使用重試機制執行查詢
+    // 計算所有從貼文發起的配對請求（包括 pending 和 matched）
     const todayMatchesFromPosts = await withRetry(async () => {
       return await prisma.match.count({
         where: {
           userId: authUser.id,
-          status: 'matched',
+          status: {
+            in: ['matched', 'pending'], // 包含 pending 和 matched 狀態
+          },
           // 只計算今天創建的匹配
           createdAt: {
             gte: today,
