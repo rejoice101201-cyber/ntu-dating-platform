@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
+import PostActionButton from '@/components/PostActionButton'
 import { motion } from 'framer-motion'
 import { Image as ImageIcon } from 'lucide-react'
 
@@ -886,27 +887,19 @@ export default function WallPage() {
                   </div>
                   {/* 收藏 + 按讚 + 配對/聊天或作者功能 */}
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
+                    <PostActionButton
+                      type="favorite"
+                      isActive={post.isFavorited}
                       onClick={() => toggleFavorite(post.id)}
-                      className="px-1"
-                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    >
-                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
-                        {post.isFavorited ? '❤️' : '🤍'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
+                      ariaLabel={post.isFavorited ? '取消收藏' : '收藏'}
+                    />
+                    <PostActionButton
+                      type="like"
+                      isActive={post.hasLiked}
+                      count={post.likeCount}
                       onClick={() => toggleLike(post.id)}
-                      className="flex items-center gap-1 px-1 text-xs"
-                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    >
-                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
-                        👍
-                      </span>
-                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
-                    </button>
+                      ariaLabel={post.hasLiked ? '取消按讚' : '按讚'}
+                    />
                   {post.isAuthor ? (
                     <div className="relative">
                       <button
@@ -947,14 +940,16 @@ export default function WallPage() {
                           </Link>
                         ) : (
                           // 未配對：顯示配對按鈕（Phase 4: 檢查是否達到上限）
-                          <button
+                          <motion.button
                             onClick={() => handleMatchFromPost(post.id)}
                             disabled={dailyMatchCount.remaining === 0}
-                            className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)]"
+                            className="px-3 py-1.5 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--pixel-text-dim)] hover:shadow-[4px_4px_0_rgba(0,0,0,0.3)] active:shadow-[1px_1px_0_rgba(0,0,0,0.25)] active:translate-x-[1px] active:translate-y-[1px]"
                             title={dailyMatchCount.remaining === 0 ? '今日配對上限已達' : ''}
+                            whileHover={{ scale: dailyMatchCount.remaining === 0 ? 1 : 1.02 }}
+                            whileTap={{ scale: dailyMatchCount.remaining === 0 ? 1 : 0.98 }}
                           >
                             {dailyMatchCount.remaining === 0 ? '已達上限' : '想要配對'}
-                          </button>
+                          </motion.button>
                         )}
                       </div>
                     )

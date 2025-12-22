@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Toast from '@/components/Toast'
+import PostActionButton from '@/components/PostActionButton'
 
 interface Post {
   id: string
@@ -238,27 +239,19 @@ export default function TopicPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
+                    <PostActionButton
+                      type="favorite"
+                      isActive={post.isFavorited || false}
                       onClick={() => toggleFavorite(post.id)}
-                      className="px-1"
-                      aria-label={post.isFavorited ? '取消收藏' : '收藏'}
-                    >
-                      <span className={post.isFavorited ? 'text-red-500' : 'text-[var(--pixel-text-dim)]'}>
-                        {post.isFavorited ? '❤️' : '🤍'}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
+                      ariaLabel={post.isFavorited ? '取消收藏' : '收藏'}
+                    />
+                    <PostActionButton
+                      type="like"
+                      isActive={post.hasLiked || false}
+                      count={post.likeCount}
                       onClick={() => toggleLike(post.id)}
-                      className="flex items-center gap-1 px-1 text-xs"
-                      aria-label={post.hasLiked ? '取消按讚' : '按讚'}
-                    >
-                      <span className={post.hasLiked ? 'text-[var(--pixel-highlight)]' : 'text-[var(--pixel-text-dim)]'}>
-                        👍
-                      </span>
-                      <span className="text-[var(--pixel-text-dim)]">{post.likeCount}</span>
-                    </button>
+                      ariaLabel={post.hasLiked ? '取消按讚' : '按讚'}
+                    />
                   </div>
                 </div>
 
