@@ -616,7 +616,6 @@ export default function WallPage() {
                 // Skeleton loading for leaderboard
                 [1, 2, 3].map((i) => (
                   <div key={i} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)] animate-pulse">
-                    <div className="w-10 h-10 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)]"></div>
                     <div className="flex-1 space-y-2">
                       <div className="h-3 bg-[var(--pixel-surface)] rounded w-1/2"></div>
                       <div className="h-4 bg-[var(--pixel-surface)] rounded w-3/4"></div>
@@ -626,16 +625,6 @@ export default function WallPage() {
               ) : (
                 leaderboard.map((u, idx) => (
                 <div key={u.id} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)]">
-                  <div className="w-10 h-10 border-3 border-[var(--pixel-border)] overflow-hidden bg-[var(--pixel-surface)]">
-                    {u.photoUrl ? (
-                      <div
-                        className="w-full h-full bg-center bg-cover"
-                        style={{ backgroundImage: `url(${u.photoUrl})`, filter: `blur(${u.blurLevel ?? 50}px)` }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-[var(--pixel-text-dim)]">?</div>
-                    )}
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-[var(--pixel-text-dim)]">#{idx + 1} • {u.matchCount} 配對</div>
                     <Link href={`/profile/${u.id}`} className="text-sm font-bold text-[var(--pixel-text)] hover:text-[var(--pixel-highlight)] truncate">
@@ -646,13 +635,15 @@ export default function WallPage() {
                   <div className="flex flex-col gap-1">
                     <button
                       onClick={() => { setFilterAuthorId(u.id); loadPosts(filterTopicId) }}
-                      className="px-2 py-1 text-[10px]"
+                      className="px-2 py-1 text-[10px] bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] hover:shadow-[1px_1px_0_rgba(0,0,0,0.25)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[0px_0px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100 font-bold"
+                      style={{ fontFamily: 'monospace' }}
                     >
                       查看
                     </button>
                     <button
                       onClick={() => router.push(`/profile/${u.id}`)}
-                      className="px-2 py-1 text-[10px] bg-[var(--pixel-panel)] text-[var(--pixel-border)] hover:bg-[var(--pixel-highlight)] hover:text-white"
+                      className="px-2 py-1 text-[10px] bg-[var(--pixel-highlight)] border-3 border-[var(--pixel-border)] text-white shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:bg-[#0284c7] hover:shadow-[1px_1px_0_rgba(0,0,0,0.25)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[0px_0px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100 font-bold"
+                      style={{ fontFamily: 'monospace' }}
                     >
                       配對
                     </button>
