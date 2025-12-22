@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 const registerSchema = z.object({
-  userId: z.string().min(1),
+  userId: z.string().optional(), // userId 改為可選，如果沒有提供則自動生成
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
@@ -57,23 +57,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existingByUserId = await prisma.user.findFirst({
-      where: { userId: data.userId },
-    });
-    if (existingByUserId) {
-      return NextResponse.json(
-        { error: 'userID 已被使用' },
-        { status: 400 }
-      );
+    // 如果提供了 userId，檢查是否已被使用
+    if (data.userId) {
+      const existingByUserId = await prisma.user.findFirst({
+        where: { userId: data.userId },
+      });
+      if (existingByUserId) {
+        return NextResponse.json(
+          { error: 'userID 已被使用' },
+          { status: 400 }
+        );
+      }
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    // Create user
+    // Create user（如果沒有提供 userId，Prisma 會自動生成）
     const user = await prisma.user.create({
       data: {
-        userId: data.userId,
+        userId: data.userId || undefined, // 如果沒有提供，使用 undefined 讓 Prisma 自動生成
         email: lowerEmail,
         password: hashedPassword,
         name: data.name,

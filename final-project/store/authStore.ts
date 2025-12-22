@@ -28,7 +28,7 @@ interface AuthState {
 }
 
 interface RegisterData {
-  userId: string;
+  userId?: string; // userId 改為可選
   email: string;
   password: string;
   name: string;

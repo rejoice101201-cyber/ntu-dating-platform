@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const router = useRouter()
   const register = useAuthStore((s) => s.register)
 
-  const [userId, setUserId] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,13 +31,12 @@ export default function RegisterPage() {
 
   const canSubmit = useMemo(() => {
     return (
-      userId.trim().length > 0 &&
       name.trim().length >= 2 &&
       email.trim().length > 0 &&
       password.length >= 6 &&
       birthday.trim().length > 0
     )
-  }, [userId, name, email, password, birthday])
+  }, [name, email, password, birthday])
 
   const uploadSelectedPhotos = async (files: File[]) => {
     if (files.length === 0) return
@@ -78,7 +76,6 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       await register({
-        userId: userId.trim(),
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -124,19 +121,6 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
-
-          <div>
-            <label className="block text-xs uppercase tracking-wide text-gray-700 mb-2">
-              userID *
-            </label>
-            <input
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              required
-              className="w-full"
-              placeholder="例如：smartairport"
-            />
-          </div>
 
           <div>
             <label className="block text-xs uppercase tracking-wide text-gray-700 mb-2">
