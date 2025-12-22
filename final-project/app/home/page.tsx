@@ -93,6 +93,9 @@ export default function WallPage() {
   const [trendingTopics, setTrendingTopics] = useState<any[]>([])
   const [loadingTrending, setLoadingTrending] = useState(false)
   
+  // 排序載入狀態（局部 loading）
+  const [loadingPosts, setLoadingPosts] = useState(false)
+  
   // 編輯/刪除狀態
   const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
@@ -154,7 +157,12 @@ export default function WallPage() {
 
   const loadPosts = async (topicId?: string | null) => {
     try {
-      setLoading(true)
+      // 只在沒有貼文時顯示全頁 loading，否則只顯示局部 loading
+      if (posts.length === 0) {
+        setLoading(true)
+      } else {
+        setLoadingPosts(true)
+      }
       setError(null)
       const params = new URLSearchParams()
       params.set('sort', sort)
@@ -172,6 +180,7 @@ export default function WallPage() {
       }
     } finally {
       setLoading(false)
+      setLoadingPosts(false)
     }
   }
 
@@ -636,33 +645,35 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('trending')
+                  setSort('latest')
                   loadPosts(filterTopicId)
                 }}
+                disabled={loadingPosts}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
-                  sort === 'trending' 
+                  sort === 'latest' 
                     ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
                     : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
-                }`}
+                } ${loadingPosts ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ fontFamily: 'monospace' }}
               >
-                最新
+                {loadingPosts && sort === 'latest' ? '...' : '最新'}
               </button>
               <span className="text-[var(--pixel-text-dim)]">/</span>
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('latest')
+                  setSort('trending')
                   loadPosts(filterTopicId)
                 }}
+                disabled={loadingPosts}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
-                  sort === 'latest' 
+                  sort === 'trending' 
                     ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
                     : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
-                }`}
+                } ${loadingPosts ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ fontFamily: 'monospace' }}
               >
-                熱門
+                {loadingPosts && sort === 'trending' ? '...' : '熱門'}
               </button>
             </div>
           </div>
