@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
@@ -71,6 +71,7 @@ function formatTimeAgo(dateString: string): string {
 
 export default function WallPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const { user, token } = useAuthStore()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
@@ -551,7 +552,7 @@ export default function WallPage() {
       <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">Wall</h1>
+          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">{pathname === '/w' ? 'WALL' : 'HOME'}</h1>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-[var(--pixel-text-dim)]">排序：</span>
             <button
