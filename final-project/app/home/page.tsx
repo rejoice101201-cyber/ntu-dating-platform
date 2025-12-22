@@ -492,6 +492,9 @@ export default function WallPage() {
       if (postingAsTopic && dailyTopic) {
         formData.append('topicId', dailyTopic.id)
       }
+      if (selectedBoard?.id) {
+        formData.append('boardId', selectedBoard.id)
+      }
 
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -532,6 +535,9 @@ export default function WallPage() {
       setSelectedImage(null)
       setImagePreview(null)
       setPostingAsTopic(false)
+      setSelectedBoard(null)
+      setBoardQuery('')
+      setBoardResults([])
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
