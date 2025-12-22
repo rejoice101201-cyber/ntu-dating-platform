@@ -38,6 +38,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const isInitialLoadRef = useRef(true)
+  const prevMatchIdRef = useRef<string | null>(null)
   const [showQAGame, setShowQAGame] = useState(false)
   const [gameSession, setGameSession] = useState<any>(null)
   const [gameTopic, setGameTopic] = useState<string>('')
@@ -50,6 +52,13 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // 如果 matchId 改變，重置 isInitialLoadRef
+    if (prevMatchIdRef.current !== null && prevMatchIdRef.current !== matchId) {
+      isInitialLoadRef.current = true
+      setIsInitialLoad(true)
+    }
+    prevMatchIdRef.current = matchId
+    
     if (!token) {
       router.push('/auth/login')
       return
@@ -76,8 +85,22 @@ export default function ChatPage() {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
         })
 
+        // 監聽 Pusher 連接狀態變化
+        newPusher.connection.bind('state_change', (states: any) => {
+          // Connection state changed
+        })
+
         // Subscribe to match channel
         const channel = newPusher.subscribe(`match-${matchId}`)
+
+        // Wait for channel subscription before binding events
+        channel.bind('pusher:subscription_succeeded', () => {
+          // Channel subscription succeeded
+        })
+
+        channel.bind('pusher:subscription_error', (error: any) => {
+          console.error('Channel subscription error:', error)
+        })
 
         channel.bind('new_message', (message: Message) => {
           console.log('Received new message via Pusher:', message)
@@ -124,8 +147,11 @@ export default function ChatPage() {
 
         // 即便有 Pusher，也開輕量 polling，避免事件漏送時沒更新
         pollInterval = setInterval(() => {
-          loadMessages(false)
-          checkActiveGameSession() // 確保遊戲狀態定期同步
+          // 使用 ref 來檢查 isInitialLoad，避免閉包問題
+          if (!isInitialLoadRef.current) {
+            loadMessages(false)
+            checkActiveGameSession() // 確保遊戲狀態定期同步
+          }
         }, 5000)
 
         pusherInstance = newPusher
@@ -138,7 +164,8 @@ export default function ChatPage() {
       console.warn('Pusher environment variables not set - real-time updates disabled')
       // Set up polling to check for new messages and game state periodically
       pollInterval = setInterval(() => {
-        if (!isInitialLoad) {
+        // 使用 ref 來檢查 isInitialLoad，避免閉包問題
+        if (!isInitialLoadRef.current) {
           loadMessages(false) // Don't show loading spinner on polling
           checkActiveGameSession() // 检查游戏状态
         }
@@ -153,7 +180,7 @@ export default function ChatPage() {
         pusherInstance.disconnect()
       }
     }
-  }, [matchId, token, user])
+  }, [matchId, token, user?.id])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -181,7 +208,7 @@ export default function ChatPage() {
       setMessages(sortedMessages)
 
       // Get match info to find other user (only on initial load)
-      if (isInitialLoad) {
+      if (isInitialLoadRef.current) {
         console.log('Loading match info for initial load')
         const matchResponse = await api.get('/matches')
         console.log('Matches response:', matchResponse.data)
@@ -211,6 +238,7 @@ export default function ChatPage() {
           console.error('Match not found in matches list:', matchId)
           setError('找不到配對資訊')
         }
+        isInitialLoadRef.current = false
         setIsInitialLoad(false)
       }
     } catch (error: any) {
