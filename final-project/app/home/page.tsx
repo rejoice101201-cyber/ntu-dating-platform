@@ -941,13 +941,13 @@ export default function WallPage() {
                     <div className="flex items-center gap-2">
                       <PostActionButton
                         type="favorite"
-                        isActive={post.isFavorited}
+                        isActive={post.isFavorited ?? false}
                         onClick={() => toggleFavorite(post.id)}
                         ariaLabel={post.isFavorited ? '取消收藏' : '收藏'}
                       />
                       <PostActionButton
                         type="like"
-                        isActive={post.hasLiked}
+                        isActive={post.hasLiked ?? false}
                         count={post.likeCount}
                         onClick={() => toggleLike(post.id)}
                         ariaLabel={post.hasLiked ? '取消按讚' : '按讚'}

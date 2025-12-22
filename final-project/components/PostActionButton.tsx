@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 
 interface PostActionButtonProps {
   type: 'favorite' | 'like'
-  isActive: boolean
+  isActive?: boolean
   count?: number
   onClick: () => void
   ariaLabel?: string
@@ -19,6 +19,7 @@ export default function PostActionButton({
   ariaLabel 
 }: PostActionButtonProps) {
   const Icon = type === 'favorite' ? Heart : ThumbsUp
+  const active = !!isActive
   
   return (
     <motion.button
@@ -29,7 +30,7 @@ export default function PostActionButton({
         relative flex items-center gap-1 px-2 py-1.5 rounded-none
         border-3 border-[var(--pixel-border)]
         transition-all duration-200
-        ${isActive 
+        ${active
           ? type === 'favorite'
             ? 'bg-pink-100 text-pink-600 shadow-[3px_3px_0_rgba(0,0,0,0.25)]' 
             : 'bg-blue-100 text-blue-600 shadow-[3px_3px_0_rgba(0,0,0,0.25)]'
@@ -44,7 +45,7 @@ export default function PostActionButton({
     >
       <Icon 
         size={18} 
-        className={isActive ? 'fill-current' : ''}
+        className={active ? 'fill-current' : ''}
       />
       {count !== undefined && count > 0 && (
         <span className="text-xs font-bold">{count}</span>
