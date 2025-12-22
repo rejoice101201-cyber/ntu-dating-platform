@@ -45,6 +45,8 @@ export default function ChatPage() {
   const [gameGuess, setGameGuess] = useState<string>('')
   const [unlockProgress, setUnlockProgress] = useState<any>(null)
   const [keys, setKeys] = useState(0)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -244,6 +246,64 @@ export default function ChatPage() {
       console.error('Failed to send message:', error)
       // Remove optimistic message on error
       setMessages(prev => prev.filter(m => m.id !== tempMessage.id))
+    }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    setUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Optimistically add message to UI
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        content: file.type.startsWith('image/') ? '正在上傳圖片...' : `正在上傳 ${file.name}...`,
+        type: file.type.startsWith('image/') ? 'image' : 'file',
+        senderId: user.id,
+        sender: {
+          id: user.id,
+          name: user.name,
+        },
+        createdAt: new Date().toISOString(),
+      }
+      setMessages(prev => [...prev, tempMessage])
+
+      // Upload file
+      const response = await fetch(`/api/chat/${matchId}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+
+      // Replace temp message with real message
+      if (data.message) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === tempMessage.id ? data.message : msg
+        ))
+      }
+    } catch (error) {
+      console.error('Failed to upload file:', error)
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id.startsWith('temp-')))
+    } finally {
+      setUploading(false)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -790,13 +850,50 @@ export default function ChatPage() {
                       : 'bg-white text-gray-800'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
-                  <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
-                    {new Date(message.createdAt).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                  {message.type === 'image' ? (
+                    <div className="space-y-2">
+                      <img
+                        src={message.content}
+                        alt="Chat image"
+                        className="max-w-full rounded-lg"
+                        style={{ maxHeight: '400px', objectFit: 'contain' }}
+                      />
+                      <p className={`text-xs ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                        {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  ) : message.type === 'file' ? (
+                    <div className="space-y-2">
+                      <a
+                        href={message.content}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm underline hover:opacity-80"
+                      >
+                        <span>📎</span>
+                        <span>{message.content.split('/').pop() || '檔案'}</span>
+                      </a>
+                      <p className={`text-xs ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                        {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm">{message.content}</p>
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                        {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )
@@ -836,15 +933,33 @@ export default function ChatPage() {
 
         <form onSubmit={handleSend} className="flex gap-2">
           <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,*"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={uploading}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading || !otherUser?.id}
+            className="px-4 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.25)] active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
+            title="上傳圖片或檔案"
+          >
+            {uploading ? '⏳' : '📎'}
+          </button>
+          <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
             className="flex-1"
+            disabled={uploading}
           />
           <button
             type="submit"
-            disabled={!input.trim()}
+            disabled={!input.trim() || uploading}
             className="px-6 py-2"
           >
             Send
