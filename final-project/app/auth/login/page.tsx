@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
 
 declare global {
   interface Window {
@@ -26,7 +28,7 @@ const errorMessages: Record<string, string> = {
   google_callback: 'Google 登入失敗，請稍後再試',
 }
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const login = useAuthStore((state) => state.login)
@@ -184,6 +186,21 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="pixel-panel p-10 w-full max-w-md text-center">
+          <div className="text-5xl mb-3">🐕</div>
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginInner />
+    </Suspense>
   )
 }
 
