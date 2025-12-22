@@ -11,12 +11,43 @@ const globalForPrisma = globalThis as unknown as {
 // PostgreSQL 連接字符串格式（兩種格式都支援）：
 //   - postgresql://user:password@host:5432/dbname?schema=public
 //   - postgres://user:password@host:5432/dbname?sslmode=require (Prisma Data Platform)
-const databaseUrl =
+let databaseUrl =
   process.env.PRISMA_DATABASE_URL ||
   process.env.DATABASE_URL ||
   // 讓 build 不會因為 PrismaClient constructor validation 直接炸掉。
   // 真正執行查詢時若沒設 DATABASE_URL 仍會出錯，提醒使用者補環境變數即可。
   'postgresql://user:password@localhost:5432/dbname?schema=public';
+
+// 優化連接池配置（Serverless 環境特別重要）
+// 如果 URL 中沒有連接池參數，自動添加
+if (databaseUrl && !databaseUrl.includes('connection_limit') && databaseUrl.startsWith('postgres')) {
+  try {
+    const url = new URL(databaseUrl);
+    // Serverless 環境優化：較小的連接池，較短的超時時間
+    const isProduction = process.env.NODE_ENV === 'production';
+    const connectionLimit = isProduction ? '5' : '10'; // Serverless 環境使用較小的連接池
+    const poolTimeout = '10'; // 10 秒獲取連接超時
+    const connectTimeout = '10'; // 10 秒連接超時
+    const statementTimeout = '30000'; // 30 秒語句執行超時
+    
+    // 添加連接池參數
+    url.searchParams.set('connection_limit', connectionLimit);
+    url.searchParams.set('pool_timeout', poolTimeout);
+    url.searchParams.set('connect_timeout', connectTimeout);
+    url.searchParams.set('statement_timeout', statementTimeout);
+    
+    // 確保 SSL 連接（生產環境）
+    if (isProduction && !url.searchParams.has('sslmode')) {
+      url.searchParams.set('sslmode', 'require');
+    }
+    
+    databaseUrl = url.toString();
+    console.log('[db] Added connection pool parameters for Serverless optimization');
+  } catch (error) {
+    console.warn('[db] Failed to add connection pool parameters:', error);
+    // 如果解析失敗，使用原始 URL
+  }
+}
 
 // 在 Serverless（Vercel）排查用：只輸出來源與 host，不輸出帳密/密鑰
 // 你可以在 Vercel → Functions/Logs 看到這行，判斷到底是吃哪個 env
@@ -44,6 +75,7 @@ if (!process.env.PRISMA_DATABASE_URL && !process.env.DATABASE_URL) {
 
 // 優化 Prisma Client 配置，添加連接池和超時設置
 // 在 Serverless 環境中，連接池配置很重要
+// 注意：連接池參數通過 DATABASE_URL 的查詢字符串設置，而不是 Prisma Client 選項
 const prismaOptions: any = {
   datasources: {
     db: {

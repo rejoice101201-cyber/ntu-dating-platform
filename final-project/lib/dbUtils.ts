@@ -15,6 +15,18 @@ export async function withRetry<T>(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // 在 Serverless 環境中，確保連接可用
+      if (process.env.NODE_ENV === 'production' && attempt === 1) {
+        // 檢查連接狀態，但不阻塞（Prisma 會自動管理連接）
+        try {
+          await prisma.$queryRaw`SELECT 1`.catch(() => {
+            // 忽略檢查錯誤，讓實際查詢來處理
+          });
+        } catch {
+          // 忽略
+        }
+      }
+      
       return await queryFn();
     } catch (error: any) {
       lastError = error;
@@ -27,6 +39,7 @@ export async function withRetry<T>(
         error?.code === 'P1000' || // Authentication failed
         error?.code === 'P1017' || // Server has closed the connection
         error?.code === 'P2024' || // Timed out fetching a new connection from the connection pool
+        error?.code === 'P2025' || // Record not found (有時也會伴隨連接問題)
         error?.message?.includes('timeout') ||
         error?.message?.includes("Can't reach database") ||
         error?.message?.includes('connection') ||
@@ -39,19 +52,29 @@ export async function withRetry<T>(
         error?.name === 'MongoTimeoutError';
       
       if (isConnectionError && attempt < maxRetries) {
-        console.warn(`Database connection error (attempt ${attempt}/${maxRetries}), retrying...`, error?.message || error?.code);
+        const delay = retryDelay * attempt; // 指數退避
+        console.warn(`[db] Connection error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, {
+          code: error?.code,
+          message: error?.message?.substring(0, 100), // 限制日誌長度
+        });
         
-        // 嘗試重新連接
-        try {
-          await prisma.$disconnect().catch(() => {
-            // 忽略斷開連接時的錯誤
-          });
-          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
-          await prisma.$connect().catch(() => {
-            // 連接失敗會在下次重試時處理
-          });
-        } catch (reconnectError) {
-          console.error('Failed to reconnect:', reconnectError);
+        // 在 Serverless 環境中，不要頻繁斷開/重連，讓 Prisma 自己管理
+        // 只在最後一次重試前才嘗試重新連接
+        if (attempt === maxRetries - 1) {
+          try {
+            await prisma.$disconnect().catch(() => {
+              // 忽略斷開連接時的錯誤
+            });
+            await new Promise(resolve => setTimeout(resolve, delay));
+            await prisma.$connect().catch(() => {
+              // 連接失敗會在下次重試時處理
+            });
+          } catch (reconnectError) {
+            console.error('[db] Failed to reconnect:', reconnectError);
+          }
+        } else {
+          // 簡單等待後重試
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
         
         continue;
