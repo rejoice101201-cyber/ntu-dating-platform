@@ -502,7 +502,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 
 ### 貼文流程
 
-![貼文流程](docs/design-references/post-flow.png)
+![貼文流程](docs/design-references/post-flow.jpg)
 
 
 1. **建立貼文**：
