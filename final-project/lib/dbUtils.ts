@@ -142,7 +142,7 @@ export function handleDatabaseError(error: any): { message: string; code: string
   
   if (isConnectionError) {
     return {
-      message: 'Database connection failed. Please try again later.',
+      message: '網路不穩，請重新嘗試幾次',
       code: 'DB_CONNECTION_ERROR',
       status: 503, // Service Unavailable
     };
@@ -150,7 +150,7 @@ export function handleDatabaseError(error: any): { message: string; code: string
   
   // 其他數據庫錯誤
   return {
-    message: 'Database operation failed. Please try again later.',
+    message: '系統忙碌中，請稍後再試',
     code: 'DB_ERROR',
     status: 500,
   };

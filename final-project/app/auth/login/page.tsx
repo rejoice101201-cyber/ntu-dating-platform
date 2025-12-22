@@ -19,13 +19,22 @@ const GOOGLE_CLIENT_ID =
 
 // 錯誤訊息映射
 const errorMessages: Record<string, string> = {
-  database_connection_failed: 'Database connection failed. Please try again later.',
+  database_connection_failed: '網路不穩，請重新嘗試幾次',
   google_hd_not_allowed: '僅限臺大 Google 帳號登入',
   google_no_email: 'Google 帳號未提供 Email',
   missing_code: 'Google 登入授權碼缺失',
   missing_id_token: 'Google ID Token 缺失',
   inactive: '帳號已停用',
   google_callback: 'Google 登入失敗，請稍後再試',
+}
+
+const DB_FRIENDLY_MESSAGE = '網路不穩，請重新嘗試幾次'
+const normalizeLoginError = (err: any): string => {
+  const code = err?.response?.data?.code
+  const msg = err?.response?.data?.error || err?.message
+  if (code === 'DB_CONNECTION_ERROR') return DB_FRIENDLY_MESSAGE
+  if (msg === 'Database connection failed. Please try again later.') return DB_FRIENDLY_MESSAGE
+  return msg || '登入失敗'
 }
 
 function LoginInner() {
@@ -79,7 +88,7 @@ function LoginInner() {
         await loginWithGoogle(idToken)
         setTimeout(() => router.push('/discover'), 100)
       } catch (err: any) {
-        setError(err.response?.data?.error || err.message || 'Google 登入失敗')
+        setError(normalizeLoginError(err) || 'Google 登入失敗')
       } finally {
         setGLoading(false)
       }
@@ -98,7 +107,7 @@ function LoginInner() {
         router.push('/discover')
       }, 100)
     } catch (err: any) {
-      setError(err.response?.data?.error || '登入失敗')
+      setError(normalizeLoginError(err))
       setLoading(false)
     }
   }
