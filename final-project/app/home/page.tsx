@@ -509,6 +509,25 @@ export default function WallPage() {
         throw new Error(errorData.error || '發文失敗')
       }
 
+      const responseData = await response.json()
+      const newPost = responseData.post
+
+      // 立即更新貼文列表（optimistic update）
+      if (newPost) {
+        setPosts((prev) => [newPost, ...prev])
+        
+        // 如果新貼文有 boardId，立即更新該主題的計數
+        if (newPost.board?.id) {
+          setTrendingTopics((prev) =>
+            prev.map((t) =>
+              t.id === newPost.board.id
+                ? { ...t, postCount: (t.postCount || 0) + 1 }
+                : t
+            )
+          )
+        }
+      }
+
       setContent('')
       setSelectedImage(null)
       setImagePreview(null)
@@ -517,7 +536,13 @@ export default function WallPage() {
         fileInputRef.current.value = ''
       }
 
-      await Promise.all([loadPosts(filterTopicId), loadDailyTopic(), loadTopicStatus()])
+      // 重新載入數據以確保同步
+      await Promise.all([
+        loadPosts(filterTopicId), 
+        loadDailyTopic(), 
+        loadTopicStatus(),
+        loadTrendingTopics() // 更新熱門主題計數
+      ])
     } catch (error: any) {
       console.error('Failed to create post:', error)
       setError(error.message || '發文失敗，請稍後再試')
@@ -564,7 +589,11 @@ export default function WallPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="truncate">{t.title}</span>
-                      {typeof t.postCount === 'number' && <span className="ml-2 text-[var(--pixel-text-dim)]">{t.postCount}</span>}
+                      {typeof t.postCount === 'number' && (
+                        <span className="ml-2 text-[var(--pixel-text-dim)]" id={`topic-count-${t.id}`}>
+                          {t.postCount}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 ))

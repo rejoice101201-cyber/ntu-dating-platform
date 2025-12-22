@@ -185,9 +185,18 @@ export default function TopicPage() {
       )}
       <div className="max-w-2xl mx-auto pt-8 px-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">
-            {topic ? topic.title : '主題'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px] transition-all duration-100 font-bold text-sm"
+              style={{ fontFamily: 'monospace' }}
+            >
+              ←
+            </button>
+            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">
+              {topic ? topic.title : '主題'}
+            </h1>
+          </div>
           {topic?.postCount !== undefined && (
             <span className="text-xs text-[var(--pixel-text-dim)]">{topic.postCount} 則貼文</span>
           )}

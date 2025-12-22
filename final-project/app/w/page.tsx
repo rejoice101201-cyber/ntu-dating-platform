@@ -516,6 +516,25 @@ export default function WallPage() {
         throw new Error(errorData.error || '發文失敗')
       }
 
+      const responseData = await response.json()
+      const newPost = responseData.post
+
+      // 立即更新貼文列表（optimistic update）
+      if (newPost) {
+        setPosts((prev) => [newPost, ...prev])
+        
+        // 如果新貼文有 boardId，立即更新該主題的計數
+        if (newPost.board?.id) {
+          setTrendingTopics((prev) =>
+            prev.map((t) =>
+              t.id === newPost.board.id
+                ? { ...t, postCount: (t.postCount || 0) + 1 }
+                : t
+            )
+          )
+        }
+      }
+
       // 清空輸入
       setContent('')
       setSelectedImage(null)
@@ -529,7 +548,12 @@ export default function WallPage() {
       }
 
       // 重新載入 feed 和主題（更新貼文數量）
-      await Promise.all([loadPosts(filterTopicId), loadDailyTopic(), loadTopicStatus()])
+      await Promise.all([
+        loadPosts(filterTopicId), 
+        loadDailyTopic(), 
+        loadTopicStatus(),
+        loadTrendingTopics() // 更新熱門主題計數
+      ])
     } catch (error: any) {
       console.error('Failed to create post:', error)
       setError(error.message || '發文失敗，請稍後再試')
