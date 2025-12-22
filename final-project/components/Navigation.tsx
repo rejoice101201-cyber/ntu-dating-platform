@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
+import PixelIcon from './PixelIcon'
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -14,10 +15,10 @@ export default function Navigation() {
   if (pathname?.startsWith('/chat/')) return null
 
   const navItems = [
-    { href: '/discover', label: 'Discover', glyph: 'D' },
-    { href: '/matches', label: 'Matches', glyph: 'M' },
-    { href: '/profile/me', label: 'Profile', glyph: 'P' },
-    { href: '/w', label: 'Wall', glyph: 'W' },
+    { href: '/discover', label: 'Discover', icon: 'discover' as const },
+    { href: '/matches', label: 'Matches', icon: 'matches' as const },
+    { href: '/profile/me', label: 'Profile', icon: 'profile' as const },
+    { href: '/w', label: 'Wall', icon: 'wall' as const },
   ]
 
   return (
@@ -36,14 +37,13 @@ export default function Navigation() {
               }`}
             >
               <span
-                className={`mb-2 flex items-center justify-center w-12 h-12 border-3 border-[var(--pixel-border)] text-lg font-bold transition-all duration-100 ${
+                className={`mb-2 flex items-center justify-center w-12 h-12 border-3 border-[var(--pixel-border)] transition-all duration-100 ${
                   isActive
-                    ? 'bg-[var(--pixel-highlight)] text-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]'
-                    : 'bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]'
+                    ? 'bg-[var(--pixel-highlight)] shadow-[4px_4px_0_rgba(0,0,0,0.35)]'
+                    : 'bg-[var(--pixel-panel)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]'
                 }`}
-                style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
               >
-                {item.glyph}
+                <PixelIcon type={item.icon} className={isActive ? 'brightness-0 invert' : ''} />
               </span>
               <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>
@@ -54,10 +54,9 @@ export default function Navigation() {
           className="flex flex-col items-center py-2 px-5 text-[var(--pixel-text-dim)] hover:text-[var(--pixel-highlight)] transition-all group"
         >
           <span 
-            className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-lg font-bold shadow-[4px_4px_0_rgba(0,0,0,0.35)] text-[var(--pixel-text)] transition-all duration-100 group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]"
-            style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
+            className="mb-2 flex items-center justify-center w-12 h-12 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] transition-all duration-100 group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]"
           >
-            L
+            <PixelIcon type="logout" />
           </span>
           <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">Logout</span>
         </button>

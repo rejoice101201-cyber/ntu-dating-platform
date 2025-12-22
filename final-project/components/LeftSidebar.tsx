@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { useEffect } from 'react'
+import PixelIcon from './PixelIcon'
 
 export default function LeftSidebar() {
   const pathname = usePathname()
@@ -18,10 +19,10 @@ export default function LeftSidebar() {
   }
 
   const navItems = [
-    { href: '/home', label: 'Home', glyph: 'H' },
-    { href: '/search', label: 'Search', glyph: 'S' },
-    { href: '/saved', label: 'Saved', glyph: 'V' },
-    { href: '/my', label: 'My', glyph: 'M' },
+    { href: '/home', label: 'Home', icon: 'home' as const },
+    { href: '/search', label: 'Search', icon: 'search' as const },
+    { href: '/saved', label: 'Saved', icon: 'saved' as const },
+    { href: '/my', label: 'My', icon: 'my' as const },
   ]
 
   return (
@@ -40,14 +41,13 @@ export default function LeftSidebar() {
               }`}
             >
               <span 
-                className={`mb-2 flex items-center justify-center w-12 h-12 border-3 border-[var(--pixel-border)] text-lg font-bold transition-all duration-100 ${
+                className={`mb-2 flex items-center justify-center w-12 h-12 border-3 border-[var(--pixel-border)] transition-all duration-100 ${
                   isActive
-                    ? 'bg-[var(--pixel-highlight)] text-white shadow-[4px_4px_0_rgba(0,0,0,0.35)]'
-                    : 'bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]'
+                    ? 'bg-[var(--pixel-highlight)] shadow-[4px_4px_0_rgba(0,0,0,0.35)]'
+                    : 'bg-[var(--pixel-panel)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] group-hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] group-hover:translate-x-[1px] group-hover:translate-y-[1px] group-active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] group-active:translate-x-[2px] group-active:translate-y-[2px]'
                 }`}
-                style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
               >
-                {item.glyph}
+                <PixelIcon type={item.icon} className={isActive ? 'brightness-0 invert' : ''} />
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--pixel-text)]">{item.label}</span>
             </Link>
