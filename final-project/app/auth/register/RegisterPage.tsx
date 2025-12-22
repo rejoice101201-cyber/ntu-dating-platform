@@ -226,11 +226,37 @@ export default function RegisterPage() {
               地區
             </label>
             <input
+              type="text"
+              list="location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full"
-              placeholder="台北 / 新北 / ..."
+              placeholder="選擇或輸入地區"
             />
+            <datalist id="location-options">
+              <option value="台北市" />
+              <option value="新北市" />
+              <option value="桃園市" />
+              <option value="台中市" />
+              <option value="台南市" />
+              <option value="高雄市" />
+              <option value="基隆市" />
+              <option value="新竹市" />
+              <option value="嘉義市" />
+              <option value="新竹縣" />
+              <option value="苗栗縣" />
+              <option value="彰化縣" />
+              <option value="南投縣" />
+              <option value="雲林縣" />
+              <option value="嘉義縣" />
+              <option value="屏東縣" />
+              <option value="宜蘭縣" />
+              <option value="花蓮縣" />
+              <option value="台東縣" />
+              <option value="澎湖縣" />
+              <option value="金門縣" />
+              <option value="連江縣" />
+            </datalist>
           </div>
 
           <div>
@@ -262,11 +288,19 @@ export default function RegisterPage() {
               血型
             </label>
             <input
+              type="text"
+              list="blood-type-options"
               value={bloodType}
               onChange={(e) => setBloodType(e.target.value)}
               className="w-full"
-              placeholder="A / B / AB / O"
+              placeholder="選擇或輸入血型"
             />
+            <datalist id="blood-type-options">
+              <option value="A" />
+              <option value="B" />
+              <option value="AB" />
+              <option value="O" />
+            </datalist>
           </div>
 
           <div>
