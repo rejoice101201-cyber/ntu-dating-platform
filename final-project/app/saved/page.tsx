@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 import Link from 'next/link'
 import Toast from '@/components/Toast'
+import PostActionButton from '@/components/PostActionButton'
+import { motion } from 'framer-motion'
 
 interface Post {
   id: string
@@ -184,21 +186,21 @@ export default function SavedPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
+                      <PostActionButton
+                        type="favorite"
+                        isActive
                         onClick={() => handleUnfavorite(fav.postId)}
-                        className="px-1"
-                        aria-label="取消收藏"
-                      >
-                        <span className="text-red-500">❤️</span>
-                      </button>
-                      <button
+                        ariaLabel="取消收藏"
+                      />
+                      <motion.button
                         type="button"
                         onClick={() => handleMatchFromPost(fav.postId)}
-                        className="px-3 py-1 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] transition-all"
+                        className="px-3 py-1.5 bg-[var(--pixel-highlight-2)] text-white text-xs font-bold border-3 border-[var(--pixel-border)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] transition-all duration-200 hover:shadow-[4px_4px_0_rgba(0,0,0,0.3)] active:shadow-[1px_1px_0_rgba(0,0,0,0.25)] active:translate-x-[1px] active:translate-y-[1px]"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         想要配對
-                      </button>
+                      </motion.button>
                     </div>
                   </div>
 
