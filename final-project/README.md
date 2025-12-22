@@ -307,7 +307,56 @@ npm run dev
 
 ## 目錄結構（重點）
 
+```
+ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
+├── final-project/            # 生產環境 (當前 Vercel 部署)
+│   ├── app/                  # Next.js App Router
+│   │   ├── api/              # API Routes (後端端點)
+│   │   │   ├── auth/         # 認證相關 API
+│   │   │   ├── chat/         # 聊天 API
+│   │   │   ├── matches/      # 配對 API
+│   │   │   ├── posts/        # 貼文 API
+│   │   │   ├── game/         # Q&A 遊戲 API
+│   │   │   └── ...
+│   │   ├── auth/             # 認證頁面
+│   │   ├── discover/         # 配對頁面
+│   │   ├── home/             # 首頁
+│   │   ├── chat/             # 聊天頁面
+│   │   └── ...
+│   ├── components/           # React 組件
+│   │   ├── LeftSidebar.tsx   # 左側邊欄
+│   │   ├── Navigation.tsx    # 底部導航
+│   │   └── ...
+│   ├── lib/                  # 工具函數
+│   │   ├── prisma.ts         # Prisma Client
+│   │   ├── auth.ts           # 認證工具
+│   │   ├── energy.ts         # 能量管理
+│   │   └── ...
+│   ├── store/                # 狀態管理
+│   │   └── authStore.ts      # 認證狀態 (Zustand)
+│   ├── prisma/               # Prisma schema
+│   │   └── schema.prisma     # 資料庫模型定義
+│   ├── docs/                 # 文件與設計參考
+│   │   └── design-references/# 頁面截圖與設計參考
+│   ├── package.json          # Next.js 專案配置
+│   ├── next.config.js        # Next.js 設定
+│   └── ...
+├── frontend/                 # 備份版本 (保留, 不使用)
+│   └── ...                   # 之前成功部署的版本 (使用 Prisma)
+├── package.json              # 根目錄配置 (monorepo)
+├── README.md                 # 本文件
+├── .gitignore
+└── LICENSE
+```
 
+### 重點目錄說明
+
+- **`final-project/app/`**：Next.js App Router，包含所有頁面和 API Routes
+- **`final-project/components/`**：可重用的 React 組件
+- **`final-project/lib/`**：共用工具函數和服務
+- **`final-project/store/`**：Zustand 狀態管理
+- **`final-project/prisma/`**：資料庫 schema 定義
+- **`final-project/docs/`**：專案文件和設計參考
 
 
 ## 系統功能（詳細說明）

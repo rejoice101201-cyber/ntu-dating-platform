@@ -124,12 +124,19 @@ export default function WallPage() {
       return
     }
     
+    // 優先載入最重要的內容（貼文）
     loadPosts()
-    loadDailyTopic()
-    loadDailyMatchCount()
-    loadTopicStatus()
-    loadLeaderboard()
-    loadTrendingTopics()
+    
+    // 並行載入其他數據以提升性能
+    Promise.all([
+      loadDailyTopic(),
+      loadDailyMatchCount(),
+      loadTopicStatus(),
+      loadLeaderboard(),
+      loadTrendingTopics(),
+    ]).catch((error) => {
+      console.error('Failed to load some data:', error)
+    })
   }, [token, router])
 
   const loadTrendingTopics = async () => {
@@ -530,23 +537,32 @@ export default function WallPage() {
               <div className="text-xs text-[var(--pixel-text-dim)]">目前沒有熱門主題</div>
             )}
             <div className="flex flex-col gap-2">
-              {trendingTopics.map((t) => (
-                <Link
-                  key={t.id}
-                  href={`/topics/${t.id}`}
-                  className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate">{t.title}</span>
-                    {typeof t.postCount === 'number' && <span className="ml-2 text-[var(--pixel-text-dim)]">{t.postCount}</span>}
+              {loadingTrending ? (
+                // Skeleton loading for trending topics
+                [1, 2, 3].map((i) => (
+                  <div key={i} className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] animate-pulse">
+                    <div className="h-4 bg-[var(--pixel-surface)] rounded w-3/4"></div>
                   </div>
-                </Link>
-              ))}
+                ))
+              ) : (
+                trendingTopics.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/topics/${t.id}`}
+                    className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{t.title}</span>
+                      {typeof t.postCount === 'number' && <span className="ml-2 text-[var(--pixel-text-dim)]">{t.postCount}</span>}
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
 
           <div className="pixel-panel p-4 space-y-3">
-            <div className="flex items中心 justify-between">
+            <div className="flex items-center justify-between">
               <div className="text-sm font-bold text-[var(--pixel-text)]">配對排行榜 Top 10</div>
               <div className="text-xs text-[var(--pixel-text-dim)]">
                 {loadingLeaderboard ? '...' : ''}
@@ -556,7 +572,19 @@ export default function WallPage() {
               <div className="text-xs text-[var(--pixel-text-dim)]">暫無資料</div>
             )}
             <div className="space-y-3">
-              {leaderboard.map((u, idx) => (
+              {loadingLeaderboard ? (
+                // Skeleton loading for leaderboard
+                [1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)] animate-pulse">
+                    <div className="w-10 h-10 border-3 border-[var(--pixel-border)] bg-[var(--pixel-surface)]"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-[var(--pixel-surface)] rounded w-1/2"></div>
+                      <div className="h-4 bg-[var(--pixel-surface)] rounded w-3/4"></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                leaderboard.map((u, idx) => (
                 <div key={u.id} className="flex items-center gap-3 border-3 border-[var(--pixel-border)] p-2 bg-[var(--pixel-panel)]">
                   <div className="w-10 h-10 border-3 border-[var(--pixel-border)] overflow-hidden bg-[var(--pixel-surface)]">
                     {u.photoUrl ? (
@@ -590,7 +618,8 @@ export default function WallPage() {
                     </button>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
         </aside>
@@ -800,11 +829,23 @@ export default function WallPage() {
 
           {/* Feed */}
           {loading && posts.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center text-gray-700">
-                <div className="text-4xl mb-4">🐕</div>
-                <p>Loading...</p>
-              </div>
+            <div className="space-y-4">
+              {/* Skeleton Loading - 顯示多個骨架讓畫面看起來更順暢 */}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="pixel-panel p-4 space-y-3 animate-pulse">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--pixel-surface)] border-3 border-[var(--pixel-border)]"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-[var(--pixel-surface)] rounded w-1/4"></div>
+                      <div className="h-3 bg-[var(--pixel-surface)] rounded w-1/6"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-[var(--pixel-surface)] rounded w-full"></div>
+                    <div className="h-4 bg-[var(--pixel-surface)] rounded w-5/6"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-12 pixel-panel">
