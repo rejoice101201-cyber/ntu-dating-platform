@@ -159,7 +159,7 @@ export default function WallPage() {
     try {
       // 只在沒有貼文時顯示全頁 loading，否則只顯示局部 loading
       if (posts.length === 0) {
-        setLoading(true)
+      setLoading(true)
       } else {
         setLoadingPosts(true)
       }
@@ -588,20 +588,20 @@ export default function WallPage() {
                 ))
               ) : (
                 trendingTopics.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/topics/${t.id}`}
-                    className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="truncate">{t.title}</span>
+                <Link
+                  key={t.id}
+                  href={`/topics/${t.id}`}
+                  className="px-3 py-2 bg-[var(--pixel-panel)] border-3 border-[var(--pixel-border)] text-[var(--pixel-text)] text-xs font-bold shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate">{t.title}</span>
                       {typeof t.postCount === 'number' && (
                         <span className="ml-2 text-[var(--pixel-text-dim)]" id={`topic-count-${t.id}`}>
                           {t.postCount}
                         </span>
                       )}
-                    </div>
-                  </Link>
+                  </div>
+                </Link>
                 ))
               )}
             </div>
@@ -625,7 +625,7 @@ export default function WallPage() {
                     <div className="flex-1 space-y-2">
                       <div className="h-3 bg-[var(--pixel-surface)] rounded w-1/2"></div>
                       <div className="h-4 bg-[var(--pixel-surface)] rounded w-3/4"></div>
-                    </div>
+                  </div>
                   </div>
                 ))
               ) : (
@@ -895,7 +895,7 @@ export default function WallPage() {
                     <div className="flex-1 space-y-2">
                       <div className="h-4 bg-[var(--pixel-surface)] rounded w-1/4"></div>
                       <div className="h-3 bg-[var(--pixel-surface)] rounded w-1/6"></div>
-                    </div>
+              </div>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 bg-[var(--pixel-surface)] rounded w-full"></div>

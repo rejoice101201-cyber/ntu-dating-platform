@@ -193,9 +193,9 @@ export default function TopicPage() {
             >
               ←
             </button>
-            <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">
-              {topic ? topic.title : '主題'}
-            </h1>
+          <h1 className="text-xl font-bold uppercase tracking-wide text-[var(--pixel-text)]">
+            {topic ? topic.title : '主題'}
+          </h1>
           </div>
           {topic?.postCount !== undefined && (
             <span className="text-xs text-[var(--pixel-text-dim)]">{topic.postCount} 則貼文</span>

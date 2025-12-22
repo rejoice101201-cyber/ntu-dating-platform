@@ -59,14 +59,14 @@ export async function POST(request: NextRequest) {
 
     // 如果提供了 userId，檢查是否已被使用
     if (data.userId) {
-      const existingByUserId = await prisma.user.findFirst({
-        where: { userId: data.userId },
-      });
-      if (existingByUserId) {
-        return NextResponse.json(
-          { error: 'userID 已被使用' },
-          { status: 400 }
-        );
+    const existingByUserId = await prisma.user.findFirst({
+      where: { userId: data.userId },
+    });
+    if (existingByUserId) {
+      return NextResponse.json(
+        { error: 'userID 已被使用' },
+        { status: 400 }
+      );
       }
     }
 

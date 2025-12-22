@@ -61,15 +61,15 @@ export async function withRetry<T>(
         // 在 Serverless 環境中，不要頻繁斷開/重連，讓 Prisma 自己管理
         // 只在最後一次重試前才嘗試重新連接
         if (attempt === maxRetries - 1) {
-          try {
-            await prisma.$disconnect().catch(() => {
-              // 忽略斷開連接時的錯誤
-            });
+        try {
+          await prisma.$disconnect().catch(() => {
+            // 忽略斷開連接時的錯誤
+          });
             await new Promise(resolve => setTimeout(resolve, delay));
-            await prisma.$connect().catch(() => {
-              // 連接失敗會在下次重試時處理
-            });
-          } catch (reconnectError) {
+          await prisma.$connect().catch(() => {
+            // 連接失敗會在下次重試時處理
+          });
+        } catch (reconnectError) {
             console.error('[db] Failed to reconnect:', reconnectError);
           }
         } else {

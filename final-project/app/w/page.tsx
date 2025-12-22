@@ -146,7 +146,7 @@ export default function WallPage() {
     try {
       // 只在沒有貼文時顯示全頁 loading，否則只顯示局部 loading
       if (posts.length === 0) {
-        setLoading(true)
+      setLoading(true)
       } else {
         setLoadingPosts(true)
       }

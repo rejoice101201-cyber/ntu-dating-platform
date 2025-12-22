@@ -45,14 +45,14 @@ export async function POST(req: NextRequest) {
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
       user = await withRetry(
         () => prisma.user.create({
-          data: {
-            email,
-            password: hashedPassword,
-            name: payload.name || 'Google 使用者',
-            birthday: new Date(), // placeholder; could be updated later
-            gender: 'other',
-            isVerified: true,
-          },
+        data: {
+          email,
+          password: hashedPassword,
+          name: payload.name || 'Google 使用者',
+          birthday: new Date(), // placeholder; could be updated later
+          gender: 'other',
+          isVerified: true,
+        },
         }),
         3,
         1000
