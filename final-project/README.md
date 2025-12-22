@@ -340,6 +340,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 │   │   └── design-references/# 頁面截圖與設計參考
 │   ├── package.json          # Next.js 專案配置
 │   ├── next.config.js        # Next.js 設定
+│   ├── eval.txt              # 組員互評表（貢獻度分數）
 │   └── ...
 ├── package.json              # 根目錄配置 (monorepo)
 ├── README.md                 # 本文件
