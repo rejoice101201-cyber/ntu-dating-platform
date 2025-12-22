@@ -221,12 +221,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Phase 2: 檢查是否為主題貼文，且今天是否已發過
+    // Phase 2: 檢查是否為主題貼文，且今天是否已發過 5 次
     if (type === 'TOPIC' && topicId) {
       const { start: today, end: todayEnd } = getTodayInTaiwan();
       
-      const todayTopicPost = await withRetry(async () => {
-        return await prisma.post.findFirst({
+      const todayTopicPostCount = await withRetry(async () => {
+        return await prisma.post.count({
           where: {
             authorId: authUser.id,
             type: 'TOPIC',
@@ -239,10 +239,15 @@ export async function POST(request: NextRequest) {
         });
       });
 
-      if (todayTopicPost) {
+      const DAILY_TOPIC_POST_LIMIT = 5;
+      if (todayTopicPostCount >= DAILY_TOPIC_POST_LIMIT) {
         return NextResponse.json(
-          { error: '今天已經發過這個主題的貼文了' },
-          { status: 400 }
+          { 
+            error: '今日主題發文上限已達',
+            message: `每天最多只能針對今日話題發文 ${DAILY_TOPIC_POST_LIMIT} 次`,
+            limitReached: true,
+          },
+          { status: 429 }
         );
       }
     }
@@ -318,21 +323,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 扣除體力
+    // 發文後增加能量（淨增加 10，不扣除）
     await applyDailyEnergyRefill(authUser.id);
     await withRetry(async () => {
       const user = await prisma.user.findUnique({
         where: { id: authUser.id },
-        select: { energy: true },
+        select: { energy: true, energyMax: true },
       });
-      if (user && user.energy >= 5) {
+      if (user) {
+        // 直接增加 10 能量（使用 clampEnergy 確保不超過上限）
+        const finalEnergy = clampEnergy(user.energy + 10, user.energyMax);
         await prisma.user.update({
           where: { id: authUser.id },
-          data: { energy: { decrement: 5 } },
+          data: { energy: finalEnergy },
         });
       }
     }).catch(() => {
-      // 忽略體力扣除錯誤
+      // 忽略體力更新錯誤
     });
 
     return NextResponse.json({

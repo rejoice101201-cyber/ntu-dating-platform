@@ -66,7 +66,7 @@ function formatTimeAgo(dateString: string): string {
 export default function WallPage() {
   const router = useRouter()
   const pathname = usePathname()
-  const { user, token } = useAuthStore()
+  const { user, token, updateUser } = useAuthStore()
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -549,7 +549,19 @@ export default function WallPage() {
         loadPosts(filterTopicId), 
         loadDailyTopic(), 
         loadTopicStatus(),
-        loadTrendingTopics() // 更新熱門主題計數
+        loadTrendingTopics(), // 更新熱門主題計數
+        // 重新載入用戶資料以更新能量狀態
+        (async () => {
+          try {
+            const res = await api.get('/auth/me')
+            const fetchedUser = res.data?.user
+            if (fetchedUser) {
+              updateUser(fetchedUser)
+            }
+          } catch (err) {
+            console.error('Failed to refresh energy:', err)
+          }
+        })()
       ])
     } catch (error: any) {
       console.error('Failed to create post:', error)
