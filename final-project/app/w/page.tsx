@@ -142,7 +142,7 @@ export default function WallPage() {
     ])
   }, [token, router])
 
-  const loadPosts = async (topicId?: string | null) => {
+  const loadPosts = async (topicId?: string | null, sortParam?: 'latest' | 'trending') => {
     try {
       // 只在沒有貼文時顯示全頁 loading，否則只顯示局部 loading
       if (posts.length === 0) {
@@ -151,8 +151,10 @@ export default function WallPage() {
         setLoadingPosts(true)
       }
       setError(null)
-      const sortParam = `sort=${sort}`
-      const base = topicId ? `/posts?topicId=${topicId}&${sortParam}` : `/posts?${sortParam}`
+      // 使用傳入的 sortParam，如果沒有則使用當前的 sort 狀態
+      const sortValue = sortParam || sort
+      const sortQuery = `sort=${sortValue}`
+      const base = topicId ? `/posts?topicId=${topicId}&${sortQuery}` : `/posts?${sortQuery}`
       const url = base
       const response = await api.get(url)
       setPosts(response.data.posts || [])
@@ -567,8 +569,9 @@ export default function WallPage() {
             <button
               type="button"
               onClick={() => { 
-                setSort('latest')
-                loadPosts(filterTopicId)
+                const newSort = 'latest'
+                setSort(newSort)
+                loadPosts(filterTopicId, newSort)
               }}
               disabled={loadingPosts}
               className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
@@ -584,8 +587,9 @@ export default function WallPage() {
             <button
               type="button"
               onClick={() => { 
-                setSort('trending')
-                loadPosts(filterTopicId)
+                const newSort = 'trending'
+                setSort(newSort)
+                loadPosts(filterTopicId, newSort)
               }}
               disabled={loadingPosts}
               className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${

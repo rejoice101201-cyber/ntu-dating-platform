@@ -155,7 +155,7 @@ export default function WallPage() {
     }
   }
 
-  const loadPosts = async (topicId?: string | null) => {
+  const loadPosts = async (topicId?: string | null, sortParam?: 'latest' | 'trending') => {
     try {
       // 只在沒有貼文時顯示全頁 loading，否則只顯示局部 loading
       if (posts.length === 0) {
@@ -165,7 +165,8 @@ export default function WallPage() {
       }
       setError(null)
       const params = new URLSearchParams()
-      params.set('sort', sort)
+      // 使用傳入的 sortParam，如果沒有則使用當前的 sort 狀態
+      params.set('sort', sortParam || sort)
       if (topicId) params.set('topicId', topicId)
       if (filterAuthorId) params.set('authorId', filterAuthorId)
       const url = `/posts?${params.toString()}`
@@ -645,8 +646,9 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('latest')
-                  loadPosts(filterTopicId)
+                  const newSort = 'latest'
+                  setSort(newSort)
+                  loadPosts(filterTopicId, newSort)
                 }}
                 disabled={loadingPosts}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
@@ -662,8 +664,9 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('trending')
-                  loadPosts(filterTopicId)
+                  const newSort = 'trending'
+                  setSort(newSort)
+                  loadPosts(filterTopicId, newSort)
                 }}
                 disabled={loadingPosts}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
