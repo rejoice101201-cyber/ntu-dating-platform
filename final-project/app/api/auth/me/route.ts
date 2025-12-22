@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { applyDailyEnergyRefill } from '@/lib/energy';
+import { applyDailyEnergyRefill, ensureMaxEnergy } from '@/lib/energy';
 import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 export async function GET(request: NextRequest) {
@@ -37,6 +37,11 @@ export async function GET(request: NextRequest) {
 
     const refilled = await applyDailyEnergyRefill(authUser.id);
     if (refilled) {
+      // 确保energyMax不超过50
+      if (refilled.energyMax > 50) {
+        refilled.energyMax = 50
+        refilled.energy = Math.min(refilled.energy, 50)
+      }
       return NextResponse.json({ user: refilled });
     }
 
@@ -47,7 +52,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ user });
+    // 确保energyMax不超过50
+    const finalUser = { ...user }
+    if (finalUser.energyMax > 50) {
+      finalUser.energyMax = 50
+      finalUser.energy = Math.min(finalUser.energy, 50)
+    }
+
+    return NextResponse.json({ user: finalUser });
   } catch (error: any) {
     console.error('Get auth user error:', error);
     

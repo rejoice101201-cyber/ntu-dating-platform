@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { applyDailyEnergyRefill } from '@/lib/energy';
+import { applyDailyEnergyRefill, ensureMaxEnergy } from '@/lib/energy';
 import { withRetry, handleDatabaseError } from '@/lib/dbUtils';
 
 const updateSchema = z.object({
@@ -53,6 +53,12 @@ export async function GET(request: NextRequest) {
     const refilled = await applyDailyEnergyRefill(authUser.id);
     const finalUser = refilled ? { ...user, ...refilled, photos: user.photos, tags: user.tags } : user;
 
+    // 确保energyMax不超过50
+    if (finalUser.energyMax && finalUser.energyMax > 50) {
+      finalUser.energyMax = 50
+      finalUser.energy = Math.min(finalUser.energy, 50)
+    }
+
     const { password, ...userWithoutPassword } = finalUser;
 
     return NextResponse.json(userWithoutPassword);
@@ -83,7 +89,7 @@ export async function PUT(request: NextRequest) {
 
     // 使用重試機制執行更新
     const updatedUser = await withRetry(async () => {
-      return await prisma.user.update({
+      const user = await prisma.user.update({
         where: { id: authUser.id },
         data,
         select: {
@@ -103,6 +109,35 @@ export async function PUT(request: NextRequest) {
           energyMax: true,
         },
       });
+      
+      // 确保energyMax不超过50
+      if (user.energyMax > 50) {
+        return await prisma.user.update({
+          where: { id: authUser.id },
+          data: {
+            energyMax: 50,
+            energy: Math.min(user.energy, 50),
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            bio: true,
+            location: true,
+            height: true,
+            weight: true,
+            occupation: true,
+            school: true,
+            bloodType: true,
+            birthday: true,
+            gender: true,
+            energy: true,
+            energyMax: true,
+          },
+        });
+      }
+      
+      return user;
     });
 
     return NextResponse.json(updatedUser);

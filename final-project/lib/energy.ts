@@ -25,10 +25,13 @@ export async function applyDailyEnergyRefill(userId: string) {
   if (!user) return null
 
   if (user.lastEnergyRefill < cutoff) {
+    // 确保energyMax不超过50
+    const maxEnergy = Math.min(user.energyMax, 50)
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
-        energy: user.energyMax,
+        energy: maxEnergy,
+        energyMax: maxEnergy, // 同时更新energyMax确保不超过50
         lastEnergyRefill: new Date(),
       },
       select: {
@@ -52,6 +55,13 @@ export async function applyDailyEnergyRefill(userId: string) {
 }
 
 export function clampEnergy(value: number, max: number) {
-  return Math.min(Math.max(value, 0), max)
+  // 确保max不超过50
+  const maxEnergy = Math.min(max, 50)
+  return Math.min(Math.max(value, 0), maxEnergy)
+}
+
+// 确保energyMax不超过50
+export function ensureMaxEnergy(max: number): number {
+  return Math.min(max, 50)
 }
 

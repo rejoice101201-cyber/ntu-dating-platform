@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { ensureMaxEnergy } from '@/lib/energy';
 
 const registerSchema = z.object({
   userId: z.string().optional(), // userId 改為可選，如果沒有提供則自動生成
@@ -74,6 +75,8 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     // Create user（如果沒有提供 userId，Prisma 會自動生成）
+    // 确保energyMax不超过50
+    const energyMax = ensureMaxEnergy(50) // 默认50，确保不超过50
     const user = await prisma.user.create({
       data: {
         userId: data.userId || undefined, // 如果沒有提供，使用 undefined 讓 Prisma 自動生成
@@ -88,6 +91,8 @@ export async function POST(request: NextRequest) {
         occupation: data.occupation,
         school: data.school,
         bloodType: data.bloodType,
+        energyMax: energyMax, // 明确设置为50
+        energy: energyMax, // 初始能量也设置为50
       },
       select: {
         id: true,

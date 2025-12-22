@@ -24,7 +24,7 @@ export default function ChatPage() {
   const router = useRouter()
   const { user, token } = useAuthStore()
   const matchId = params.matchId as string
-  
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [personaIndices, setPersonaIndices] = useState<Record<string, number>>({
@@ -57,12 +57,12 @@ export default function ChatPage() {
 
     // Load messages first (even without Pusher)
     loadMessages(true)
-    
+
     // Load current user's profile to get photos
     if (user?.id) {
       loadCurrentUserProfile(user.id)
     }
-    
+
     // 检查是否有活跃的游戏会话
     checkActiveGameSession()
 
@@ -78,11 +78,18 @@ export default function ChatPage() {
 
         // Subscribe to match channel
         const channel = newPusher.subscribe(`match-${matchId}`)
-        
+
         channel.bind('new_message', (message: Message) => {
-          setMessages(prev => [...prev, message])
+          setMessages((prev: Message[]) => {
+            // 检查消息是否已存在，避免重复添加
+            const exists = prev.some((m: Message) => m.id === message.id)
+            if (exists) {
+              return prev
+            }
+            return [...prev, message]
+          })
         })
-        
+
         // 监听游戏状态更新
         channel.bind('game_state_update', (data: any) => {
           console.log('Game state update received:', data)
@@ -151,7 +158,7 @@ export default function ChatPage() {
         setLoading(true)
       }
       setError(null)
-      
+
       console.log('Loading messages for match:', matchId)
       const response = await api.get(`/chat/${matchId}`)
       console.log('Messages response:', response.data)
@@ -213,7 +220,7 @@ export default function ChatPage() {
     if (!input.trim() || !user) return
 
     const messageContent = input.trim()
-    
+
     // Optimistically add message to UI
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
@@ -235,10 +242,10 @@ export default function ChatPage() {
         content: messageContent,
         type: 'text',
       })
-      
+
       // Replace temp message with real message
       if (response.data.message) {
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === tempMessage.id ? response.data.message : msg
         ))
       }
@@ -290,7 +297,7 @@ export default function ChatPage() {
 
       // Replace temp message with real message
       if (data.message) {
-        setMessages(prev => prev.map(msg => 
+        setMessages(prev => prev.map(msg =>
           msg.id === tempMessage.id ? data.message : msg
         ))
       }
@@ -415,13 +422,13 @@ export default function ChatPage() {
         topic,
       })
       console.log('Game initiated successfully:', response.data)
-      
+
       if (!response.data.gameSession || !response.data.gameSession.question) {
         console.error('Game session created but no question assigned:', response.data)
         alert('遊戲已發起，但沒有找到題目。請稍後再試或聯繫客服。')
         return
       }
-      
+
       setGameSession(response.data.gameSession)
       setGameTopic(topic)
       setShowQAGame(true)
@@ -441,7 +448,7 @@ export default function ChatPage() {
   // 回答问题（回答者）
   const submitAnswer = async () => {
     if (!gameSession || !gameAnswer) return
-    
+
     try {
       const response = await api.post('/game/answer', {
         gameSessionId: gameSession.id,
@@ -460,7 +467,7 @@ export default function ChatPage() {
   // 猜测答案（发起者）
   const submitGuess = async () => {
     if (!gameSession || !gameGuess) return
-    
+
     try {
       const response = await api.post('/game/guess', {
         gameSessionId: gameSession.id,
@@ -490,7 +497,7 @@ export default function ChatPage() {
       alert('鑰匙不足！')
       return
     }
-    
+
     try {
       const response = await api.post('/game/unlock', {
         targetUserId: otherUser.id,
@@ -571,7 +578,7 @@ export default function ChatPage() {
               ✕
             </button>
           </div>
-          
+
           {unlockProgress && (
             <div className="mb-3 space-y-2 pixel-panel p-3 text-[var(--pixel-text)]">
               <div className="w-full bg-[#d9dce1] h-3 mb-1">
@@ -625,12 +632,12 @@ export default function ChatPage() {
               </p>
               {gameSession.question ? (
                 <>
-              <p
-                className="text-lg mb-3"
-                style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
-              >
-                {gameSession.question.content}
-              </p>
+                  <p
+                    className="text-lg mb-3"
+                    style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+                  >
+                    {gameSession.question.content}
+                  </p>
                   {gameSession.question.type === 'multiple_choice' && gameSession.question.options ? (
                     <div className="space-y-2">
                       {JSON.parse(gameSession.question.options).map((opt: string, idx: number) => (
@@ -779,12 +786,12 @@ export default function ChatPage() {
             // Find cover photo or first photo for other user - 完全按照资料页面的方式
             let senderPhoto = null
             let blurLevel = 20
-            
+
             if (!isOwn && otherUser?.photos && otherUser.photos.length > 0) {
               senderPhoto = otherUser.photos.find((p: any) => p.isCover) || otherUser.photos[0]
               blurLevel = senderPhoto?.blurLevel ?? 20
             }
-            
+
             return (
               <div
                 key={message.id}
@@ -814,7 +821,7 @@ export default function ChatPage() {
                     )}
                   </button>
                 )}
-                
+
                 {/* Avatar for own messages */}
                 {isOwn && user && (
                   <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative">
@@ -842,13 +849,12 @@ export default function ChatPage() {
                     })()}
                   </div>
                 )}
-                
+
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                    isOwn
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-white text-gray-800'
-                  }`}
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isOwn
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-white text-gray-800'
+                    }`}
                 >
                   {message.type === 'image' ? (
                     <div className="space-y-2">
@@ -885,13 +891,13 @@ export default function ChatPage() {
                     </div>
                   ) : (
                     <>
-                  <p className="text-sm">{message.content}</p>
-                  <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
-                    {new Date(message.createdAt).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                      <p className="text-sm">{message.content}</p>
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                        {new Date(message.createdAt).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
                     </>
                   )}
                 </div>
