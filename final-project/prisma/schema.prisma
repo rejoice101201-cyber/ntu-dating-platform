@@ -26,8 +26,8 @@ model User {
   school           String? // 學校
   bloodType        String? // 血型 (A, B, AB, O)
   bio              String?
-  energy           Int      @default(100) // 体力值
-  energyMax        Int      @default(100)
+  energy           Int      @default(50) // 体力值
+  energyMax        Int      @default(50)
   lastEnergyRefill DateTime @default(now())
   matchCredits     Int      @default(0) // 配對機會點數
   matchLikeCounter Int      @default(0) // 按讚計數器（每3次給1次配對機會）
