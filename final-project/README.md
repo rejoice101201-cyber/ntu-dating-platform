@@ -1,7 +1,7 @@
 # Shibuya - 全臺大學生專用免費交友軟體
 
-> Deployed service 網址：  
-> https://ntu-dating-platform1.vercel.app
+Deployed service 網址：  
+https://ntu-dating-platform1.vercel.app/
 
 
 ## 專案簡介
