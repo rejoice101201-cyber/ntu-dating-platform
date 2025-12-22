@@ -402,7 +402,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 
 ### 能量管理流程
 
-![Discover 頁面](docs/design-references/discover-page.png)
+![Home/Wall 頁面](docs/design-references/home-wall-page.jpg)
 
 1. **每日補滿檢查**：
    - 每次 API 請求時檢查 `lastEnergyRefill`
@@ -417,6 +417,8 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
    - 能量扣除防呆：所有扣除操作都使用 `clampEnergy` 確保不會 < 0
 
 ### 配對流程
+
+![Discover 頁面](docs/design-references/discover-page.png)
 
 1. **推薦算法**：
    - 基於用戶標籤匹配度計算
