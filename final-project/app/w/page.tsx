@@ -89,7 +89,7 @@ export default function WallPage() {
   const [loadingTrending, setLoadingTrending] = useState(true)
 
   // Phase 4: 每日配對上限狀態
-  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 3, remaining: 3 })
+  const [dailyMatchCount, setDailyMatchCount] = useState({ count: 0, limit: 5, remaining: 5 })
   
   // Phase 2: 今天是否已發過主題貼文
   const [hasPostedTopicToday, setHasPostedTopicToday] = useState(false)
@@ -458,7 +458,7 @@ export default function WallPage() {
       console.error('Failed to match from post:', error)
       // Phase 4: 檢查是否是配對上限錯誤
       if (error.response?.status === 429) {
-        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 3 個人', type: 'error' })
+        setToast({ message: error.response.data?.message || '每天最多只能從貼文中配對 5 個人', type: 'error' })
         await loadDailyMatchCount() // 更新配對次數顯示
       } else {
         setToast({ message: error.message || '配對失敗，請稍後再試', type: 'error' })
@@ -1028,7 +1028,7 @@ export default function WallPage() {
         {/* Phase 4: 每日配對上限提示 */}
         <div className="pixel-panel p-3 mt-6 text-center">
           <p className="text-xs text-[var(--pixel-text-dim)]">
-            每天最多只能從貼文中配對 3 人
+            每天最多只能從貼文中配對 5 人
           </p>
           <p className="text-sm font-bold text-[var(--pixel-text)] mt-1">
             今日已配對：{dailyMatchCount.count} / {dailyMatchCount.limit}
