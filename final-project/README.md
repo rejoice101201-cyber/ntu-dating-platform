@@ -416,7 +416,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 
 ### 配對流程
 
-![Discover 頁面](docs/design-references/discover-page.png)
+![Discover 頁面](docs/design-references/discover-page.jpg)
 
 1. **推薦算法**：
    - 基於用戶標籤匹配度計算
