@@ -811,24 +811,24 @@ export default function ChatPage() {
           <button
             onClick={() => usePersonaLine('puppy')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+            className="px-4 py-2.5 border-3 border-[var(--pixel-border)] bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[#0284c7] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[var(--pixel-highlight)] transition-all font-semibold text-sm"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif" }}
           >
             🐶 小奶狗
           </button>
           <button
             onClick={() => usePersonaLine('boss')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+            className="px-4 py-2.5 border-3 border-[var(--pixel-border)] bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[#0284c7] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[var(--pixel-highlight)] transition-all font-semibold text-sm"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif" }}
           >
             🧠 霸道總裁
           </button>
           <button
             onClick={() => usePersonaLine('queen')}
             disabled={!otherUser?.id}
-            className="px-3 py-2 border-3 border-[var(--pixel-border)] bg-[var(--pixel-panel)] text-[var(--pixel-text)] shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[var(--pixel-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif", fontWeight: 500 }}
+            className="px-4 py-2.5 border-3 border-[var(--pixel-border)] bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.25)] hover:bg-[#0284c7] hover:shadow-[2px_2px_0_rgba(0,0,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[var(--pixel-highlight)] transition-all font-semibold text-sm"
+            style={{ fontFamily: "'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif" }}
           >
             👑 高貴御姐
           </button>

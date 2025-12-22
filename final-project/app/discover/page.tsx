@@ -199,7 +199,7 @@ export default function DiscoverPage() {
               <button
                 key={score}
                 onClick={() => handleRate(score)}
-                className="w-14 h-14 text-lg font-bold flex items-center justify-center"
+                className="w-16 h-16 text-xl font-bold flex items-center justify-center bg-[var(--pixel-highlight)] text-white border-3 border-[var(--pixel-border)] shadow-[4px_4px_0_rgba(0,0,0,0.35)] hover:bg-[#0284c7] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] transition-all"
               >
                 {score}
               </button>
