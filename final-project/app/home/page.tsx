@@ -636,11 +636,11 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('latest')
+                  setSort('trending')
                   loadPosts(filterTopicId)
                 }}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
-                  sort === 'latest' 
+                  sort === 'trending' 
                     ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
                     : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
                 }`}
@@ -652,11 +652,11 @@ export default function WallPage() {
               <button
                 type="button"
                 onClick={() => { 
-                  setSort('trending')
+                  setSort('latest')
                   loadPosts(filterTopicId)
                 }}
                 className={`px-3 py-1 border-3 border-[var(--pixel-border)] transition-all duration-100 font-bold text-xs ${
-                  sort === 'trending' 
+                  sort === 'latest' 
                     ? 'bg-[var(--pixel-highlight)] text-white shadow-[3px_3px_0_rgba(0,0,0,0.35)]' 
                     : 'bg-[var(--pixel-panel)] text-[var(--pixel-text-dim)] shadow-[3px_3px_0_rgba(0,0,0,0.35)] hover:shadow-[2px_2px_0_rgba(0,0,0,0.35)] hover:translate-x-[1px] hover:translate-y-[1px] active:shadow-[1px_1px_0_rgba(0,0,0,0.35)] active:translate-x-[2px] active:translate-y-[2px]'
                 }`}
