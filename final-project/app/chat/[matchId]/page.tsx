@@ -80,13 +80,20 @@ export default function ChatPage() {
         const channel = newPusher.subscribe(`match-${matchId}`)
 
         channel.bind('new_message', (message: Message) => {
+          console.log('Received new message via Pusher:', message)
           setMessages((prev: Message[]) => {
             // 检查消息是否已存在，避免重复添加
             const exists = prev.some((m: Message) => m.id === message.id)
             if (exists) {
+              console.log('Message already exists, skipping:', message.id)
               return prev
             }
-            return [...prev, message]
+            console.log('Adding new message to list:', message.id)
+            // 確保訊息按時間排序
+            const updated = [...prev, message].sort((a, b) => 
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            )
+            return updated
           })
         })
 
@@ -162,7 +169,16 @@ export default function ChatPage() {
       console.log('Loading messages for match:', matchId)
       const response = await api.get(`/chat/${matchId}`)
       console.log('Messages response:', response.data)
-      setMessages(response.data.messages || [])
+      const loadedMessages = response.data.messages || []
+      // 確保訊息按時間排序並移除重複
+      const sortedMessages = loadedMessages
+        .filter((msg: Message, index: number, self: Message[]) => 
+          index === self.findIndex((m: Message) => m.id === msg.id)
+        )
+        .sort((a: Message, b: Message) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+      setMessages(sortedMessages)
 
       // Get match info to find other user (only on initial load)
       if (isInitialLoad) {
@@ -249,6 +265,11 @@ export default function ChatPage() {
           msg.id === tempMessage.id ? response.data.message : msg
         ))
       }
+
+      // 立即重新載入訊息列表，確保訊息即時顯示（即使 Pusher 沒有推送）
+      setTimeout(() => {
+        loadMessages(false)
+      }, 500)
     } catch (error) {
       console.error('Failed to send message:', error)
       // Remove optimistic message on error
@@ -301,6 +322,11 @@ export default function ChatPage() {
           msg.id === tempMessage.id ? data.message : msg
         ))
       }
+
+      // 立即重新載入訊息列表，確保訊息即時顯示（即使 Pusher 沒有推送）
+      setTimeout(() => {
+        loadMessages(false)
+      }, 500)
     } catch (error) {
       console.error('Failed to upload file:', error)
       // Remove optimistic message on error
