@@ -9,31 +9,13 @@ export default function LeftSidebar() {
   const pathname = usePathname()
   const { user } = useAuthStore()
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/LeftSidebar.tsx:entry',message:'LeftSidebar component rendered',data:{hasUser:!!user,userId:user?.id,pathname:pathname,isChatPage:pathname?.startsWith('/chat/')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{})
-  }, [user, pathname])
-  // #endregion
-
-  // #region agent log
   if (!user) {
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/LeftSidebar.tsx:early-return',message:'Early return: no user',data:{user:null,pathname:pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
     return null
   }
-  // #endregion
   
-  // #region agent log
   if (pathname?.startsWith('/chat/')) {
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/LeftSidebar.tsx:early-return',message:'Early return: chat page',data:{pathname:pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{})
     return null
   }
-  // #endregion
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'components/LeftSidebar.tsx:render',message:'LeftSidebar rendering nav items',data:{navItemsCount:4,pathname:pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{})
-  }, [pathname])
-  // #endregion
 
   const navItems = [
     { href: '/home', label: 'Home', glyph: 'H' },

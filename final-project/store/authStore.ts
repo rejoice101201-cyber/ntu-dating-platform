@@ -102,29 +102,17 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => {
         return (state) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store/authStore.ts:onRehydrateStorage',message:'Auth store rehydration started',data:{hasState:!!state,hasWindow:typeof window !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{})
-          // #endregion
           // After rehydration, try to restore user from token
           if (state && typeof window !== 'undefined') {
             const storedToken = localStorage.getItem('token');
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store/authStore.ts:onRehydrateStorage',message:'Checking stored token',data:{hasStoredToken:!!storedToken,hasStateToken:!!state.token,userId:state?.user?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{})
-            // #endregion
             if (storedToken && !state.token) {
               // Try to restore user from token
               api.get('/auth/me')
                 .then(response => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store/authStore.ts:onRehydrateStorage',message:'User restored from token',data:{userId:response.data.user?.id,hasUser:!!response.data.user},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{})
-                  // #endregion
                   state.user = response.data.user;
                   state.token = storedToken;
                 })
                 .catch(() => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'store/authStore.ts:onRehydrateStorage',message:'Token invalid, clearing',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{})
-                  // #endregion
                   // Token invalid, clear it
                   localStorage.removeItem('token');
                   state.user = null;

@@ -18,28 +18,15 @@ export async function GET(req: NextRequest) {
     const error = req.nextUrl.searchParams.get('error')
     const errorDescription = req.nextUrl.searchParams.get('error_description')
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:entry',message:'callback entry',data:{hasCode:!!code,hasError:!!error,error:error,errorDescription:errorDescription,origin:req.nextUrl.origin,fullUrl:req.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{})
-    // #endregion
-    
     if (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:error',message:'OAuth error from Google',data:{error:error,errorDescription:errorDescription},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{})
-      // #endregion
       return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent(error)}&description=${encodeURIComponent(errorDescription || '')}`, req.url))
     }
     
     if (!code) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:missing-code',message:'missing code',data:{hasCode:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{})
-      // #endregion
       return NextResponse.redirect(new URL('/auth/login?error=missing_code', req.url))
     }
 
     const redirectUri = `${req.nextUrl.origin}/api/auth/google/callback`
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:redirect-uri',message:'using redirect URI',data:{redirectUri:redirectUri,origin:req.nextUrl.origin,expectedLocal:'http://localhost:3000/api/auth/google/callback',expectedProd:'https://ntu-dating-platform-liard.vercel.app/api/auth/google/callback'},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{})
-    // #endregion
     const client = new OAuth2Client({
       clientId: CLIENT_ID,
       clientSecret: CLIENT_SECRET,
@@ -47,9 +34,6 @@ export async function GET(req: NextRequest) {
     })
 
     const { tokens } = await client.getToken({ code, redirect_uri: redirectUri })
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:token',message:'token exchange result',data:{hasIdToken:!!tokens.id_token,hasAccessToken:!!tokens.access_token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
-    // #endregion
     if (!tokens.id_token) {
       return NextResponse.redirect(new URL('/auth/login?error=missing_id_token', req.url))
     }
@@ -110,9 +94,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(successUrl)
   } catch (error) {
     console.error('[Google Callback] error:', error)
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/api/auth/google/callback/route.ts:catch',message:'callback error',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{})
-    // #endregion
     return NextResponse.redirect(new URL('/auth/login?error=google_callback', req.url))
   }
 }

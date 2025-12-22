@@ -42,9 +42,6 @@ export default function LoginPage() {
     const params = new URLSearchParams(hash.replace(/^#/, ''))
     const idToken = params.get('id_token')
     if (!idToken) return
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/login/page.tsx:hash',message:'hash contains id_token, start loginWithGoogle',data:{hasIdToken:true,hashLength:hash.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     setGLoading(true)
     setError('')
     // 清掉 hash
@@ -89,9 +86,6 @@ export default function LoginPage() {
     url.searchParams.set('response_type', 'code')
     url.searchParams.set('scope', 'openid email profile')
     url.searchParams.set('prompt', 'select_account')
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/f87aa6be-13d8-46a5-9a9a-42ffe933ed05',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/auth/login/page.tsx:handleGoogle',message:'start google redirect',data:{redirectUri:redirectUri,fullUrl:url.toString(),origin:window.location.origin,clientId:GOOGLE_CLIENT_ID},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'G'})}).catch(()=>{});
-    // #endregion
     window.location.href = url.toString()
   }
 

@@ -313,11 +313,11 @@ npm run dev
 ## 系統功能（詳細說明）
 
 ### 認證流程
-1. **Google OAuth 登入**：
-   - 用戶點擊「Sign in with Google」
    
    ![登入頁面](docs/design-references/login-page.png)
    
+1. **Google OAuth 登入**：
+   - 點擊「Sign in with Google」
    - 重定向至 Google 授權頁面
    - Google 回調至 `/api/auth/google/callback`
    - 驗證 email 必須存在
@@ -326,16 +326,25 @@ npm run dev
    - 成功頁面解析 token 和用戶資料，設定 authStore
    - 自動跳轉至 `/discover`
 2. **Email/密碼登入**：
-   - 用戶輸入 email 和密碼
+   - 輸入 email 和密碼
    - 後端驗證密碼（bcrypt）
    - 生成 JWT token
    - 設定 authStore 並跳轉至 `/discover`
 3. **忘記密碼流程**：
+
+   ![忘記密碼頁面](docs/design-references/forgot-password-page.png)
+
    - 用戶輸入 email
    - 後端生成重設 token（JWT）
    - 發送重設連結至 email（使用 Nodemailer）
+   
+   ![重設密碼頁面](docs/design-references/reset-password-page.png)
+   
    - 用戶點擊連結進入重設頁面
    - 輸入新密碼並提交
+   
+   ![註冊頁面](docs/design-references/register-page.png)
+   
    - 後端驗證 token 並更新密碼
 4. **10 分鐘內免重登**：
    - 登入成功後 10 分鐘內可直接進站
@@ -356,6 +365,7 @@ npm run dev
    - 能量扣除防呆：所有扣除操作都使用 `clampEnergy` 確保不會 < 0
 
 ### 配對流程
+
 1. **推薦算法**：
    - 基於用戶標籤匹配度計算
    - 排除已評分過的用戶
