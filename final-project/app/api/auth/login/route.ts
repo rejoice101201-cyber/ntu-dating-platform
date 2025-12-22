@@ -48,9 +48,26 @@ export async function POST(request: NextRequest) {
 
     console.log('User found:', { id: user.id, email: user.email, isActive: user.isActive });
 
-    const isValidPassword = await bcrypt.compare(data.password, user.password);
+    // 檢查密碼格式（bcrypt hash 應該以 $2a$, $2b$, 或 $2y$ 開頭）
+    const passwordHash = user.password;
+    const isBcryptHash = passwordHash.startsWith('$2a$') || passwordHash.startsWith('$2b$') || passwordHash.startsWith('$2y$');
+    
+    if (!isBcryptHash) {
+      console.error('Password hash format invalid for user:', email, 'Hash format:', passwordHash.substring(0, 10));
+      return NextResponse.json(
+        { error: '帳號密碼格式錯誤，請使用忘記密碼功能重設' },
+        { status: 401 }
+      );
+    }
+
+    // 確保密碼沒有前後空白
+    const cleanPassword = data.password.trim();
+    
+    const isValidPassword = await bcrypt.compare(cleanPassword, passwordHash);
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
+      console.log('Invalid password for user:', email, 'Hash length:', passwordHash.length);
+      // 不記錄實際密碼，但記錄一些調試信息
+      console.log('Password comparison failed - hash prefix:', passwordHash.substring(0, 7));
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
