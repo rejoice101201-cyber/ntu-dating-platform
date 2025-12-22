@@ -504,7 +504,7 @@ ntu-dating-platform/          # 根目錄 (monorepo 管理, 可選)
 
 ### 貼文流程
 
-![貼文流程](docs/螢幕快照 2025-12-22 15-29-16.png)
+![貼文流程](docs/design-references/post-flow.png)
 
 1. **建立貼文**：
    - 用戶輸入內容
